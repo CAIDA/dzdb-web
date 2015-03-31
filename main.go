@@ -20,7 +20,7 @@ func main() {
 	}
 
 	// get server and start application
-	server := NewServer(&config.API)
+	server := NewServer(config)
 	AppStart(ds, server)
-	ServerStart(&config.Http, server)
+	log.Fatal(server.Start())
 }

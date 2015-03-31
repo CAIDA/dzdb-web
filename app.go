@@ -36,7 +36,7 @@ func (app *appContext) domainHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = json.NewEncoder(w).Encode(data)
-	if err != nil {
+	if err != nil && err != http.ErrHandlerTimeout {
 		panic(err)
 	}
 }
@@ -48,7 +48,7 @@ func (app *appContext) randomDomainHandler(w http.ResponseWriter, r *http.Reques
 		panic(err)
 	}
 	err = json.NewEncoder(w).Encode(domain)
-	if err != nil {
+	if err != nil && err != http.ErrHandlerTimeout {
 		panic(err)
 	}
 }
@@ -67,7 +67,7 @@ func (app *appContext) nameserverHandler(w http.ResponseWriter, r *http.Request)
 	}
 
 	err = json.NewEncoder(w).Encode(data)
-	if err != nil {
+	if err != nil && err != http.ErrHandlerTimeout {
 		panic(err)
 	}
 }

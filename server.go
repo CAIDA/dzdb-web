@@ -44,7 +44,7 @@ func loggingHandler(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 		t2 := time.Now()
 		ip, _, _ := net.SplitHostPort(r.RemoteAddr)
-		log.Printf("[%s] %s:%q %v\n", ip, r.Method, r.RequestURI, t2.Sub(t1))
+		log.Printf("[%s] %s %q %v\n", ip, r.Method, r.RequestURI, t2.Sub(t1))
 	}
 
 	return http.HandlerFunc(fn)
@@ -80,19 +80,23 @@ type server struct {
 
 	// Alice chain of http handlers
 	handlers alice.Chain
+
+	// Configuration
+	config *Config
 }
 
 // creates a new server object with the default (included) handlers
-func NewServer(api_config *APIConfig) *server {
+func NewServer(config *Config) *server {
 	server := &server{}
 	server.index = make(map[string]string)
 	server.router = httprouter.New()
+	server.config = config
 	server.handlers = alice.New(
 		context.ClearHandler,
 		loggingHandler,
 		recoverHandler,
-		makeTimeoutHandler(api_config.API_Timeout),
-		makeThrottleHandler(api_config.Requests_PerMin),
+		makeTimeoutHandler(server.config.API.API_Timeout),
+		makeThrottleHandler(server.config.API.Requests_PerMin),
 	)
 	return server
 }
@@ -117,14 +121,14 @@ func (s *server) Get(path string, handler http.Handler) {
 // Displays the map of the API methods available
 func (s *server) Index(w http.ResponseWriter, req *http.Request) {
 	err := json.NewEncoder(w).Encode(s.index)
-	if err != nil {
+	if err != nil && err != http.ErrHandlerTimeout {
 		panic(err)
 	}
 }
 
 // Starts the server
 // blocking function
-func ServerStart(http_config *HttpConfig, server *server) {
-	server.Get("/", server.handlers.ThenFunc(server.Index))
-	http.ListenAndServe(fmt.Sprintf("%s:%d", http_config.IP, http_config.Port), server.router)
+func (s *server) Start() error {
+	s.Get("/", s.handlers.ThenFunc(s.Index))
+	return http.ListenAndServe(fmt.Sprintf("%s:%d", s.config.Http.IP, s.config.Http.Port), s.router)
 }
