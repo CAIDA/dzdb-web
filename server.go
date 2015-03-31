@@ -20,6 +20,25 @@ import (
 	"github.com/justinas/alice"
 )
 
+// handler to ensure correct request accept headers
+/*
+func acceptHandler(next http.Handler) http.Handler {
+  fn := func(w http.ResponseWriter, r *http.Request) {
+    // We send a JSON-API error if the Accept header does not have a valid value.
+    if r.Header.Get("Accept") != "application/vnd.api+json" {
+      jsonErr := &Error{"not_acceptable", 406, "Not Acceptable", "Accept header must be set to 'application/vnd.api+json'."}
+      w.Header().Set("Content-Type", "application/vnd.api+json")
+      w.WriteHeader(jsonErr.Status)
+      json.NewEncoder(w).Encode(Errors{[]*Error{jsonErr}})
+      return
+    }
+
+    next.ServeHTTP(w, r)
+  }
+
+  return http.HandlerFunc(fn)
+}*/
+
 // handler for catching a panic
 // returns an HTTP code 500
 func recoverHandler(next http.Handler) http.Handler {
@@ -27,8 +46,7 @@ func recoverHandler(next http.Handler) http.Handler {
 		defer func() {
 			if err := recover(); err != nil {
 				log.Printf("panic: %+v", err)
-				//TODO json err
-				http.Error(w, http.StatusText(500), 500)
+				WriteJSONError(w, ErrInternalServer)
 			}
 		}()
 
@@ -55,18 +73,35 @@ func loggingHandler(next http.Handler) http.Handler {
 func makeTimeoutHandler(sec int) func(http.Handler) http.Handler {
 	// TODO make json error
 	return func(h http.Handler) http.Handler {
-		return http.TimeoutHandler(h, time.Duration(sec)*time.Second, "timed out")
+		return http.TimeoutHandler(h, time.Duration(sec)*time.Second, ErrTimeout.Error())
 	}
 }
 
 // creates a throttled handler using the perMin limit on requests
 func makeThrottleHandler(perMin int) func(http.Handler) http.Handler {
 	th := throttled.RateLimit(throttled.PerMin(perMin), &throttled.VaryBy{RemoteAddr: true}, store.NewMemStore(1000))
-	// TODO make json error
 	th.DeniedHandler = http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.Error(w, "limit exceeded", 429)
+		WriteJSONError(w, ErrLimitExceeded)
 	}))
 	return th.Throttle
+}
+
+// variables to hold common json errors
+var (
+	//ErrBadRequest           = &JSONError{"bad_request", 400, "Bad request", "Request body is not well-formed. It must be JSON."}
+	//ErrUnauthorized         = &JSONError{"unauthorized", 401, "Unauthorized", "Access token is invalid."}
+	//ErrNotFound             = &JSONError{"not_found", 404, "Not found", "Route not found."}
+	//ErrNotAcceptable        = &JSONError{"not_acceptable", 406, "Not acceptable", "Accept HTTP header must be \"application/vnd.api+json\"."}
+	//ErrUnsupportedMediaType = &JSONError{"unsupported_media_type", 415, "Unsupported Media Type", "Content-Type header must be \"application/vnd.api+json\"."}
+	ErrLimitExceeded  = &JSONError{"limit_exceeded", 429, "Too Many Requests", "To many requests, please wait and submit again."}
+	ErrInternalServer = &JSONError{"internal_server_error", 500, "Internal Server Error", "Something went wrong."}
+	ErrTimeout        = &JSONError{"timeout", 503, "Service Unavailable", "The request took longer than expected to process."}
+)
+
+func WriteJSONError(w http.ResponseWriter, err *JSONError) {
+	w.Header().Set("Content-Type", "application/vnd.api+json")
+	w.WriteHeader(err.Status)
+	json.NewEncoder(w).Encode(JSONErrors{[]*JSONError{err}})
 }
 
 // struct for holding server resources
