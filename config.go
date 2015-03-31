@@ -18,13 +18,13 @@ type DatabaseConfig struct {
 	Password string
 	Database string
 	SSL      bool
+	Timeout  int
 }
 
 // API settings
 type APIConfig struct {
-	SQL_Timeout     int
-	API_Timeout     int
-	Requests_PerMin int
+	Timeout             int
+	Requests_Per_Minute int
 }
 
 // main configuration object

@@ -27,6 +27,7 @@ func recoverHandler(next http.Handler) http.Handler {
 		defer func() {
 			if err := recover(); err != nil {
 				log.Printf("panic: %+v", err)
+				//TODO json err
 				http.Error(w, http.StatusText(500), 500)
 			}
 		}()
@@ -93,10 +94,10 @@ func NewServer(config *Config) *server {
 	server.config = config
 	server.handlers = alice.New(
 		context.ClearHandler,
+		makeTimeoutHandler(server.config.API.Timeout),
 		loggingHandler,
 		recoverHandler,
-		makeTimeoutHandler(server.config.API.API_Timeout),
-		makeThrottleHandler(server.config.API.Requests_PerMin),
+		makeThrottleHandler(server.config.API.Requests_Per_Minute),
 	)
 	return server
 }

@@ -47,7 +47,14 @@ func NewDataStore(cfg *DatabaseConfig) (*DataStore, error) {
 		return nil, err
 	}
 	ds := DataStore{db}
-	return &ds, nil
+	err = ds.setSQLTimeout(cfg.Timeout)
+	return &ds, err
+}
+
+// sets the amount of time a SQL query can run before timing out
+func (ds *DataStore) setSQLTimeout(sec int) error {
+	_, err := ds.db.Exec(fmt.Sprintf("SET statement_timeout TO %d;", (1000 * sec)))
+	return err
 }
 
 // closes the database connection
@@ -59,10 +66,10 @@ func (ds *DataStore) Close() error {
 func (ds *DataStore) getDomain(domain string) (*Domain, error) {
 	domain = strings.ToUpper(domain)
 	rows, err := ds.db.Query("select ns.domain, dns.first_seen, dns.last_seen from nameservers, domains, domains_nameservers dns, nameservers ns where ns.id = dns.nameserver_id and domains.id = dns.domain_id and dns.nameserver_id = nameservers.id and dns.last_seen is null and domains.domain = $1 limit 10", domain)
-	defer rows.Close()
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 	var data Domain
 	data.Domain = domain
 	data.NameServers = make([]NameServer, 0, 4)
@@ -111,10 +118,10 @@ func (ds *DataStore) getRandomDomain() (*Domain, error) {
 func (ds *DataStore) getNameServer(domain string) (*NameServer, error) {
 	domain = strings.ToUpper(domain)
 	rows, err := ds.db.Query("select domains.domain, dns.first_seen, dns.last_seen from nameservers, domains, domains_nameservers dns, nameservers ns where ns.id = dns.nameserver_id and domains.id = dns.domain_id and dns.nameserver_id = nameservers.id and dns.last_seen is null and nameservers.domain = $1 order by first_seen desc nulls last limit 100", domain)
-	defer rows.Close()
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 	var data NameServer
 	data.NameServer = domain
 	data.Domains = make([]Domain, 0, 4)

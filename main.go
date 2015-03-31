@@ -22,5 +22,6 @@ func main() {
 	// get server and start application
 	server := NewServer(config)
 	AppStart(ds, server)
+	log.Printf("Server starting on %s:%d", config.Http.IP, config.Http.Port)
 	log.Fatal(server.Start())
 }
