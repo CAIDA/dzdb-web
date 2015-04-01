@@ -216,17 +216,19 @@ func (ds *DataStore) getNameServer(domain string) (*NameServer, error) {
 	ns.NameServer = domain
 
 	// get first_seen & last_seen
-	err = ds.db.QueryRow("select first_seen from domains_nameservers where nameserver_id = $1 order by first_seen nulls first limit 1", ns.Id).Scan(&ns.FirstSeen)
+	// times out
+	/*err = ds.db.QueryRow("select first_seen from domains_nameservers where nameserver_id = $1 order by first_seen nulls first limit 1", ns.Id).Scan(&ns.FirstSeen)
 	if err != nil {
 		return nil, err
 	}
 	err = ds.db.QueryRow("select last_seen from domains_nameservers where nameserver_id = $1 order by last_seen nulls first limit 1", ns.Id).Scan(&ns.LastSeen)
 	if err != nil {
 		return nil, err
-	}
+	}*/
 
 	// get num Domains
-	err = ds.db.QueryRow("SELECT count(*) FROM domains_nameservers WHERE nameserver_id = $1 AND last_seen IS NULL", ns.Id).Scan(&ns.DomainCount)
+	// times out
+	/*err = ds.db.QueryRow("SELECT count(*) FROM domains_nameservers WHERE nameserver_id = $1 AND last_seen IS NULL", ns.Id).Scan(&ns.DomainCount)
 	if err != nil {
 		return nil, err
 	}
@@ -235,7 +237,7 @@ func (ds *DataStore) getNameServer(domain string) (*NameServer, error) {
 	err = ds.db.QueryRow("SELECT count(*) FROM domains_nameservers WHERE nameserver_id = $1 AND last_seen IS NOT NULL", ns.Id).Scan(&ns.ArchiveDomainCount)
 	if err != nil {
 		return nil, err
-	}
+	}*/
 
 	// get some active Domains
 	rows, err := ds.db.Query("SELECT d.id, d.domain, dns.first_seen, dns.last_seen FROM domains_nameservers dns, domains d WHERE d.id = dns.domain_id AND dns.last_seen IS NULL AND dns.nameserver_id = $1 limit 100", ns.Id)
