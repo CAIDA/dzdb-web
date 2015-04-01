@@ -2,6 +2,9 @@
 
 all: api
 
+run: api
+	./api
+
 api: main.go config.go datastore.go model.go server.go app.go
 	go build -o $@ $^
 

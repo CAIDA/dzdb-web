@@ -11,8 +11,8 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"time"
 	"regexp"
+	"time"
 
 	"github.com/PuerkitoBio/throttled"
 	"github.com/PuerkitoBio/throttled/store"
@@ -20,26 +20,6 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/justinas/alice"
 )
-
-// handler to ensure correct request accept headers
-// also want to be able to accept text/plain
-/*
-func acceptHandler(next http.Handler) http.Handler {
-  fn := func(w http.ResponseWriter, r *http.Request) {
-    // We send a JSON-API error if the Accept header does not have a valid value.
-    if r.Header.Get("Accept") != "application/vnd.api+json" {
-      jsonErr := &Error{"not_acceptable", 406, "Not Acceptable", "Accept header must be set to 'application/vnd.api+json'."}
-      w.Header().Set("Content-Type", "application/vnd.api+json")
-      w.WriteHeader(jsonErr.Status)
-      json.NewEncoder(w).Encode(Errors{[]*Error{jsonErr}})
-      return
-    }
-
-    next.ServeHTTP(w, r)
-  }
-
-  return http.HandlerFunc(fn)
-}*/
 
 // handler for catching a panic
 // returns an HTTP code 500
@@ -100,18 +80,30 @@ func makeThrottleHandler(perMin int) func(http.Handler) http.Handler {
 var (
 	//ErrBadRequest           = &JSONError{"bad_request", 400, "Bad request", "Request body is not well-formed. It must be JSON."}
 	//ErrUnauthorized         = &JSONError{"unauthorized", 401, "Unauthorized", "Access token is invalid."}
-	ErrNotFound             = &JSONError{"not_found", 404, "Not found", "Route not found."}
-	//ErrNotAcceptable        = &JSONError{"not_acceptable", 406, "Not acceptable", "Accept HTTP header must be \"application/vnd.api+json\"."}
-	//ErrUnsupportedMediaType = &JSONError{"unsupported_media_type", 415, "Unsupported Media Type", "Content-Type header must be \"application/vnd.api+json\"."}
-	ErrLimitExceeded  = &JSONError{"limit_exceeded", 429, "Too Many Requests", "To many requests, please wait and submit again."}
-	ErrInternalServer = &JSONError{"internal_server_error", 500, "Internal Server Error", "Something went wrong."}
-	ErrTimeout        = &JSONError{"timeout", 503, "Service Unavailable", "The request took longer than expected to process."}
+	ErrNotFound         = &JSONError{"not_found", 404, "Not found", "Route not found."}
+	ErrResourceNotFound = &JSONError{"resource_not_found", 404, "Not found", "Resource not found."}
+	ErrLimitExceeded    = &JSONError{"limit_exceeded", 429, "Too Many Requests", "To many requests, please wait and submit again."}
+	ErrInternalServer   = &JSONError{"internal_server_error", 500, "Internal Server Error", "Something went wrong."}
+	ErrNotImplemented   = &JSONError{"not_implemented", 501, "Not Implemented", "The server does not support the functionality required to fulfill the request. It may not have been implemented yet"}
+	ErrTimeout          = &JSONError{"timeout", 503, "Service Unavailable", "The request took longer than expected to process."}
 )
 
+func HandlerNotImplemented(w http.ResponseWriter, r *http.Request) {
+	WriteJSONError(w, ErrNotImplemented)
+}
+
 func WriteJSONError(w http.ResponseWriter, err *JSONError) {
-	w.Header().Set("Content-Type", "application/vnd.api+json")
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(err.Status)
 	json.NewEncoder(w).Encode(JSONErrors{[]*JSONError{err}})
+}
+
+func WriteJSON(w http.ResponseWriter, data interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	err := json.NewEncoder(w).Encode(JSONResponse{data})
+	if err != nil && err != http.ErrHandlerTimeout {
+		panic(err)
+	}
 }
 
 // struct for holding server resources
@@ -169,10 +161,12 @@ func (s *server) Get(path string, handler http.Handler) {
 // Index handler
 // Displays the map of the API methods available
 func (s *server) Index(w http.ResponseWriter, req *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 	err := json.NewEncoder(w).Encode(s.index)
 	if err != nil && err != http.ErrHandlerTimeout {
 		panic(err)
 	}
+
 }
 
 // Starts the server
