@@ -12,6 +12,7 @@ import (
 	"net"
 	"net/http"
 	"time"
+	"regexp"
 
 	"github.com/PuerkitoBio/throttled"
 	"github.com/PuerkitoBio/throttled/store"
@@ -21,6 +22,7 @@ import (
 )
 
 // handler to ensure correct request accept headers
+// also want to be able to accept text/plain
 /*
 func acceptHandler(next http.Handler) http.Handler {
   fn := func(w http.ResponseWriter, r *http.Request) {
@@ -69,11 +71,19 @@ func loggingHandler(next http.Handler) http.Handler {
 	return http.HandlerFunc(fn)
 }
 
+// 404 not found handler
+func notFoundJSON(w http.ResponseWriter, r *http.Request) {
+	WriteJSONError(w, ErrNotFound)
+}
+
 // creates a TimeoutHandler using the provided sec timeout
 func makeTimeoutHandler(sec int) func(http.Handler) http.Handler {
-	// TODO make json error
+	timeout_error_json, err := json.Marshal(ErrTimeout)
+	if err != nil {
+		log.Fatal(err)
+	}
 	return func(h http.Handler) http.Handler {
-		return http.TimeoutHandler(h, time.Duration(sec)*time.Second, ErrTimeout.Error())
+		return http.TimeoutHandler(h, time.Duration(sec)*time.Second, string(timeout_error_json))
 	}
 }
 
@@ -90,7 +100,7 @@ func makeThrottleHandler(perMin int) func(http.Handler) http.Handler {
 var (
 	//ErrBadRequest           = &JSONError{"bad_request", 400, "Bad request", "Request body is not well-formed. It must be JSON."}
 	//ErrUnauthorized         = &JSONError{"unauthorized", 401, "Unauthorized", "Access token is invalid."}
-	//ErrNotFound             = &JSONError{"not_found", 404, "Not found", "Route not found."}
+	ErrNotFound             = &JSONError{"not_found", 404, "Not found", "Route not found."}
 	//ErrNotAcceptable        = &JSONError{"not_acceptable", 406, "Not acceptable", "Accept HTTP header must be \"application/vnd.api+json\"."}
 	//ErrUnsupportedMediaType = &JSONError{"unsupported_media_type", 415, "Unsupported Media Type", "Content-Type header must be \"application/vnd.api+json\"."}
 	ErrLimitExceeded  = &JSONError{"limit_exceeded", 429, "Too Many Requests", "To many requests, please wait and submit again."}
@@ -134,13 +144,16 @@ func NewServer(config *Config) *server {
 		recoverHandler,
 		makeThrottleHandler(server.config.API.Requests_Per_Minute),
 	)
+	server.router.NotFound = notFoundJSON
 	return server
 }
 
 // Adds a method to the router's GET handler but also adds it to the API index map
 // description is the API function description
 func (s *server) Get_Index(path, description string, fn http.HandlerFunc) {
-	s.index[description] = path
+	re := regexp.MustCompile(":[a-zA-Z0-9_]*")
+	param_path := re.ReplaceAllStringFunc(path, func(s string) string { return fmt.Sprintf("{%s}", s[1:]) })
+	s.index[description] = param_path
 	s.Get(path, s.handlers.ThenFunc(fn))
 }
 
