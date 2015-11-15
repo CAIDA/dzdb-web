@@ -1,0 +1,25 @@
+<!-- https://bootswatch.com/flatly/ -->
+{{define "top"}}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="//maxcdn.bootstrapcdn.com/bootswatch/3.3.4/flatly/bootstrap.min.css" rel="stylesheet">
+    <title>{{$.Title}}</title>
+</head>
+<body>
+    <div class="container">
+    {{template "navbar.tmpl" $}}
+{{end}}
+{{define "bottom"}}
+    </div> <!-- /container -->
+    <script src="//code.jquery.com/jquery-1.11.3.min.js"></script>
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+    <!-- set the correct tab to active on the navbar -->
+    <script>$('.nav a:contains({{$.Title}})').parent().addClass('active');</script>
+</body>
+</html>
+{{end}}

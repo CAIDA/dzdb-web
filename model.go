@@ -6,8 +6,11 @@ import (
 )
 
 var (
-	DomainType     = "domain"
-	NameServerType = "nameserver"
+	DomainType            = "domain"
+	NameServerType        = "nameserver"
+	ImportProgressType    = "import_progress"
+	ZoneImportResultType  = "zone_import_result"
+	ZoneImportResultsType = "zone_import_results"
 )
 
 // JSON-API root data object
@@ -31,6 +34,66 @@ type JSONError struct {
 // Err implements the error interface.
 func (err JSONError) Error() string {
 	return err.Detail
+}
+
+// Import Progress
+type ImportProgress struct {
+	Type    *string        `json:"type"`
+	Link    string         `json:"link"`
+	Imports int64          `json:"imports_left"`
+	Days    int            `json:"days_left"`
+	Dates   [15]ImportDate `json:"dates"`
+}
+
+type ImportDate struct {
+	Date *time.Time `json:"date"`
+	//TODO make duration
+	//Took			time.Duration `json:"took"`
+	Took  string `json:"took"`
+	Count uint64 `json:"count"`
+}
+
+func (ip *ImportProgress) generateMetaData() {
+	ip.Type = &ImportProgressType
+	ip.Link = "/imports/status"
+}
+
+type ZoneImportResults struct {
+	Type  *string             `json:"type"`
+	Count int                 `json:"count"`
+	Zones []*ZoneImportResult `json:"zones"`
+}
+
+func (zirs *ZoneImportResults) generateMetaData() {
+	zirs.Type = &ZoneImportResultsType
+	zirs.Count = len(zirs.Zones)
+
+	for _, v := range zirs.Zones {
+		v.generateMetaData()
+	}
+}
+
+type ZoneImportResult struct {
+	Type    *string    `json:"type"`
+	Id      int64      `json:"id"`
+	Link    string     `json:"link"`
+	Date    *time.Time `json:"date"`
+	Zone    string     `json:"zone"`
+	Records int64      `json:"records"`
+	Domains int64      `json:"domains"`
+	// todo make duration
+	Duration *string `json:"duration"`
+	NewNs    *int64  `json:"ns_new"`
+	OldNs    *int64  `json:"ns_old"`
+	NewA     *int64  `json:"a_new"`
+	OldA     *int64  `json:"a_old"`
+	NewAaaa  *int64  `json:"aaaa_new"`
+	OldAaaa  *int64  `json:"aaaa_old"`
+}
+
+func (zir *ZoneImportResult) generateMetaData() {
+	zir.Type = &ZoneImportResultType
+	zir.Link = fmt.Sprintf("/zones/%s", zir.Zone)
 }
 
 // domain object

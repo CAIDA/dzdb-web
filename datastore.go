@@ -205,6 +205,53 @@ func (ds *DataStore) getNameServerLegacy(domain string) (*NameServer, error) {
 	return &data, nil
 }
 
+func (ds *DataStore) getZoneImportResults() (*ZoneImportResults, error) {
+	var zirs ZoneImportResults
+	zirs.Zones = make([]*ZoneImportResult, 0, 100)
+
+	rows, err := ds.db.Query("Select * from import_progress")
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		var r ZoneImportResult
+		err = rows.Scan(&r.Id, &r.Date, &r.Zone, &r.Records, &r.Domains, &r.Duration, &r.NewNs, &r.OldNs, &r.NewA, &r.OldA, &r.NewAaaa, &r.OldAaaa)
+		if err != nil {
+			return nil, err
+		}
+		zirs.Zones = append(zirs.Zones, &r)
+	}
+
+	return &zirs, nil
+
+}
+
+func (ds *DataStore) getImportProgress() (*ImportProgress, error) {
+	var ip ImportProgress
+	err := ds.db.QueryRow("select count(*) imports, count(distinct date) days from unimported").Scan(&ip.Imports, &ip.Days)
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := ds.db.Query("select * from import_date_timer limit $1", len(ip.Dates))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var i int
+	for rows.Next() {
+		ipd := &ip.Dates[i]
+		err = rows.Scan(&ipd.Date, &ipd.Took, &ipd.Count)
+		if err != nil {
+			return nil, err
+		}
+		i++
+	}
+
+	return &ip, nil
+}
+
 // gets information for the provided nameserver
 func (ds *DataStore) getNameServer(domain string) (*NameServer, error) {
 	var ns NameServer

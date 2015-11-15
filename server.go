@@ -11,11 +11,10 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"regexp"
 	"time"
 
-	"github.com/PuerkitoBio/throttled"
-	"github.com/PuerkitoBio/throttled/store"
+	"gopkg.in/throttled/throttled.v2"
+	"gopkg.in/throttled/throttled.v2/store"
 	"github.com/gorilla/context"
 	"github.com/julienschmidt/httprouter"
 	"github.com/justinas/alice"
@@ -91,7 +90,7 @@ var (
 func HandlerNotImplemented(w http.ResponseWriter, r *http.Request) {
 	WriteJSONError(w, ErrNotImplemented)
 }
-
+// TODO make not all errors JSON
 func WriteJSONError(w http.ResponseWriter, err *JSONError) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(err.Status)
@@ -113,9 +112,6 @@ type server struct {
 	// all communication with the server's router should be done with server methods
 	router *httprouter.Router
 
-	// used for creating the API index
-	index map[string]string
-
 	// Alice chain of http handlers
 	handlers alice.Chain
 
@@ -126,7 +122,6 @@ type server struct {
 // creates a new server object with the default (included) handlers
 func NewServer(config *Config) *server {
 	server := &server{}
-	server.index = make(map[string]string)
 	server.router = httprouter.New()
 	server.config = config
 	server.handlers = alice.New(
@@ -136,21 +131,14 @@ func NewServer(config *Config) *server {
 		recoverHandler,
 		makeThrottleHandler(server.config.API.Requests_Per_Minute),
 	)
-	server.router.NotFound = notFoundJSON
+	//TODO !!! what was I doing here? //server.router.NotFound = notFoundJSON
 	return server
 }
 
-// Adds a method to the router's GET handler but also adds it to the API index map
-// description is the API function description
-func (s *server) Get_Index(path, description string, fn http.HandlerFunc) {
-	re := regexp.MustCompile(":[a-zA-Z0-9_]*")
-	param_path := re.ReplaceAllStringFunc(path, func(s string) string { return fmt.Sprintf("{%s}", s[1:]) })
-	s.index[description] = param_path
-	s.Get(path, s.handlers.ThenFunc(fn))
-}
-
 // add a method to the router's GET handler
-func (s *server) Get(path string, handler http.Handler) {
+func (s *server) Get(path string, fn http.HandlerFunc) {
+	// TODO does the below line break anything?
+	handler := s.handlers.ThenFunc(fn)
 	s.router.GET(path,
 		func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 			context.Set(r, "params", ps)
@@ -158,20 +146,8 @@ func (s *server) Get(path string, handler http.Handler) {
 		})
 }
 
-// Index handler
-// Displays the map of the API methods available
-func (s *server) Index(w http.ResponseWriter, req *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	err := json.NewEncoder(w).Encode(s.index)
-	if err != nil && err != http.ErrHandlerTimeout {
-		panic(err)
-	}
-
-}
-
 // Starts the server
 // blocking function
 func (s *server) Start() error {
-	s.Get("/", s.handlers.ThenFunc(s.Index))
 	return http.ListenAndServe(fmt.Sprintf("%s:%d", s.config.Http.IP, s.config.Http.Port), s.router)
 }
