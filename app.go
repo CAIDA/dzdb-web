@@ -3,10 +3,11 @@ package main
 import (
 	"net/http"
     "html/template"
+	"strings"
 
 	//"github.com/gorilla/context"
 	//"github.com/julienschmidt/httprouter"
-	//"golang.org/x/net/idna"
+	"golang.org/x/net/idna"
 )
 
 // object to hold application context and persistent storage
@@ -67,5 +68,11 @@ func (app *appContext) OrangeHandler(w http.ResponseWriter, r *http.Request) {
     }
 }
 
-
+func cleanDomain(domain string) string {
+	domain, err := idna.ToASCII(strings.ToUpper(domain))
+	if err != nil {
+		panic(err)
+	}
+	return domain
+}
 

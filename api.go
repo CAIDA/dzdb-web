@@ -2,14 +2,12 @@ package main
 
 import (
 	"net/http"
-	"strings"
 	"fmt"
 	"regexp"
 	"encoding/json"
 
 	"github.com/gorilla/context"
 	"github.com/julienschmidt/httprouter"
-	"golang.org/x/net/idna"
 )
 
 // Entry point for starting application
@@ -133,10 +131,7 @@ func (app *appContext) latestZonesHandler(w http.ResponseWriter, r *http.Request
 // domainHandler returns domain object for the queried domain
 func (app *appContext) domainHandler(w http.ResponseWriter, r *http.Request) {
 	params := context.Get(r, "params").(httprouter.Params)
-	domain, err := idna.ToASCII(strings.ToUpper(params.ByName("domain")))
-	if err != nil {
-		panic(err)
-	}
+	domain := cleanDomain(params.ByName("domain"))
 	data, err1 := app.ds.getDomain(domain)
 	if err1 != nil {
 		if err1 == ErrNoResource {
@@ -163,10 +158,7 @@ func (app *appContext) randomDomainHandler(w http.ResponseWriter, r *http.Reques
 // nameserverHandler returns nameserver object for the queried domain
 func (app *appContext) nameserverHandler(w http.ResponseWriter, r *http.Request) {
 	params := context.Get(r, "params").(httprouter.Params)
-	domain, err := idna.ToASCII(strings.ToUpper(params.ByName("domain")))
-	if err != nil {
-		panic(err)
-	}
+	domain := cleanDomain(params.ByName("domain"))
 
 	data, err1 := app.ds.getNameServer(domain)
 	if err1 != nil {

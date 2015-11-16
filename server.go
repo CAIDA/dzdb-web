@@ -12,9 +12,10 @@ import (
 	"net"
 	"net/http"
 	"time"
+	"strings"
 
 	"gopkg.in/throttled/throttled.v2"
-	"gopkg.in/throttled/throttled.v2/store"
+	"gopkg.in/throttled/throttled.v2/store/memstore"
 	"github.com/gorilla/context"
 	"github.com/julienschmidt/httprouter"
 	"github.com/justinas/alice"
@@ -43,7 +44,7 @@ func loggingHandler(next http.Handler) http.Handler {
 		t1 := time.Now()
 		next.ServeHTTP(w, r)
 		t2 := time.Now()
-		ip, _, _ := net.SplitHostPort(r.RemoteAddr)
+		ip :=  getIpAddress(r)
 		log.Printf("[%s] %s %q %v\n", ip, r.Method, r.RequestURI, t2.Sub(t1))
 	}
 
@@ -51,9 +52,9 @@ func loggingHandler(next http.Handler) http.Handler {
 }
 
 // 404 not found handler
-func notFoundJSON(w http.ResponseWriter, r *http.Request) {
+/*func notFoundJSON(w http.ResponseWriter, r *http.Request) {
 	WriteJSONError(w, ErrNotFound)
-}
+}*/
 
 // creates a TimeoutHandler using the provided sec timeout
 func makeTimeoutHandler(sec int) func(http.Handler) http.Handler {
@@ -66,13 +67,34 @@ func makeTimeoutHandler(sec int) func(http.Handler) http.Handler {
 	}
 }
 
+//custom vary by to use real remote IP without port
+type myVaryBy struct {}
+func (m myVaryBy) Key(r *http.Request) string {
+	return getIpAddress(r)
+}
+
+
 // creates a throttled handler using the perMin limit on requests
-func makeThrottleHandler(perMin int) func(http.Handler) http.Handler {
-	th := throttled.RateLimit(throttled.PerMin(perMin), &throttled.VaryBy{RemoteAddr: true}, store.NewMemStore(1000))
-	th.DeniedHandler = http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		WriteJSONError(w, ErrLimitExceeded)
-	}))
-	return th.Throttle
+func makeThrottleHandler(perMin, burst, store_size int) func(http.Handler) http.Handler {
+	store, err := memstore.New(store_size)
+	if err != nil {
+		log.Fatal(err)
+	}
+	quota := throttled.RateQuota{throttled.PerMin(perMin), 5}
+	rateLimiter, err := throttled.NewGCRARateLimiter(store, quota)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	httpRateLimiter := throttled.HTTPRateLimiter{
+		RateLimiter: rateLimiter,
+		VaryBy:      new(myVaryBy),
+		DeniedHandler: http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				WriteJSONError(w, ErrLimitExceeded)
+			})),
+	}
+
+	return httpRateLimiter.RateLimit
 }
 
 // variables to hold common json errors
@@ -129,7 +151,7 @@ func NewServer(config *Config) *server {
 		makeTimeoutHandler(server.config.API.Timeout),
 		loggingHandler,
 		recoverHandler,
-		makeThrottleHandler(server.config.API.Requests_Per_Minute),
+		makeThrottleHandler(server.config.API.Requests_Per_Minute, server.config.API.Requests_Burst, server.config.API.Requests_Max_History),
 	)
 	//TODO !!! what was I doing here? //server.router.NotFound = notFoundJSON
 	return server
@@ -151,3 +173,25 @@ func (s *server) Get(path string, fn http.HandlerFunc) {
 func (s *server) Start() error {
 	return http.ListenAndServe(fmt.Sprintf("%s:%d", s.config.Http.IP, s.config.Http.Port), s.router)
 }
+
+
+func getIpAddress(r *http.Request) string {
+	hdr := r.Header
+	hdrRealIp := hdr.Get("X-Real-Ip")
+	hdrForwardedFor := hdr.Get("X-Forwarded-For")
+	if hdrRealIp == "" && hdrForwardedFor == "" {
+		hdrRealIp, _, _ := net.SplitHostPort(r.RemoteAddr)
+		return hdrRealIp
+	}
+	if hdrForwardedFor != "" {
+		// X-Forwarded-For is potentially a list of addresses separated with "," 
+		parts := strings.Split(hdrForwardedFor, ",")
+		for i, p := range parts {
+			parts[i] = strings.TrimSpace(p)
+		}
+		// TODO: should return first non-local address 
+		return parts[0]
+	}
+	return hdrRealIp
+}
+
