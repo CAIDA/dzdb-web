@@ -83,6 +83,9 @@ type ZoneImportResult struct {
 	Domains int64      `json:"domains"`
 	// todo make duration
 	Duration *string `json:"duration"`
+	Old	     *int64  `json:"domains_old"`
+	Moved    *int64  `json:"domains_moved"`
+	New	     *int64  `json:"domains_new"`
 	NewNs    *int64  `json:"ns_new"`
 	OldNs    *int64  `json:"ns_old"`
 	NewA     *int64  `json:"a_new"`

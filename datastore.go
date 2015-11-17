@@ -209,14 +209,14 @@ func (ds *DataStore) getZoneImportResults() (*ZoneImportResults, error) {
 	var zirs ZoneImportResults
 	zirs.Zones = make([]*ZoneImportResult, 0, 100)
 
-	rows, err := ds.db.Query("Select * from import_progress")
+	rows, err := ds.db.Query("select id, date, zone, records, domains, duration, old, moved, new, old_ns, new_ns, old_a, new_a, old_aaaa, new_aaaa from import_progress;")
 	if err != nil {
 		return nil, err
 	}
 
 	for rows.Next() {
 		var r ZoneImportResult
-		err = rows.Scan(&r.Id, &r.Date, &r.Zone, &r.Records, &r.Domains, &r.Duration, &r.NewNs, &r.OldNs, &r.NewA, &r.OldA, &r.NewAaaa, &r.OldAaaa)
+		err = rows.Scan(&r.Id, &r.Date, &r.Zone, &r.Records, &r.Domains, &r.Duration, &r.Old, &r.Moved, &r.New, &r.NewNs, &r.OldNs, &r.NewA, &r.OldA, &r.NewAaaa, &r.OldAaaa)
 		if err != nil {
 			return nil, err
 		}

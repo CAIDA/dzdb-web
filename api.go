@@ -31,13 +31,13 @@ func APIStart(app *appContext, server *server) {
 
 
 	// imports
-	addAPI("/imports", "imports", app.importStatusHandler) //might want to expand this
+	addAPI("/imports", "imports", app.apiImportStatusHandler) //might want to expand this
 	addAPI("/imports/:year/:month/:day", "import_day_view", nil)
 	addAPI("/imports/:year/:month/:day/:zone", "import_day_view_zone", nil)
 
 
 	// zones
-	addAPI("/zones", "zones", app.latestZonesHandler)
+	addAPI("/zones", "zones", app.apiLatestZonesHandler)
 	addAPI("/zones/:zone", "zone_view", nil)
 	addAPI("/zones/:zone/nameservers", "zone_nameservers", nil)
 	addAPI("/zones/:zone/nameservers/current", "zone_nameservers_current", nil)
@@ -46,8 +46,8 @@ func APIStart(app *appContext, server *server) {
 
 
 	// domains
-	addAPI("/random", "random_domain", app.randomDomainHandler)
-	addAPI("/domains/:domain", "domain", app.domainHandler)
+	addAPI("/random", "random_domain", app.apiRandomDomainHandler)
+	addAPI("/domains/:domain", "domain", app.apiDomainHandler)
 	addAPI("/domains/:domain/nameservers", "domain_nameservers", nil)
 	addAPI("/domains/:domain/nameservers/current", "domain_current_nameservers", nil)
 	addAPI("/domains/:domain/nameservers/current/page/:page", "domain_current_nameservers_paged", nil)
@@ -56,7 +56,7 @@ func APIStart(app *appContext, server *server) {
 
 
 	// nameservers
-	addAPI("/nameservers/:domain", "nameserver", app.nameserverHandler)
+	addAPI("/nameservers/:domain", "nameserver", app.apiNameserverHandler)
 	addAPI("/nameservers/:domain/domains", "nameserver_domains", nil)
 	addAPI("/nameservers/:domain/domains/current", "nameserver_current_domains", nil)
 	addAPI("/nameservers/:domain/domains/current/page/:page", "nameserver_current_domains_paged", nil)
@@ -102,11 +102,11 @@ func APIStart(app *appContext, server *server) {
 
 
 	// API index
-	server.Get("/api/", app.api_index)
+	server.Get("/api/", app.apiIndex)
 }
 
 //TODO
-func (app *appContext) importStatusHandler(w http.ResponseWriter, r *http.Request) {
+func (app *appContext) apiImportStatusHandler(w http.ResponseWriter, r *http.Request) {
 	ip, err := app.ds.getImportProgress()
 	if err != nil {
 		panic(err)
@@ -117,7 +117,7 @@ func (app *appContext) importStatusHandler(w http.ResponseWriter, r *http.Reques
 }
 
 //TODO
-func (app *appContext) latestZonesHandler(w http.ResponseWriter, r *http.Request) {
+func (app *appContext) apiLatestZonesHandler(w http.ResponseWriter, r *http.Request) {
 	zirs, err := app.ds.getZoneImportResults()
 	if err != nil {
 		panic(err)
@@ -129,7 +129,7 @@ func (app *appContext) latestZonesHandler(w http.ResponseWriter, r *http.Request
 }
 
 // domainHandler returns domain object for the queried domain
-func (app *appContext) domainHandler(w http.ResponseWriter, r *http.Request) {
+func (app *appContext) apiDomainHandler(w http.ResponseWriter, r *http.Request) {
 	params := context.Get(r, "params").(httprouter.Params)
 	domain := cleanDomain(params.ByName("domain"))
 	data, err1 := app.ds.getDomain(domain)
@@ -146,7 +146,7 @@ func (app *appContext) domainHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // randomDomainHandler returns a random domain from the system
-func (app *appContext) randomDomainHandler(w http.ResponseWriter, r *http.Request) {
+func (app *appContext) apiRandomDomainHandler(w http.ResponseWriter, r *http.Request) {
 	domain, err := app.ds.getRandomDomain()
 	if err != nil {
 		panic(err)
@@ -156,7 +156,7 @@ func (app *appContext) randomDomainHandler(w http.ResponseWriter, r *http.Reques
 }
 
 // nameserverHandler returns nameserver object for the queried domain
-func (app *appContext) nameserverHandler(w http.ResponseWriter, r *http.Request) {
+func (app *appContext) apiNameserverHandler(w http.ResponseWriter, r *http.Request) {
 	params := context.Get(r, "params").(httprouter.Params)
 	domain := cleanDomain(params.ByName("domain"))
 
@@ -178,12 +178,11 @@ func (app *appContext) nameserverHandler(w http.ResponseWriter, r *http.Request)
 
 // API Index handler
 // Displays the map of the API methods available
-func (app *appContext) api_index(w http.ResponseWriter, req *http.Request) {
+func (app *appContext) apiIndex(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	err := json.NewEncoder(w).Encode(app.api)
 	if err != nil && err != http.ErrHandlerTimeout {
 		panic(err)
 	}
 }
-
 

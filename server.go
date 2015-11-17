@@ -153,13 +153,12 @@ func NewServer(config *Config) *server {
 		recoverHandler,
 		makeThrottleHandler(server.config.API.Requests_Per_Minute, server.config.API.Requests_Burst, server.config.API.Requests_Max_History),
 	)
-	//TODO !!! what was I doing here? //server.router.NotFound = notFoundJSON
+	//server.router.NotFound = notFoundJSON
 	return server
 }
 
 // add a method to the router's GET handler
 func (s *server) Get(path string, fn http.HandlerFunc) {
-	// TODO does the below line break anything?
 	handler := s.handlers.ThenFunc(fn)
 	s.router.GET(path,
 		func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
