@@ -49,6 +49,48 @@ func AppStart(ds *DataStore, server *server) {
 
     server.Get("/domains", app.DomainIndexHandler)
 	server.Get("/domains/:domain", app.domainHandler)
+    server.Get("/nameservers/:nameserver", app.nameserverHandler)
+    server.Get("/zones/:zone", app.zoneHandler)
+}
+
+func (app *appContext) zoneHandler(w http.ResponseWriter, r *http.Request) {
+    params := context.Get(r, "params").(httprouter.Params)
+    name := cleanDomain(params.ByName("zone"))
+    data, err := app.ds.getZone(name)
+    if err != nil {
+        if err == ErrNoResource {
+            // TODO make http err (not json)
+            WriteJSONError(w, ErrResourceNotFound)
+            return
+        }
+        panic(err)
+    }
+
+    p := Page{name, "Nameservers", data}
+    err = app.templates.ExecuteTemplate(w, "zone.tmpl", p)
+    if err != nil {
+        panic(err)
+    }
+}
+
+func (app *appContext) nameserverHandler(w http.ResponseWriter, r *http.Request) {
+    params := context.Get(r, "params").(httprouter.Params)
+    name := cleanDomain(params.ByName("nameserver"))
+    data, err := app.ds.getNameServer(name)
+    if err != nil {
+        if err == ErrNoResource {
+            // TODO make http err (not json)
+            WriteJSONError(w, ErrResourceNotFound)
+            return
+        }
+        panic(err)
+    }
+
+    p := Page{name, "Nameservers", data}
+    err = app.templates.ExecuteTemplate(w, "nameserver.tmpl", p)
+    if err != nil {
+        panic(err)
+    }
 }
 
 // domainHandler returns domain object for the queried domain
@@ -66,13 +108,10 @@ func (app *appContext) domainHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
     p := Page{domain, "Domains", data}
-    err = app.templates.ExecuteTemplate(w, "domains.tmpl", p)
+    err = app.templates.ExecuteTemplate(w, "domain.tmpl", p)
     if err != nil {
 		panic(err)
     }
-
-    // TODO remove this
-	//WriteJSON(w, data)
 }
 
 func (app *appContext) TodoHandler(w http.ResponseWriter, r *http.Request) {

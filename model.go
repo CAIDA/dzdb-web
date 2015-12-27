@@ -99,11 +99,18 @@ func (zir *ZoneImportResult) generateMetaData() {
 	zir.Link = fmt.Sprintf("/zones/%s", zir.Zone)
 }
 
+type Zone struct {
+	Type 	*string 	`json:"type"`
+	Id 		int64		`json:"id"`
+	Name 	string		`json:"name"`
+	Updated	*time.Time 	`json:"lastupdated,omitempty"`
+}
+
 // domain object
 type Domain struct {
 	Type                   *string       `json:"type"`
 	Id                     int64         `json:"id"`
-	Domain                 string        `json:"domain"`
+	Name                 string        `json:"name"`
 	Link                   string        `json:"link"`
 	FirstSeen              *time.Time    `json:"firstseen,omitempty"`
 	LastSeen               *time.Time    `json:"lastseen,omitempty"`
@@ -111,7 +118,7 @@ type Domain struct {
 	ArchiveNameServers     []*NameServer `json:"archive_nameservers,omitempty"`
 	NameServerCount        *int64        `json:"nameserver_count,omitempty"`
 	ArchiveNameServerCount *int64        `json:"archive_nameserver_count,omitempty"`
-	//Zone					Zone
+	Zone				   Zone
 }
 
 /*func NewDomain(id int64, domain, string) *Domain {
@@ -125,7 +132,7 @@ type Domain struct {
 
 func (d *Domain) generateMetaData() {
 	d.Type = &DomainType
-	d.Link = fmt.Sprintf("/domains/%s", d.Domain)
+	d.Link = fmt.Sprintf("/domains/%s", d.Name)
 	for _, ns := range d.NameServers {
 		if ns.Type == nil {
 			ns.generateMetaData()
@@ -142,7 +149,7 @@ func (d *Domain) generateMetaData() {
 type NameServer struct {
 	Type               *string    `json:"type"`
 	Id                 int64      `json:"id"`
-	NameServer         string     `json:"nameserver"`
+	Name        	   string     `json:"name"`
 	Link               string     `json:"link"`
 	FirstSeen          *time.Time `json:"firstseen,omitempty"`
 	LastSeen           *time.Time `json:"lastseen,omitempty"`
@@ -150,21 +157,12 @@ type NameServer struct {
 	ArchiveDomains     []*Domain  `json:"archive_domains,omitempty"`
 	DomainCount        *int64     `json:"domain_count,omitempty"`
 	ArchiveDomainCount *int64     `json:"archive_domain_count,omitempty"`
-	// IP 4 + 6
+	// TODO IP 4 + 6
 }
-
-/*func NewNameServer(id int64, domain string) *NameServer {
-	ns := NameServer{}
-	ns.Id = id
-	ns.NameServer = domain
-	d.Domains = make([]*Domains, 0, 4)
-	d.ArchiveDomains = make([]*Domains, 0, 4)
-	return &ns
-}*/
 
 func (ns *NameServer) generateMetaData() {
 	ns.Type = &NameServerType
-	ns.Link = fmt.Sprintf("/nameservers/%s", ns.NameServer)
+	ns.Link = fmt.Sprintf("/nameservers/%s", ns.Name)
 	for _, d := range ns.Domains {
 		if d.Type == nil {
 			d.generateMetaData()

@@ -1,0 +1,11 @@
+{{template "top" $}}
+<div class="col-md-8" >
+    <h1>{{$.Data.Name}}</h1>
+    <p>
+    {{if $.Data.Updated}}{{$.Data.Updated.Format "Jan 02, 2006"}}{{end}}
+    </p>
+</div>
+<div class="col-md-4" >
+</div>
+
+{{template "bottom" $}}
