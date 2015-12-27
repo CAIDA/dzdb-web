@@ -81,7 +81,7 @@ type ZoneImportResult struct {
 	Zone    string     `json:"zone"`
 	Records int64      `json:"records"`
 	Domains int64      `json:"domains"`
-	// todo make duration
+	// TODO make duration
 	Duration *string `json:"duration"`
 	Old	     *int64  `json:"domains_old"`
 	Moved    *int64  `json:"domains_moved"`
@@ -111,6 +111,7 @@ type Domain struct {
 	ArchiveNameServers     []*NameServer `json:"archive_nameservers,omitempty"`
 	NameServerCount        *int64        `json:"nameserver_count,omitempty"`
 	ArchiveNameServerCount *int64        `json:"archive_nameserver_count,omitempty"`
+	//Zone					Zone
 }
 
 /*func NewDomain(id int64, domain, string) *Domain {
@@ -149,6 +150,7 @@ type NameServer struct {
 	ArchiveDomains     []*Domain  `json:"archive_domains,omitempty"`
 	DomainCount        *int64     `json:"domain_count,omitempty"`
 	ArchiveDomainCount *int64     `json:"archive_domain_count,omitempty"`
+	// IP 4 + 6
 }
 
 /*func NewNameServer(id int64, domain string) *NameServer {

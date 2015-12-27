@@ -19,7 +19,7 @@
     <!-- Latest compiled and minified JavaScript -->
     <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
     <!-- set the correct tab to active on the navbar -->
-    <script>$('.nav a:contains({{$.Title}})').parent().addClass('active');</script>
+    <script>if({{$.Tab}}.length){$('.nav a:contains({{$.Tab}})').parent().addClass('active');}</script>
 </body>
 </html>
 {{end}}

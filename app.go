@@ -5,8 +5,8 @@ import (
     "html/template"
 	"strings"
 
-	//"github.com/gorilla/context"
-	//"github.com/julienschmidt/httprouter"
+	"github.com/gorilla/context"
+	"github.com/julienschmidt/httprouter"
 	"golang.org/x/net/idna"
 )
 
@@ -24,6 +24,8 @@ type appContext struct {
 
 type Page struct {
     Title string
+    Tab string
+    Data interface{}
 }
 
 // Entry point for starting application
@@ -38,36 +40,66 @@ func AppStart(ds *DataStore, server *server) {
 
 	//TODO
 	server.Get("/", app.IndexHandler)
-    server.Get("/apple", app.AppleHandler)
-    server.Get("/orange", app.OrangeHandler)
 
+    server.Get("/nameservers", app.TodoHandler)
+    server.Get("/ip", app.TodoHandler)
+    server.Get("/zones", app.TodoHandler)
+    server.Get("/feeds", app.TodoHandler)
+    server.Get("/stats", app.TodoHandler)
+
+    server.Get("/domains", app.DomainIndexHandler)
+	server.Get("/domains/:domain", app.domainHandler)
 }
 
+// domainHandler returns domain object for the queried domain
+func (app *appContext) domainHandler(w http.ResponseWriter, r *http.Request) {
+	params := context.Get(r, "params").(httprouter.Params)
+	domain := cleanDomain(params.ByName("domain"))
+	data, err := app.ds.getDomain(domain)
+	if err != nil {
+		if err == ErrNoResource {
+			// TODO make http err (not json)
+			WriteJSONError(w, ErrResourceNotFound)
+			return
+		}
+		panic(err)
+	}
+
+    p := Page{domain, "Domains", data}
+    err = app.templates.ExecuteTemplate(w, "domains.tmpl", p)
+    if err != nil {
+		panic(err)
+    }
+
+    // TODO remove this
+	//WriteJSON(w, data)
+}
+
+func (app *appContext) TodoHandler(w http.ResponseWriter, r *http.Request) {
+    p := Page{"TODO", "", nil}
+    err := app.templates.ExecuteTemplate(w, "todo.tmpl", p)
+    if err != nil {
+        panic(err)
+    }
+}
 
 func (app *appContext) IndexHandler(w http.ResponseWriter, r *http.Request) {
-    p := Page{"Home"}
+    p := Page{"Home", "Home", nil}
     err := app.templates.ExecuteTemplate(w, "home.tmpl", p)
     if err != nil {
 		panic(err)
     }
 }
 
-func (app *appContext) AppleHandler(w http.ResponseWriter, r *http.Request) {
-    p := Page{"Apples"}
-    err := app.templates.ExecuteTemplate(w, "apple.tmpl", p)
+func (app *appContext) DomainIndexHandler(w http.ResponseWriter, r *http.Request) {
+    p := Page{"Domains", "Domains", nil}
+    err := app.templates.ExecuteTemplate(w, "domainIndex.tmpl", p)
     if err != nil {
-		panic(err)
+        panic(err)
     }
 }
 
-func (app *appContext) OrangeHandler(w http.ResponseWriter, r *http.Request) {
-    p := Page{"Oranges"}
-    err := app.templates.ExecuteTemplate(w, "orange.tmpl", p)
-    if err != nil {
-		panic(err)
-    }
-}
-
+// helper
 func cleanDomain(domain string) string {
 	domain, err := idna.ToASCII(strings.ToUpper(domain))
 	if err != nil {
