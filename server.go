@@ -167,6 +167,15 @@ func (s *server) Get(path string, fn http.HandlerFunc) {
 		})
 }
 
+func (s *server) Post(path string, fn http.HandlerFunc) {
+	handler := s.handlers.ThenFunc(fn)
+	s.router.POST(path,
+		func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+			context.Set(r, "params", ps)
+			handler.ServeHTTP(w, r)
+		})
+}
+
 // Starts the server
 // blocking function
 func (s *server) Start() error {

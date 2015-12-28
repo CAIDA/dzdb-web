@@ -38,7 +38,7 @@ func APIStart(app *appContext, server *server) {
 
 	// zones
 	addAPI("/zones", "zones", app.apiLatestZonesHandler)
-	addAPI("/zones/:zone", "zone_view", nil)
+	addAPI("/zones/:zone", "zone_view", app.apiZoneHandler)
 	addAPI("/zones/:zone/nameservers", "zone_nameservers", nil)
 	addAPI("/zones/:zone/nameservers/current", "zone_nameservers_current", nil)
 	addAPI("/zones/:zone/nameservers/archive", "zone_nameservers_archive", nil)
@@ -133,6 +133,22 @@ func (app *appContext) apiDomainHandler(w http.ResponseWriter, r *http.Request) 
 	params := context.Get(r, "params").(httprouter.Params)
 	domain := cleanDomain(params.ByName("domain"))
 	data, err1 := app.ds.getDomain(domain)
+	if err1 != nil {
+		if err1 == ErrNoResource {
+			WriteJSONError(w, ErrResourceNotFound)
+			return
+		}
+		panic(err1)
+	}
+
+	data.generateMetaData()
+	WriteJSON(w, data)
+}
+
+func (app *appContext) apiZoneHandler(w http.ResponseWriter, r *http.Request) {
+	params := context.Get(r, "params").(httprouter.Params)
+	domain := cleanDomain(params.ByName("zone"))
+	data, err1 := app.ds.getZone(domain)
 	if err1 != nil {
 		if err1 == ErrNoResource {
 			WriteJSONError(w, ErrResourceNotFound)

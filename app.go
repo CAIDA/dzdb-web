@@ -43,14 +43,73 @@ func AppStart(ds *DataStore, server *server) {
 
     server.Get("/nameservers", app.TodoHandler)
     server.Get("/ip", app.TodoHandler)
-    server.Get("/zones", app.TodoHandler)
     server.Get("/feeds", app.TodoHandler)
-    server.Get("/stats", app.TodoHandler)
+
+    server.Post("/search", app.searchHandler)
 
     server.Get("/domains", app.DomainIndexHandler)
 	server.Get("/domains/:domain", app.domainHandler)
     server.Get("/nameservers/:nameserver", app.nameserverHandler)
     server.Get("/zones/:zone", app.zoneHandler)
+    server.Get("/zones", app.zoneIndexHandler)
+    server.Get("/stats", app.statsHandler)
+}
+
+func (app *appContext) searchHandler(w http.ResponseWriter, r *http.Request) {
+    query := cleanDomain(r.FormValue("query"))
+    //t := r.FormValue("type")
+    var err error
+
+    _, err = app.ds.getZoneID(query)
+    if err == nil {
+        // redirect
+        http.Redirect(w, r, "/zones/"+query, http.StatusFound)
+        return
+    }
+
+    _, _, err = app.ds.getDomainID(query)
+    if err == nil {
+        // redirect
+        http.Redirect(w, r, "/domains/"+query, http.StatusFound)
+        return
+    }
+
+    _, err = app.ds.getNameServerID(query)
+    if err == nil {
+        // redirect
+        http.Redirect(w, r, "/nameservers/"+query, http.StatusFound)
+        return
+    }
+
+    //TODO search result not found
+    app.TodoHandler(w, r)
+}
+
+
+func (app *appContext) statsHandler(w http.ResponseWriter, r *http.Request) {
+    data, err := app.ds.getImportProgress()
+    if err != nil {
+        panic(err)
+    }
+
+    p := Page{"Stats", "Stats", data}
+    err = app.templates.ExecuteTemplate(w, "stats.tmpl", p)
+    if err != nil {
+        panic(err)
+    }
+}
+
+func (app *appContext) zoneIndexHandler(w http.ResponseWriter, r *http.Request) {
+    data, err := app.ds.getZoneImportResults()
+    if err != nil {
+        panic(err)
+    }
+
+    p := Page{"Zones", "Zones", data}
+    err = app.templates.ExecuteTemplate(w, "zones.tmpl", p)
+    if err != nil {
+        panic(err)
+    }
 }
 
 func (app *appContext) zoneHandler(w http.ResponseWriter, r *http.Request) {
@@ -66,7 +125,7 @@ func (app *appContext) zoneHandler(w http.ResponseWriter, r *http.Request) {
         panic(err)
     }
 
-    p := Page{name, "Nameservers", data}
+    p := Page{name, "Zones", data}
     err = app.templates.ExecuteTemplate(w, "zone.tmpl", p)
     if err != nil {
         panic(err)
@@ -132,7 +191,7 @@ func (app *appContext) IndexHandler(w http.ResponseWriter, r *http.Request) {
 
 func (app *appContext) DomainIndexHandler(w http.ResponseWriter, r *http.Request) {
     p := Page{"Domains", "Domains", nil}
-    err := app.templates.ExecuteTemplate(w, "domainIndex.tmpl", p)
+    err := app.templates.ExecuteTemplate(w, "domains.tmpl", p)
     if err != nil {
         panic(err)
     }

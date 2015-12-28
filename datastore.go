@@ -76,13 +76,80 @@ func (ds *DataStore) getDomainID(domain string) (int64, int64, error) {
 	return id, zone_id, err
 }
 
-func (ds *DataStore) getZone(name string) (Zone, error) {
-	var zone Zone
-	err := ds.db.QueryRow("select zones.id, zones.zone, imports.date from zones, imports where zones.id = imports.zone_id and zones.zone = $1 order by date desc limit 1", name).Scan(&zone.Id, &zone.Name, &zone.Updated)
+func (ds *DataStore) getZoneID(name string) (int64, error) {
+	var id int64
+	err := ds.db.QueryRow("select id from zones where zone = $1 limit 1", name).Scan(&id)
 	if err == sql.ErrNoRows {
 		err = ErrNoResource
 	}
-	return zone, err
+	return id, err
+}
+
+func (ds *DataStore) getZone(name string) (*Zone, error) {
+	var z Zone
+	var err error
+
+	z.Id, err = ds.getZoneID(name)
+	if err != nil {
+		return nil, err
+	}
+	z.Name = name
+
+	// get first_seen & last_seen
+	err = ds.db.QueryRow("select first_seen from zones_nameservers where zone_id = $1 order by first_seen nulls first limit 1", z.Id).Scan(&z.FirstSeen)
+	if err != nil {
+		return nil, err
+	}
+	err = ds.db.QueryRow("select last_seen from zones_nameservers where zone_id = $1 order by last_seen nulls first limit 1", z.Id).Scan(&z.LastSeen)
+	if err != nil {
+		return nil, err
+	}
+
+	// get num NS
+	err = ds.db.QueryRow("SELECT count(*) FROM zones_nameservers WHERE zone_id = $1 AND last_seen IS NULL", z.Id).Scan(&z.NameServerCount)
+	if err != nil {
+		return nil, err
+	}
+
+	// get num archive NS
+	err = ds.db.QueryRow("SELECT count(*) FROM zones_nameservers WHERE zone_id = $1 AND last_seen IS NOT NULL", z.Id).Scan(&z.ArchiveNameServerCount)
+	if err != nil {
+		return nil, err
+	}
+
+	// get active NS
+	rows, err := ds.db.Query("SELECT ns.id, ns.domain, zns.first_seen, zns.last_seen FROM zones_nameservers zns, nameservers ns WHERE zns.nameserver_id = ns.id AND zns.last_seen IS NULL AND zns.zone_id = $1 limit 100", z.Id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	z.NameServers = make([]*NameServer, 0, 4)
+	for rows.Next() {
+		var ns NameServer
+		err = rows.Scan(&ns.Id, &ns.Name, &ns.FirstSeen, &ns.LastSeen)
+		if err != nil {
+			return nil, err
+		}
+		z.NameServers = append(z.NameServers, &ns)
+	}
+
+	// get archive NS
+	archive_rows, err := ds.db.Query("SELECT ns.id, ns.domain, zns.first_seen, zns.last_seen FROM zones_nameservers zns, nameservers ns WHERE zns.nameserver_id = ns.id AND zns.last_seen IS NOT NULL AND zns.zone_id = $1 ORDER BY last_seen desc limit 100", z.Id)
+	if err != nil {
+		return nil, err
+	}
+	defer archive_rows.Close()
+	z.ArchiveNameServers = make([]*NameServer, 0, 4)
+	for archive_rows.Next() {
+		var ns NameServer
+		err = archive_rows.Scan(&ns.Id, &ns.Name, &ns.FirstSeen, &ns.LastSeen)
+		if err != nil {
+			return nil, err
+		}
+		z.ArchiveNameServers = append(z.ArchiveNameServers, &ns)
+	}
+
+	return &z, err
 }
 
 func (ds *DataStore) getNameServerID(domain string) (int64, error) {
@@ -105,7 +172,7 @@ func (ds *DataStore) getDomain(domain string) (*Domain, error) {
 	d.Name = domain
 
 	// zone queries
-	err = ds.db.QueryRow("select zones.zone, imports.date from zones, imports where zones.id = imports.zone_id and zones.id = $1 order by date desc limit 1", d.Zone.Id).Scan(&d.Zone.Name, &d.Zone.Updated)
+	err = ds.db.QueryRow("select zones.zone, imports.date from zones, imports where zones.id = imports.zone_id and zones.id = $1 order by date desc limit 1", d.Zone.Id).Scan(&d.Zone.Name, &d.Zone.LastSeen)
 	if err != nil {
 		return nil, err
 	}
@@ -197,29 +264,6 @@ func (ds *DataStore) getRandomDomain() (*Domain, error) {
 	return &domain, nil
 }
 
-// gets information for the provided nameserver
-/*func (ds *DataStore) getNameServerLegacy(domain string) (*NameServer, error) {
-	domain = strings.ToUpper(domain)
-	rows, err := ds.db.Query("select domains.domain, dns.first_seen, dns.last_seen from nameservers, domains, domains_nameservers dns, nameservers ns where ns.id = dns.nameserver_id and domains.id = dns.domain_id and dns.nameserver_id = nameservers.id and dns.last_seen is null and nameservers.domain = $1 order by first_seen desc nulls last limit 100", domain)
-	if err != nil {
-		return nil, err
-	}
-	//TODO dont return when no object found
-	defer rows.Close()
-	var data NameServer
-	data.NameServer = domain
-	data.Domains = make([]*Domain, 0, 4)
-	for rows.Next() {
-		var result Domain
-		err = rows.Scan(&result.Domain, &result.FirstSeen, &result.LastSeen)
-		if err != nil {
-			return nil, err
-		}
-		data.Domains = append(data.Domains, &result)
-	}
-	return &data, nil
-}*/
-
 func (ds *DataStore) getZoneImportResults() (*ZoneImportResults, error) {
 	var zirs ZoneImportResults
 	zirs.Zones = make([]*ZoneImportResult, 0, 100)
@@ -237,6 +281,7 @@ func (ds *DataStore) getZoneImportResults() (*ZoneImportResults, error) {
 		}
 		zirs.Zones = append(zirs.Zones, &r)
 	}
+	zirs.Count = len(zirs.Zones)
 
 	return &zirs, nil
 

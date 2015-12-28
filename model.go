@@ -42,7 +42,7 @@ type ImportProgress struct {
 	Link    string         `json:"link"`
 	Imports int64          `json:"imports_left"`
 	Days    int            `json:"days_left"`
-	Dates   [15]ImportDate `json:"dates"`
+	Dates   [15]ImportDate `json:"dates"` // gets last 15 days
 }
 
 type ImportDate struct {
@@ -55,7 +55,8 @@ type ImportDate struct {
 
 func (ip *ImportProgress) generateMetaData() {
 	ip.Type = &ImportProgressType
-	ip.Link = "/imports/status"
+	//ip.Link = "/imports/status"
+	ip.Link = "/imports"
 }
 
 type ZoneImportResults struct {
@@ -66,7 +67,6 @@ type ZoneImportResults struct {
 
 func (zirs *ZoneImportResults) generateMetaData() {
 	zirs.Type = &ZoneImportResultsType
-	zirs.Count = len(zirs.Zones)
 
 	for _, v := range zirs.Zones {
 		v.generateMetaData()
@@ -101,9 +101,20 @@ func (zir *ZoneImportResult) generateMetaData() {
 
 type Zone struct {
 	Type 	*string 	`json:"type"`
+	Link                   string        `json:"link"`
 	Id 		int64		`json:"id"`
 	Name 	string		`json:"name"`
-	Updated	*time.Time 	`json:"lastupdated,omitempty"`
+	FirstSeen              *time.Time    `json:"firstseen,omitempty"`
+	LastSeen               *time.Time    `json:"lastseen,omitempty"`
+	NameServers            []*NameServer `json:"nameservers,omitempty"`
+	ArchiveNameServers     []*NameServer `json:"archive_nameservers,omitempty"`
+	NameServerCount        *int64        `json:"nameserver_count,omitempty"`
+	ArchiveNameServerCount *int64        `json:"archive_nameserver_count,omitempty"`
+}
+
+func (z *Zone) generateMetaData() {
+	z.Type = &DomainType
+	z.Link = fmt.Sprintf("/zones/%s", z.Name)
 }
 
 // domain object
