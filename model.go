@@ -84,9 +84,9 @@ type ZoneImportResult struct {
 	Domains int64      `json:"domains"`
 	// TODO make duration
 	Duration *string `json:"duration"`
-	Old	     *int64  `json:"domains_old"`
+	Old      *int64  `json:"domains_old"`
 	Moved    *int64  `json:"domains_moved"`
-	New	     *int64  `json:"domains_new"`
+	New      *int64  `json:"domains_new"`
 	NewNs    *int64  `json:"ns_new"`
 	OldNs    *int64  `json:"ns_old"`
 	NewA     *int64  `json:"a_new"`
@@ -101,10 +101,10 @@ func (zir *ZoneImportResult) generateMetaData() {
 }
 
 type Zone struct {
-	Type 	*string 	`json:"type"`
+	Type                   *string       `json:"type"`
 	Link                   string        `json:"link"`
-	Id 		int64		`json:"id"`
-	Name 	string		`json:"name"`
+	Id                     int64         `json:"id"`
+	Name                   string        `json:"name"`
 	FirstSeen              *time.Time    `json:"firstseen,omitempty"`
 	LastSeen               *time.Time    `json:"lastseen,omitempty"`
 	NameServers            []*NameServer `json:"nameservers,omitempty"`
@@ -122,7 +122,7 @@ func (z *Zone) generateMetaData() {
 type Domain struct {
 	Type                   *string       `json:"type"`
 	Id                     int64         `json:"id"`
-	Name                 string        `json:"name"`
+	Name                   string        `json:"name"`
 	Link                   string        `json:"link"`
 	FirstSeen              *time.Time    `json:"firstseen,omitempty"`
 	LastSeen               *time.Time    `json:"lastseen,omitempty"`
@@ -130,7 +130,7 @@ type Domain struct {
 	ArchiveNameServers     []*NameServer `json:"archive_nameservers,omitempty"`
 	NameServerCount        *int64        `json:"nameserver_count,omitempty"`
 	ArchiveNameServerCount *int64        `json:"archive_nameserver_count,omitempty"`
-	Zone				   Zone
+	Zone                   Zone
 }
 
 /*func NewDomain(id int64, domain, string) *Domain {
@@ -161,7 +161,7 @@ func (d *Domain) generateMetaData() {
 type NameServer struct {
 	Type               *string    `json:"type"`
 	Id                 int64      `json:"id"`
-	Name        	   string     `json:"name"`
+	Name               string     `json:"name"`
 	Link               string     `json:"link"`
 	FirstSeen          *time.Time `json:"firstseen,omitempty"`
 	LastSeen           *time.Time `json:"lastseen,omitempty"`
@@ -169,14 +169,14 @@ type NameServer struct {
 	ArchiveDomains     []*Domain  `json:"archive_domains,omitempty"`
 	DomainCount        *int64     `json:"domain_count,omitempty"`
 	ArchiveDomainCount *int64     `json:"archive_domain_count,omitempty"`
-	IP4 			   []*IP4      `json:"ipv4,omitempty"`
-	ArchiveIP4 			   []*IP4      `json:"archive_ipv4,omitempty"`
-	IP4Count *int64     `json:"ipv4_count,omitempty"`
-	ArchiveIP4Count *int64     `json:"archive_ipv4_count,omitempty"`
-	IP6 			   []*IP6      `json:"ipv6,omitempty"`
-	ArchiveIP6 			   []*IP6      `json:"archive_ipv6,omitempty"`
-	IP6Count *int64     `json:"ipv6_count,omitempty"`
-	ArchiveIP6Count *int64     `json:"archive_ipv6_count,omitempty"`
+	IP4                []*IP4     `json:"ipv4,omitempty"`
+	ArchiveIP4         []*IP4     `json:"archive_ipv4,omitempty"`
+	IP4Count           *int64     `json:"ipv4_count,omitempty"`
+	ArchiveIP4Count    *int64     `json:"archive_ipv4_count,omitempty"`
+	IP6                []*IP6     `json:"ipv6,omitempty"`
+	ArchiveIP6         []*IP6     `json:"archive_ipv6,omitempty"`
+	IP6Count           *int64     `json:"ipv6_count,omitempty"`
+	ArchiveIP6Count    *int64     `json:"archive_ipv6_count,omitempty"`
 }
 
 func (ns *NameServer) generateMetaData() {
@@ -215,19 +215,18 @@ func (ns *NameServer) generateMetaData() {
 }
 
 type IP struct {
-	Type               *string    `json:"type"`
-	Id                 int64      `json:"id"`
-	Name        	   string     `json:"name"`
-	Version			int `json:"version"`
-	Link               string     `json:"link"`
-	FirstSeen          *time.Time `json:"firstseen,omitempty"`
-	LastSeen           *time.Time `json:"lastseen,omitempty"`
+	Type                   *string       `json:"type"`
+	Id                     int64         `json:"id"`
+	Name                   string        `json:"name"`
+	Version                int           `json:"version"`
+	Link                   string        `json:"link"`
+	FirstSeen              *time.Time    `json:"firstseen,omitempty"`
+	LastSeen               *time.Time    `json:"lastseen,omitempty"`
 	NameServers            []*NameServer `json:"nameservers,omitempty"`
 	ArchiveNameServers     []*NameServer `json:"archive_nameservers,omitempty"`
 	NameServerCount        *int64        `json:"nameserver_count,omitempty"`
 	ArchiveNameServerCount *int64        `json:"archive_nameserver_count,omitempty"`
 }
-
 
 type IP4 struct {
 	IP

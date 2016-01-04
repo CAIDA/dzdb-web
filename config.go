@@ -23,10 +23,10 @@ type DatabaseConfig struct {
 
 // API settings
 type APIConfig struct {
-	Timeout             int
-	Requests_Per_Minute int
+	Timeout              int
+	Requests_Per_Minute  int
 	Requests_Max_History int
-	Requests_Burst	int
+	Requests_Burst       int
 }
 
 // main configuration object

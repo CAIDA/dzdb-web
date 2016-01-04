@@ -1,10 +1,10 @@
 package main
 
 import (
-	"net/http"
-	"fmt"
-	"regexp"
 	"encoding/json"
+	"fmt"
+	"net/http"
+	"regexp"
 
 	"github.com/gorilla/context"
 	"github.com/julienschmidt/httprouter"
@@ -15,10 +15,9 @@ import (
 func APIStart(app *appContext, server *server) {
 	app.api = make(map[string]string)
 
-
 	// Adds a method to the router's GET handler but also adds it to the API index map
 	// description is the API function description
-	addAPI := func (path, description string, fn http.HandlerFunc) {
+	addAPI := func(path, description string, fn http.HandlerFunc) {
 		re := regexp.MustCompile(":[a-zA-Z0-9_]*")
 		param_path := re.ReplaceAllStringFunc(path, func(s string) string { return fmt.Sprintf("{%s}", s[1:]) })
 		if fn == nil {
@@ -29,12 +28,10 @@ func APIStart(app *appContext, server *server) {
 		server.Get("/api"+path, fn)
 	}
 
-
 	// imports
 	addAPI("/imports", "imports", app.apiImportStatusHandler) //might want to expand this
 	addAPI("/imports/:year/:month/:day", "import_day_view", nil)
 	addAPI("/imports/:year/:month/:day/:zone", "import_day_view_zone", nil)
-
 
 	// zones
 	addAPI("/zones", "zones", app.apiLatestZonesHandler)
@@ -44,7 +41,6 @@ func APIStart(app *appContext, server *server) {
 	addAPI("/zones/:zone/nameservers/archive", "zone_nameservers_archive", nil)
 	addAPI("/zones/:zone/nameservers/archive/page/:page", "zone_nameservers_archive_paged", nil)
 
-
 	// domains
 	addAPI("/random", "random_domain", app.apiRandomDomainHandler)
 	addAPI("/domains/:domain", "domain", app.apiDomainHandler)
@@ -53,7 +49,6 @@ func APIStart(app *appContext, server *server) {
 	addAPI("/domains/:domain/nameservers/current/page/:page", "domain_current_nameservers_paged", nil)
 	addAPI("/domains/:domain/nameservers/archive", "domain_archive_nameservers", nil)
 	addAPI("/domains/:domain/nameservers/archive/page/:page", "domain_archive_nameservers_paged", nil)
-
 
 	// nameservers
 	addAPI("/nameservers/:domain", "nameserver", app.apiNameserverHandler)
@@ -75,14 +70,12 @@ func APIStart(app *appContext, server *server) {
 	addAPI("/nameservers/:domain/ip/6/archive", "nameserver_ipv6_archive", nil)
 	addAPI("/nameservers/:domain/ip/6/archive/page/:page", "nameserver_ipv6_archive_paged", nil)
 
-
 	// ipv4 & ipv6
 	addAPI("/ip", "ip", nil)
 	addAPI("/ip/:ip", "ip_view", app.apiIPHandler)
 	addAPI("/ip/:ip/nameservers", "ip_nameservers", nil)
 	addAPI("/ip/:ip/nameservers/current", "ip_nameservers_current", nil)
 	addAPI("/ip/:ip/nameservers/archive", "ip_nameservers_archive", nil)
-
 
 	// feeds
 	addAPI("/feeds/new", "feeds_new", nil)
@@ -99,7 +92,6 @@ func APIStart(app *appContext, server *server) {
 	addAPI("/feeds/moved/page/:page", "feeds_moved_paged", nil)
 	//addAPI("/feeds/moved/:year/:month/:day", "feeds_moved_date", nil)
 	//addAPI("/feeds/moved/:year/:month/:day/page/:page", "feeds_moved_date_paged", nil)
-
 
 	// API index
 	server.Get("/api/", app.apiIndex)
@@ -161,7 +153,6 @@ func (app *appContext) apiIPHandler(w http.ResponseWriter, r *http.Request) {
 	WriteJSON(w, data)
 }
 
-
 func (app *appContext) apiZoneHandler(w http.ResponseWriter, r *http.Request) {
 	params := context.Get(r, "params").(httprouter.Params)
 	domain := cleanDomain(params.ByName("zone"))
@@ -208,7 +199,6 @@ func (app *appContext) apiNameserverHandler(w http.ResponseWriter, r *http.Reque
 	WriteJSON(w, data)
 }
 
-
 // API Index handler
 // Displays the map of the API methods available
 func (app *appContext) apiIndex(w http.ResponseWriter, req *http.Request) {
@@ -218,4 +208,3 @@ func (app *appContext) apiIndex(w http.ResponseWriter, req *http.Request) {
 		panic(err)
 	}
 }
-

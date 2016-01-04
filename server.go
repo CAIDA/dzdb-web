@@ -11,14 +11,14 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"time"
 	"strings"
+	"time"
 
-	"gopkg.in/throttled/throttled.v2"
-	"gopkg.in/throttled/throttled.v2/store/memstore"
 	"github.com/gorilla/context"
 	"github.com/julienschmidt/httprouter"
 	"github.com/justinas/alice"
+	"gopkg.in/throttled/throttled.v2"
+	"gopkg.in/throttled/throttled.v2/store/memstore"
 )
 
 // handler for catching a panic
@@ -44,7 +44,7 @@ func loggingHandler(next http.Handler) http.Handler {
 		t1 := time.Now()
 		next.ServeHTTP(w, r)
 		t2 := time.Now()
-		ip :=  getIpAddress(r)
+		ip := getIpAddress(r)
 		log.Printf("[%s] %s %q %v\n", ip, r.Method, r.RequestURI, t2.Sub(t1))
 	}
 
@@ -68,11 +68,11 @@ func makeTimeoutHandler(sec int) func(http.Handler) http.Handler {
 }
 
 //custom vary by to use real remote IP without port
-type myVaryBy struct {}
+type myVaryBy struct{}
+
 func (m myVaryBy) Key(r *http.Request) string {
 	return getIpAddress(r)
 }
-
 
 // creates a throttled handler using the perMin limit on requests
 func makeThrottleHandler(perMin, burst, store_size int) func(http.Handler) http.Handler {
@@ -90,8 +90,8 @@ func makeThrottleHandler(perMin, burst, store_size int) func(http.Handler) http.
 		RateLimiter: rateLimiter,
 		VaryBy:      new(myVaryBy),
 		DeniedHandler: http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				WriteJSONError(w, ErrLimitExceeded)
-			})),
+			WriteJSONError(w, ErrLimitExceeded)
+		})),
 	}
 
 	return httpRateLimiter.RateLimit
@@ -112,6 +112,7 @@ var (
 func HandlerNotImplemented(w http.ResponseWriter, r *http.Request) {
 	WriteJSONError(w, ErrNotImplemented)
 }
+
 // TODO make not all errors JSON
 func WriteJSONError(w http.ResponseWriter, err *JSONError) {
 	w.Header().Set("Content-Type", "application/json")
@@ -182,7 +183,6 @@ func (s *server) Start() error {
 	return http.ListenAndServe(fmt.Sprintf("%s:%d", s.config.Http.IP, s.config.Http.Port), s.router)
 }
 
-
 func getIpAddress(r *http.Request) string {
 	hdr := r.Header
 	hdrRealIp := hdr.Get("X-Real-Ip")
@@ -192,14 +192,13 @@ func getIpAddress(r *http.Request) string {
 		return hdrRealIp
 	}
 	if hdrForwardedFor != "" {
-		// X-Forwarded-For is potentially a list of addresses separated with "," 
+		// X-Forwarded-For is potentially a list of addresses separated with ","
 		parts := strings.Split(hdrForwardedFor, ",")
 		for i, p := range parts {
 			parts[i] = strings.TrimSpace(p)
 		}
-		// TODO: should return first non-local address 
+		// TODO: should return first non-local address
 		return parts[0]
 	}
 	return hdrRealIp
 }
-

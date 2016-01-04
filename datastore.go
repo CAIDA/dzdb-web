@@ -451,7 +451,6 @@ func (ds *DataStore) getNameServer(domain string) (*NameServer, error) {
 		return nil, err
 	}
 
-
 	// get current IP6
 	rows, err = ds.db.Query("SELECT ip.id, ip.ip, dns.first_seen, dns.last_seen FROM aaaa_nameservers dns, aaaa ip WHERE ip.id = dns.aaaa_id AND dns.last_seen IS NULL AND dns.nameserver_id = $1 limit 100", ns.Id)
 	if err != nil {
@@ -488,7 +487,6 @@ func (ds *DataStore) getNameServer(domain string) (*NameServer, error) {
 
 	return &ns, nil
 }
-
 
 // gets information for the provided domain
 func (ds *DataStore) getIP(name string) (*IP, error) {
@@ -555,7 +553,7 @@ func (ds *DataStore) getIP(name string) (*IP, error) {
 			ip.ArchiveNameServers = append(ip.ArchiveNameServers, &ns)
 		}
 	} else {
-// get first_seen & last_seen
+		// get first_seen & last_seen
 		err = ds.db.QueryRow("select first_seen from aaaa_nameservers where aaaa_id = $1 order by first_seen nulls first limit 1", ip.Id).Scan(&ip.FirstSeen)
 		if err != nil {
 			return nil, err
