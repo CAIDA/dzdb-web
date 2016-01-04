@@ -76,6 +76,20 @@ func (ds *DataStore) getDomainID(domain string) (int64, int64, error) {
 	return id, zone_id, err
 }
 
+func (ds *DataStore) getIPID(ip string) (int64, int, error) {
+	var id int64
+	var version int = 4
+	err := ds.db.QueryRow("SELECT id FROM a WHERE ip = $1", ip).Scan(&id)
+	if err == sql.ErrNoRows {
+		version = 6
+		err = ds.db.QueryRow("SELECT id FROM aaaa WHERE ip = $1", ip).Scan(&id)
+		if err == sql.ErrNoRows {
+			err = ErrNoResource
+		}
+	}
+	return id, version, err
+}
+
 func (ds *DataStore) getZoneID(name string) (int64, error) {
 	var id int64
 	err := ds.db.QueryRow("select id from zones where zone = $1 limit 1", name).Scan(&id)
@@ -379,5 +393,222 @@ func (ds *DataStore) getNameServer(domain string) (*NameServer, error) {
 		ns.ArchiveDomains = append(ns.ArchiveDomains, &d)
 	}
 
+	// get num IP4
+	err = ds.db.QueryRow("SELECT count(*) FROM a_nameservers WHERE nameserver_id = $1 AND last_seen IS NULL", ns.Id).Scan(&ns.IP4Count)
+	if err != nil {
+		return nil, err
+	}
+
+	// get num archive IP4
+	err = ds.db.QueryRow("SELECT count(*) FROM a_nameservers WHERE nameserver_id = $1 AND last_seen IS NOT NULL", ns.Id).Scan(&ns.ArchiveIP4Count)
+	if err != nil {
+		return nil, err
+	}
+
+	// get current IP4
+	rows, err = ds.db.Query("SELECT ip.id, ip.ip, dns.first_seen, dns.last_seen FROM a_nameservers dns, a ip WHERE ip.id = dns.a_id AND dns.last_seen IS NULL AND dns.nameserver_id = $1 limit 100", ns.Id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	ns.IP4 = make([]*IP4, 0, 4)
+	for rows.Next() {
+		var ip IP4
+		err = rows.Scan(&ip.Id, &ip.Name, &ip.FirstSeen, &ip.LastSeen)
+		if err != nil {
+			return nil, err
+		}
+		ip.Version = 4
+		ns.IP4 = append(ns.IP4, &ip)
+	}
+
+	//get archive ipv4
+	rows, err = ds.db.Query("SELECT ip.id, ip.ip, dns.first_seen, dns.last_seen FROM a_nameservers dns, a ip WHERE ip.id = dns.a_id AND dns.last_seen IS NOT NULL AND dns.nameserver_id = $1 limit 100", ns.Id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	ns.ArchiveIP4 = make([]*IP4, 0, 4)
+	for rows.Next() {
+		var ip IP4
+		err = rows.Scan(&ip.Id, &ip.Name, &ip.FirstSeen, &ip.LastSeen)
+		if err != nil {
+			return nil, err
+		}
+		ip.Version = 4
+		ns.ArchiveIP4 = append(ns.ArchiveIP4, &ip)
+	}
+
+	// get num IP6
+	err = ds.db.QueryRow("SELECT count(*) FROM aaaa_nameservers WHERE nameserver_id = $1 AND last_seen IS NULL", ns.Id).Scan(&ns.IP6Count)
+	if err != nil {
+		return nil, err
+	}
+
+	// get num archive IP6
+	err = ds.db.QueryRow("SELECT count(*) FROM aaaa_nameservers WHERE nameserver_id = $1 AND last_seen IS NOT NULL", ns.Id).Scan(&ns.ArchiveIP6Count)
+	if err != nil {
+		return nil, err
+	}
+
+
+	// get current IP6
+	rows, err = ds.db.Query("SELECT ip.id, ip.ip, dns.first_seen, dns.last_seen FROM aaaa_nameservers dns, aaaa ip WHERE ip.id = dns.aaaa_id AND dns.last_seen IS NULL AND dns.nameserver_id = $1 limit 100", ns.Id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	ns.IP6 = make([]*IP6, 0, 4)
+	for rows.Next() {
+		var ip IP6
+		err = rows.Scan(&ip.Id, &ip.Name, &ip.FirstSeen, &ip.LastSeen)
+		if err != nil {
+			return nil, err
+		}
+		ip.Version = 6
+		ns.IP6 = append(ns.IP6, &ip)
+	}
+
+	//get archive ipv6
+	rows, err = ds.db.Query("SELECT ip.id, ip.ip, dns.first_seen, dns.last_seen FROM aaaa_nameservers dns, aaaa ip WHERE ip.id = dns.aaaa_id AND dns.last_seen IS NOT NULL AND dns.nameserver_id = $1 limit 100", ns.Id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	ns.ArchiveIP6 = make([]*IP6, 0, 4)
+	for rows.Next() {
+		var ip IP6
+		err = rows.Scan(&ip.Id, &ip.Name, &ip.FirstSeen, &ip.LastSeen)
+		if err != nil {
+			return nil, err
+		}
+		ip.Version = 6
+		ns.ArchiveIP6 = append(ns.ArchiveIP6, &ip)
+	}
+
 	return &ns, nil
+}
+
+
+// gets information for the provided domain
+func (ds *DataStore) getIP(name string) (*IP, error) {
+	var ip IP
+	var err error
+	ip.Id, ip.Version, err = ds.getIPID(name)
+	if err != nil {
+		return nil, err
+	}
+	ip.Name = name
+
+	if ip.Version == 4 {
+		// get first_seen & last_seen
+		err = ds.db.QueryRow("select first_seen from a_nameservers where a_id = $1 order by first_seen nulls first limit 1", ip.Id).Scan(&ip.FirstSeen)
+		if err != nil {
+			return nil, err
+		}
+		err = ds.db.QueryRow("select last_seen from a_nameservers where a_id = $1 order by last_seen nulls first limit 1", ip.Id).Scan(&ip.LastSeen)
+		if err != nil {
+			return nil, err
+		}
+
+		// get num NS
+		err = ds.db.QueryRow("SELECT count(*) FROM a_nameservers WHERE a_id = $1 AND last_seen IS NULL", ip.Id).Scan(&ip.NameServerCount)
+		if err != nil {
+			return nil, err
+		}
+
+		// get num archive NS
+		err = ds.db.QueryRow("SELECT count(*) FROM a_nameservers WHERE a_id = $1 AND last_seen IS NOT NULL", ip.Id).Scan(&ip.ArchiveNameServerCount)
+		if err != nil {
+			return nil, err
+		}
+
+		// get current NS
+		rows, err := ds.db.Query("SELECT ns.id, ns.domain, dns.first_seen, dns.last_seen FROM a_nameservers dns, nameservers ns WHERE dns.nameserver_id = ns.id AND dns.last_seen IS NULL AND dns.a_id = $1 limit 100", ip.Id)
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+		ip.NameServers = make([]*NameServer, 0, 4)
+		for rows.Next() {
+			var ns NameServer
+			err = rows.Scan(&ns.Id, &ns.Name, &ns.FirstSeen, &ns.LastSeen)
+			if err != nil {
+				return nil, err
+			}
+			ip.NameServers = append(ip.NameServers, &ns)
+		}
+
+		// get archive NS
+		rows, err = ds.db.Query("SELECT ns.id, ns.domain, dns.first_seen, dns.last_seen FROM a_nameservers dns, nameservers ns WHERE dns.nameserver_id = ns.id AND dns.last_seen IS NOT NULL AND dns.a_id = $1 ORDER BY last_seen desc limit 100", ip.Id)
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+		ip.ArchiveNameServers = make([]*NameServer, 0, 4)
+		for rows.Next() {
+			var ns NameServer
+			err = rows.Scan(&ns.Id, &ns.Name, &ns.FirstSeen, &ns.LastSeen)
+			if err != nil {
+				return nil, err
+			}
+			ip.ArchiveNameServers = append(ip.ArchiveNameServers, &ns)
+		}
+	} else {
+// get first_seen & last_seen
+		err = ds.db.QueryRow("select first_seen from aaaa_nameservers where aaaa_id = $1 order by first_seen nulls first limit 1", ip.Id).Scan(&ip.FirstSeen)
+		if err != nil {
+			return nil, err
+		}
+		err = ds.db.QueryRow("select last_seen from aaaa_nameservers where aaaa_id = $1 order by last_seen nulls first limit 1", ip.Id).Scan(&ip.LastSeen)
+		if err != nil {
+			return nil, err
+		}
+
+		// get num NS
+		err = ds.db.QueryRow("SELECT count(*) FROM aaaa_nameservers WHERE aaaa_id = $1 AND last_seen IS NULL", ip.Id).Scan(&ip.NameServerCount)
+		if err != nil {
+			return nil, err
+		}
+
+		// get num archive NS
+		err = ds.db.QueryRow("SELECT count(*) FROM aaaa_nameservers WHERE aaaa_id = $1 AND last_seen IS NOT NULL", ip.Id).Scan(&ip.ArchiveNameServerCount)
+		if err != nil {
+			return nil, err
+		}
+
+		// get current NS
+		rows, err := ds.db.Query("SELECT ns.id, ns.domain, dns.first_seen, dns.last_seen FROM aaaa_nameservers dns, nameservers ns WHERE dns.nameserver_id = ns.id AND dns.last_seen IS NULL AND dns.aaaa_id = $1 limit 100", ip.Id)
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+		ip.NameServers = make([]*NameServer, 0, 4)
+		for rows.Next() {
+			var ns NameServer
+			err = rows.Scan(&ns.Id, &ns.Name, &ns.FirstSeen, &ns.LastSeen)
+			if err != nil {
+				return nil, err
+			}
+			ip.NameServers = append(ip.NameServers, &ns)
+		}
+
+		// get archive NS
+		rows, err = ds.db.Query("SELECT ns.id, ns.domain, dns.first_seen, dns.last_seen FROM aaaa_nameservers dns, nameservers ns WHERE dns.nameserver_id = ns.id AND dns.last_seen IS NOT NULL AND dns.aaaa_id = $1 ORDER BY last_seen desc limit 100", ip.Id)
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+		ip.ArchiveNameServers = make([]*NameServer, 0, 4)
+		for rows.Next() {
+			var ns NameServer
+			err = rows.Scan(&ns.Id, &ns.Name, &ns.FirstSeen, &ns.LastSeen)
+			if err != nil {
+				return nil, err
+			}
+			ip.ArchiveNameServers = append(ip.ArchiveNameServers, &ns)
+		}
+	}
+
+	return &ip, nil
 }

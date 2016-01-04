@@ -78,7 +78,7 @@ func APIStart(app *appContext, server *server) {
 
 	// ipv4 & ipv6
 	addAPI("/ip", "ip", nil)
-	addAPI("/ip/:ip", "ip_view", nil)
+	addAPI("/ip/:ip", "ip_view", app.apiIPHandler)
 	addAPI("/ip/:ip/nameservers", "ip_nameservers", nil)
 	addAPI("/ip/:ip/nameservers/current", "ip_nameservers_current", nil)
 	addAPI("/ip/:ip/nameservers/archive", "ip_nameservers_archive", nil)
@@ -144,6 +144,23 @@ func (app *appContext) apiDomainHandler(w http.ResponseWriter, r *http.Request) 
 	data.generateMetaData()
 	WriteJSON(w, data)
 }
+
+func (app *appContext) apiIPHandler(w http.ResponseWriter, r *http.Request) {
+	params := context.Get(r, "params").(httprouter.Params)
+	ip := cleanDomain(params.ByName("ip"))
+	data, err := app.ds.getIP(ip)
+	if err != nil {
+		if err == ErrNoResource {
+			WriteJSONError(w, ErrResourceNotFound)
+			return
+		}
+		panic(err)
+	}
+
+	data.generateMetaData()
+	WriteJSON(w, data)
+}
+
 
 func (app *appContext) apiZoneHandler(w http.ResponseWriter, r *http.Request) {
 	params := context.Get(r, "params").(httprouter.Params)

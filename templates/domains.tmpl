@@ -7,4 +7,25 @@
   <input type="hidden" name="type" value="domain">
   </form>
 </div>
+<button type="submit" class="btn btn-warning" onclick="doRandom();">Random Domain</button>
+<script type="text/javascript">
+function doRandom() {
+    var url = "/api/random";
+    var xmlhttp = new XMLHttpRequest();
+
+    xmlhttp.onreadystatechange = function() {
+        if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+            var data = JSON.parse(xmlhttp.responseText);
+            // got response
+            if (data.data && data.data.type == "domain") {
+                window.location.replace(data.data.link);
+            }else {
+                console.log(data);
+            }
+        }
+    };
+    xmlhttp.open("GET", url, true);
+    xmlhttp.send();
+}
+</script>
 {{template "bottom" $}}

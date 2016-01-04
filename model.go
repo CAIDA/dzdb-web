@@ -8,6 +8,7 @@ import (
 var (
 	DomainType            = "domain"
 	NameServerType        = "nameserver"
+	IPType                = "ip"
 	ImportProgressType    = "import_progress"
 	ZoneImportResultType  = "zone_import_result"
 	ZoneImportResultsType = "zone_import_results"
@@ -168,7 +169,14 @@ type NameServer struct {
 	ArchiveDomains     []*Domain  `json:"archive_domains,omitempty"`
 	DomainCount        *int64     `json:"domain_count,omitempty"`
 	ArchiveDomainCount *int64     `json:"archive_domain_count,omitempty"`
-	// TODO IP 4 + 6
+	IP4 			   []*IP4      `json:"ipv4,omitempty"`
+	ArchiveIP4 			   []*IP4      `json:"archive_ipv4,omitempty"`
+	IP4Count *int64     `json:"ipv4_count,omitempty"`
+	ArchiveIP4Count *int64     `json:"archive_ipv4_count,omitempty"`
+	IP6 			   []*IP6      `json:"ipv6,omitempty"`
+	ArchiveIP6 			   []*IP6      `json:"archive_ipv6,omitempty"`
+	IP6Count *int64     `json:"ipv6_count,omitempty"`
+	ArchiveIP6Count *int64     `json:"archive_ipv6_count,omitempty"`
 }
 
 func (ns *NameServer) generateMetaData() {
@@ -182,6 +190,64 @@ func (ns *NameServer) generateMetaData() {
 	for _, d := range ns.ArchiveDomains {
 		if d.Type == nil {
 			d.generateMetaData()
+		}
+	}
+	for _, ip := range ns.IP4 {
+		if ip.Type == nil {
+			ip.generateMetaData()
+		}
+	}
+	for _, ip := range ns.ArchiveIP4 {
+		if ip.Type == nil {
+			ip.generateMetaData()
+		}
+	}
+	for _, ip := range ns.IP6 {
+		if ip.Type == nil {
+			ip.generateMetaData()
+		}
+	}
+	for _, ip := range ns.ArchiveIP6 {
+		if ip.Type == nil {
+			ip.generateMetaData()
+		}
+	}
+}
+
+type IP struct {
+	Type               *string    `json:"type"`
+	Id                 int64      `json:"id"`
+	Name        	   string     `json:"name"`
+	Version			int `json:"version"`
+	Link               string     `json:"link"`
+	FirstSeen          *time.Time `json:"firstseen,omitempty"`
+	LastSeen           *time.Time `json:"lastseen,omitempty"`
+	NameServers            []*NameServer `json:"nameservers,omitempty"`
+	ArchiveNameServers     []*NameServer `json:"archive_nameservers,omitempty"`
+	NameServerCount        *int64        `json:"nameserver_count,omitempty"`
+	ArchiveNameServerCount *int64        `json:"archive_nameserver_count,omitempty"`
+}
+
+
+type IP4 struct {
+	IP
+}
+
+type IP6 struct {
+	IP
+}
+
+func (ip *IP) generateMetaData() {
+	ip.Type = &IPType
+	ip.Link = fmt.Sprintf("/ip/%s", ip.Name)
+	for _, ns := range ip.NameServers {
+		if ns.Type == nil {
+			ns.generateMetaData()
+		}
+	}
+	for _, ns := range ip.ArchiveNameServers {
+		if ns.Type == nil {
+			ns.generateMetaData()
 		}
 	}
 }

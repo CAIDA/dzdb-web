@@ -39,16 +39,20 @@ func AppStart(ds *DataStore, server *server) {
 	APIStart(&app, server)
 
 	//TODO
+    server.Get("/feeds", app.TodoHandler)
+
+
 	server.Get("/", app.IndexHandler)
 
-    server.Get("/nameservers", app.TodoHandler)
-    server.Get("/ip", app.TodoHandler)
-    server.Get("/feeds", app.TodoHandler)
+    server.Get("/nameservers", app.nameserverIndexHandler)
+    server.Get("/ip", app.ipIndexHandler)
+
 
     server.Post("/search", app.searchHandler)
 
-    server.Get("/domains", app.DomainIndexHandler)
+    server.Get("/domains", app.domainIndexHandler)
 	server.Get("/domains/:domain", app.domainHandler)
+    server.Get("/ip/:ip", app.ipHandler)
     server.Get("/nameservers/:nameserver", app.nameserverHandler)
     server.Get("/zones/:zone", app.zoneHandler)
     server.Get("/zones", app.zoneIndexHandler)
@@ -81,8 +85,19 @@ func (app *appContext) searchHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    //TODO search result not found
-    app.TodoHandler(w, r)
+    _, _, err = app.ds.getIPID(query)
+    if err == nil {
+        // redirect
+        http.Redirect(w, r, "/ip/"+query, http.StatusFound)
+        return
+    }
+
+    // no results found
+    p := Page{"Search", "", query}
+    err = app.templates.ExecuteTemplate(w, "search.tmpl", p)
+    if err != nil {
+        panic(err)
+    }
 }
 
 
@@ -173,6 +188,27 @@ func (app *appContext) domainHandler(w http.ResponseWriter, r *http.Request) {
     }
 }
 
+// ipHandler returns ip object for the queried domain
+func (app *appContext) ipHandler(w http.ResponseWriter, r *http.Request) {
+    params := context.Get(r, "params").(httprouter.Params)
+    name := cleanDomain(params.ByName("ip"))
+    data, err := app.ds.getIP(name)
+    if err != nil {
+        if err == ErrNoResource {
+            // TODO make http err (not json)
+            WriteJSONError(w, ErrResourceNotFound)
+            return
+        }
+        panic(err)
+    }
+
+    p := Page{name, "IPs", data}
+    err = app.templates.ExecuteTemplate(w, "ip.tmpl", p)
+    if err != nil {
+        panic(err)
+    }
+}
+
 func (app *appContext) TodoHandler(w http.ResponseWriter, r *http.Request) {
     p := Page{"TODO", "", nil}
     err := app.templates.ExecuteTemplate(w, "todo.tmpl", p)
@@ -189,9 +225,25 @@ func (app *appContext) IndexHandler(w http.ResponseWriter, r *http.Request) {
     }
 }
 
-func (app *appContext) DomainIndexHandler(w http.ResponseWriter, r *http.Request) {
+func (app *appContext) domainIndexHandler(w http.ResponseWriter, r *http.Request) {
     p := Page{"Domains", "Domains", nil}
     err := app.templates.ExecuteTemplate(w, "domains.tmpl", p)
+    if err != nil {
+        panic(err)
+    }
+}
+
+func (app *appContext) nameserverIndexHandler(w http.ResponseWriter, r *http.Request) {
+    p := Page{"Name Servers", "Nameservers", nil}
+    err := app.templates.ExecuteTemplate(w, "nameservers.tmpl", p)
+    if err != nil {
+        panic(err)
+    }
+}
+
+func (app *appContext) ipIndexHandler(w http.ResponseWriter, r *http.Request) {
+    p := Page{"IPs", "IPs", nil}
+    err := app.templates.ExecuteTemplate(w, "ips.tmpl", p)
     if err != nil {
         panic(err)
     }
