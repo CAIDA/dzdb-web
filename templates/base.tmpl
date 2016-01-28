@@ -10,16 +10,23 @@
     <title>{{$.Title}} - DNS Coffee</title>
 </head>
 <body>
-    <div class="container">
-    {{template "navbar.tmpl" $}}
+<div class="container">
+{{template "navbar.tmpl" $}}
 {{end}}
 {{define "bottom"}}
-    </div> <!-- /container -->
-    <script src="//code.jquery.com/jquery-1.11.3.min.js"></script>
-    <!-- Latest compiled and minified JavaScript -->
-    <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
-    <!-- set the correct tab to active on the navbar -->
-    <script>if({{$.Tab}}.length){$('.nav a:contains({{$.Tab}})').parent().addClass('active');}</script>
+<footer>
+    <hr>
+    <div class="row">
+        <div class="col-xs-10">&copy; 2016 Vorsk</div>
+        <div class="col-xs-2"><p class="pull-right"><a href="#">Back to top</a></p></div>
+    </div>
+</footer>
+</div><!-- /container -->
+<script src="//code.jquery.com/jquery-1.11.3.min.js"></script>
+<!-- Latest compiled and minified JavaScript -->
+<script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+<!-- set the correct tab to active on the navbar -->
+<script>if({{$.Tab}}.length){$('.nav a:contains({{$.Tab}})').parent().addClass('active');}</script>
 </body>
 </html>
 {{end}}
