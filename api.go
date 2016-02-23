@@ -97,7 +97,7 @@ func APIStart(app *appContext, server *server) {
 	server.Get("/api/", app.apiIndex)
 }
 
-//TODO
+//TODO expand
 func (app *appContext) apiImportStatusHandler(w http.ResponseWriter, r *http.Request) {
 	ip, err := app.ds.getImportProgress()
 	if err != nil {
@@ -108,7 +108,7 @@ func (app *appContext) apiImportStatusHandler(w http.ResponseWriter, r *http.Req
 	WriteJSON(w, ip)
 }
 
-//TODO
+//TODO expand
 func (app *appContext) apiLatestZonesHandler(w http.ResponseWriter, r *http.Request) {
 	zirs, err := app.ds.getZoneImportResults()
 	if err != nil {
