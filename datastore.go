@@ -18,9 +18,9 @@ var ErrNoResource = errors.New("The requested object does not exist.")
 // connects to the Postgresql database
 func getDB(cfg *DatabaseConfig) (*sql.DB, error) {
 	os.Clearenv() /* because there is a bug when PGHOSTADDR is set */
-	connStr := fmt.Sprintf("host=%s user=%s password=%s dbname=%s sslmode=disable",
+	connStr := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
 		cfg.Host,
-		/*cfg.Port,*/
+		cfg.Port,
 		cfg.User,
 		cfg.Password,
 		cfg.Database,
