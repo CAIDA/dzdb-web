@@ -7,21 +7,21 @@ import (
 // main
 func main() {
 	// get configuration
-	config, config_err := GetConfig("config.ini")
-	if config_err != nil {
-		log.Fatal(config_err)
+	config, err := GetConfig("config.ini")
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	// get datstore
-	ds, ds_err := NewDataStore(&config.Postgresql)
+	ds, err := NewDataStore(&config.Postgresql)
 	defer ds.Close()
-	if ds_err != nil {
-		log.Fatal(ds_err)
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	// get server and start application
 	server := NewServer(config)
 	AppStart(ds, server)
-	log.Printf("Server starting on %s:%d", config.Http.IP, config.Http.Port)
+	log.Printf("Server starting on %s:%d", config.HTTP.IP, config.HTTP.Port)
 	log.Fatal(server.Start())
 }

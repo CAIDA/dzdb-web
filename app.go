@@ -22,13 +22,14 @@ type appContext struct {
 
 // compile all templates and cache them
 
+// Page holds information for rendered HTML pages
 type Page struct {
 	Title string
 	Tab   string
 	Data  interface{}
 }
 
-// Entry point for starting application
+// AppStart entry point for starting application
 // adds routes to the server so that the correct handlers are registered
 func AppStart(ds *DataStore, server *server) {
 	var app appContext

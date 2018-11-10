@@ -10,7 +10,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-// Entry point for starting application
+// APIStart entry point for starting application
 // adds routes to the server so that the correct handlers are registered
 func APIStart(app *appContext, server *server) {
 	app.api = make(map[string]string)
@@ -19,12 +19,12 @@ func APIStart(app *appContext, server *server) {
 	// description is the API function description
 	addAPI := func(path, description string, fn http.HandlerFunc) {
 		re := regexp.MustCompile(":[a-zA-Z0-9_]*")
-		param_path := re.ReplaceAllStringFunc(path, func(s string) string { return fmt.Sprintf("{%s}", s[1:]) })
+		paramPath := re.ReplaceAllStringFunc(path, func(s string) string { return fmt.Sprintf("{%s}", s[1:]) })
 		if fn == nil {
 			fn = HandlerNotImplemented
 			description = fmt.Sprintf("[WIP] %s", description)
 		}
-		app.api[description] = param_path
+		app.api[description] = paramPath
 		server.Get("/api"+path, fn)
 	}
 
@@ -110,14 +110,14 @@ func (app *appContext) apiImportStatusHandler(w http.ResponseWriter, r *http.Req
 
 //TODO expand
 func (app *appContext) apiLatestZonesHandler(w http.ResponseWriter, r *http.Request) {
-	zirs, err := app.ds.getZoneImportResults()
+	zoneImportResults, err := app.ds.getZoneImportResults()
 	if err != nil {
 		panic(err)
 	}
 
-	zirs.generateMetaData()
+	zoneImportResults.generateMetaData()
 
-	WriteJSON(w, zirs)
+	WriteJSON(w, zoneImportResults)
 }
 
 // domainHandler returns domain object for the queried domain

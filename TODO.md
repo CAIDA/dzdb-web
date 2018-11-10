@@ -8,7 +8,7 @@
 
 update templates so that first/last seen are in a box or something...
 
-use envirotment vars instead of config.ini
+use environment vars instead of config.ini
 docker^^
 
 ## Stats
@@ -19,7 +19,7 @@ total tracked zones
 
 ## Zones
 pi chart?
-domain history per zone (ggraph)
+domain history per zone (graph)
 
 ## NS
 counts of domains
@@ -38,7 +38,7 @@ whois?
 some statS on index (total ip4/6)?
 
 # all
- pagnation for all pages via api?
+ pagination for all pages via api?
 
 # metadata tables
 
@@ -91,7 +91,7 @@ does not need to be public, keep internal
 └───────────┴────────┴────────┴───────┴───────┴──────────┴──────────┘
 
 ## import_zone_counts
-used to generate weighted_coutns, should be shown on import data page
+used to generate weighted_counts, should be shown on import data page
 ┌────────────┬─────────┬─────────┬─────────┬───────────┬─────┬───────┬─────┐
 │    date    │ zone_id │ domains │ records │ import_id │ new │ moved │ old │
 ├────────────┼─────────┼─────────┼─────────┼───────────┼─────┼───────┼─────┤
@@ -102,8 +102,8 @@ used to generate weighted_coutns, should be shown on import data page
 │ 2016-02-25 │ 2048914 │       2 │      17 │    392612 │   0 │     0 │   0 │
 └────────────┴─────────┴─────────┴─────────┴───────────┴─────┴───────┴─────┘
 
-## weighted_coutns
-use for gloabal stats in zones and total stats
+## weighted_counts
+use for global stats in zones and total stats
 ┌────────────┬─────────┬──────────┬──────┬───────┬──────┐
 │    date    │ zone_id │ domains  │ old  │ moved │ new  │
 ├────────────┼─────────┼──────────┼──────┼───────┼──────┤

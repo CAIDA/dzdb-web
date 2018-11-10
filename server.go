@@ -44,7 +44,7 @@ func loggingHandler(next http.Handler) http.Handler {
 		t1 := time.Now()
 		next.ServeHTTP(w, r)
 		t2 := time.Now()
-		ip := getIpAddress(r)
+		ip := getIPAddress(r)
 		log.Printf("[%s] %s %q %v\n", ip, r.Method, r.RequestURI, t2.Sub(t1))
 	}
 
@@ -58,12 +58,12 @@ func loggingHandler(next http.Handler) http.Handler {
 
 // creates a TimeoutHandler using the provided sec timeout
 func makeTimeoutHandler(sec int) func(http.Handler) http.Handler {
-	timeout_error_json, err := json.Marshal(ErrTimeout)
+	timeoutErrorJSON, err := json.Marshal(ErrTimeout)
 	if err != nil {
 		log.Fatal(err)
 	}
 	return func(h http.Handler) http.Handler {
-		return http.TimeoutHandler(h, time.Duration(sec)*time.Second, string(timeout_error_json))
+		return http.TimeoutHandler(h, time.Duration(sec)*time.Second, string(timeoutErrorJSON))
 	}
 }
 
@@ -71,16 +71,19 @@ func makeTimeoutHandler(sec int) func(http.Handler) http.Handler {
 type myVaryBy struct{}
 
 func (m myVaryBy) Key(r *http.Request) string {
-	return getIpAddress(r)
+	return getIPAddress(r)
 }
 
 // creates a throttled handler using the perMin limit on requests
-func makeThrottleHandler(perMin, burst, store_size int) func(http.Handler) http.Handler {
-	store, err := memstore.New(store_size)
+func makeThrottleHandler(perMin, burst, storeSize int) func(http.Handler) http.Handler {
+	store, err := memstore.New(storeSize)
 	if err != nil {
 		log.Fatal(err)
 	}
-	quota := throttled.RateQuota{throttled.PerMin(perMin), 5}
+	quota := throttled.RateQuota{
+		MaxRate:  throttled.PerMin(perMin),
+		MaxBurst: 5,
+	}
 	rateLimiter, err := throttled.NewGCRARateLimiter(store, quota)
 	if err != nil {
 		log.Fatal(err)
@@ -152,7 +155,7 @@ func NewServer(config *Config) *server {
 		makeTimeoutHandler(server.config.API.Timeout),
 		loggingHandler,
 		recoverHandler,
-		makeThrottleHandler(server.config.API.Requests_Per_Minute, server.config.API.Requests_Burst, server.config.API.Requests_Max_History),
+		makeThrottleHandler(server.config.API.RequestsPerMinute, server.config.API.RequestsBurst, server.config.API.RequestsMaxHistory),
 	)
 	//server.router.NotFound = notFoundJSON
 	return server
@@ -180,16 +183,16 @@ func (s *server) Post(path string, fn http.HandlerFunc) {
 // Starts the server
 // blocking function
 func (s *server) Start() error {
-	return http.ListenAndServe(fmt.Sprintf("%s:%d", s.config.Http.IP, s.config.Http.Port), s.router)
+	return http.ListenAndServe(fmt.Sprintf("%s:%d", s.config.HTTP.IP, s.config.HTTP.Port), s.router)
 }
 
-func getIpAddress(r *http.Request) string {
+func getIPAddress(r *http.Request) string {
 	hdr := r.Header
-	hdrRealIp := hdr.Get("X-Real-Ip")
+	hdrRealIP := hdr.Get("X-Real-Ip")
 	hdrForwardedFor := hdr.Get("X-Forwarded-For")
-	if hdrRealIp == "" && hdrForwardedFor == "" {
-		hdrRealIp, _, _ := net.SplitHostPort(r.RemoteAddr)
-		return hdrRealIp
+	if hdrRealIP == "" && hdrForwardedFor == "" {
+		hdrRealIP, _, _ := net.SplitHostPort(r.RemoteAddr)
+		return hdrRealIP
 	}
 	if hdrForwardedFor != "" {
 		// X-Forwarded-For is potentially a list of addresses separated with ","
@@ -200,5 +203,5 @@ func getIpAddress(r *http.Request) string {
 		// TODO: should return first non-local address
 		return parts[0]
 	}
-	return hdrRealIp
+	return hdrRealIP
 }

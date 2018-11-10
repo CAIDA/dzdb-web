@@ -1,6 +1,6 @@
-.PHONY: all rall fmt tags test testv lc doc
+.PHONY: all fmt docker
 
-all: web docker
+all: web
 
 docker: Dockerfile web
 	docker build -t="lanrat/vdzweb" .
@@ -10,12 +10,3 @@ web: main.go config.go datastore.go model.go server.go app.go api.go
 
 fmt:
 	gofmt -s -w -l .
-
-tags:
-	gotags `find . -name "*.go"` > tags
-
-test:
-	go test ./...
-
-testv:
-	go test -v ./...

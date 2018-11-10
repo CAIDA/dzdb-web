@@ -14,19 +14,19 @@ var (
 	ZoneImportResultsType = "zone_import_results"
 )
 
-// JSON-API root data object
+// JSONResponse JSON-API root data object
 type JSONResponse struct {
 	Data interface{} `json:"data,omitempty"`
 }
 
-// JSON-API root error object
+// JSONErrors JSON-API root error object
 type JSONErrors struct {
 	Errors []*JSONError `json:"errors"`
 }
 
-// JSON-API error object
+// JSONError JSON-API error object
 type JSONError struct {
-	Id     string `json:"id"`
+	ID     string `json:"id"`
 	Status int    `json:"status"`
 	Title  string `json:"title"`
 	Detail string `json:"detail"`
@@ -37,7 +37,7 @@ func (err JSONError) Error() string {
 	return err.Detail
 }
 
-// Import Progress
+// ImportProgress Import Progress
 type ImportProgress struct {
 	Type    *string        `json:"type"`
 	Link    string         `json:"link"`
@@ -46,6 +46,7 @@ type ImportProgress struct {
 	Dates   [15]ImportDate `json:"dates"` // gets last 15 days
 }
 
+// ImportDate import date data
 type ImportDate struct {
 	Date *time.Time `json:"date"`
 	//TODO make duration
@@ -60,6 +61,7 @@ func (ip *ImportProgress) generateMetaData() {
 	ip.Link = "/imports"
 }
 
+// ZoneImportResults results for imports
 type ZoneImportResults struct {
 	Type  *string             `json:"type"`
 	Count int                 `json:"count"`
@@ -76,7 +78,7 @@ func (zirs *ZoneImportResults) generateMetaData() {
 
 type ZoneImportResult struct {
 	Type    *string    `json:"type"`
-	Id      int64      `json:"id"`
+	ID      int64      `json:"id"`
 	Link    string     `json:"link"`
 	Date    *time.Time `json:"date"`
 	Zone    string     `json:"zone"`
@@ -103,7 +105,7 @@ func (zir *ZoneImportResult) generateMetaData() {
 type Zone struct {
 	Type                   *string       `json:"type"`
 	Link                   string        `json:"link"`
-	Id                     int64         `json:"id"`
+	ID                     int64         `json:"id"`
 	Name                   string        `json:"name"`
 	FirstSeen              *time.Time    `json:"firstseen,omitempty"`
 	LastSeen               *time.Time    `json:"lastseen,omitempty"`
@@ -118,10 +120,10 @@ func (z *Zone) generateMetaData() {
 	z.Link = fmt.Sprintf("/zones/%s", z.Name)
 }
 
-// domain object
+// Domain domain object
 type Domain struct {
 	Type                   *string       `json:"type"`
-	Id                     int64         `json:"id"`
+	ID                     int64         `json:"id"`
 	Name                   string        `json:"name"`
 	Link                   string        `json:"link"`
 	FirstSeen              *time.Time    `json:"firstseen,omitempty"`
@@ -157,10 +159,10 @@ func (d *Domain) generateMetaData() {
 	}
 }
 
-// nameserver object
+// NameServer nameserver object
 type NameServer struct {
 	Type               *string    `json:"type"`
-	Id                 int64      `json:"id"`
+	ID                 int64      `json:"id"`
 	Name               string     `json:"name"`
 	Link               string     `json:"link"`
 	FirstSeen          *time.Time `json:"firstseen,omitempty"`
@@ -216,7 +218,7 @@ func (ns *NameServer) generateMetaData() {
 
 type IP struct {
 	Type                   *string       `json:"type"`
-	Id                     int64         `json:"id"`
+	ID                     int64         `json:"id"`
 	Name                   string        `json:"name"`
 	Version                int           `json:"version"`
 	Link                   string        `json:"link"`
