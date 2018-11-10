@@ -171,10 +171,14 @@ func (s *server) Get(path string, fn http.HandlerFunc) {
 		})
 }
 
+// TODO gorilla mux is broken https://github.com/gorilla/context/issues/32
+// move to http.Request.WithContext()
+
 func (s *server) Post(path string, fn http.HandlerFunc) {
 	handler := s.handlers.ThenFunc(fn)
 	s.router.POST(path,
 		func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+			// TODO VIAL this breaks!!!
 			context.Set(r, "params", ps)
 			handler.ServeHTTP(w, r)
 		})
