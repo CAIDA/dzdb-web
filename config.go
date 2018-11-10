@@ -24,9 +24,9 @@ type DatabaseConfig struct {
 // APIConfig API settings
 type APIConfig struct {
 	Timeout            int
-	RequestsPerMinute  int
-	RequestsMaxHistory int
-	RequestsBurst      int
+	RequestsPerMinute  int `gcfg:"requests-per-minute"`
+	RequestsMaxHistory int `gcfg:"requests-max-history"`
+	RequestsBurst      int `gcfg:"requests-burst"`
 }
 
 // Config main configuration object
