@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"html/template"
 	"net/http"
 	"strings"
@@ -175,7 +174,6 @@ func (app *appContext) domainHandler(w http.ResponseWriter, r *http.Request) {
 	//params := r.Context().Value(serverContext).(httprouter.Params)
 	params := httprouter.ParamsFromContext(r.Context())
 	domain := cleanDomain(params.ByName("domain"))
-	fmt.Println("getting param domain: ", domain)
 	data, err := app.ds.getDomain(domain)
 	if err != nil {
 		if err == ErrNoResource {
