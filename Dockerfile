@@ -1,5 +1,4 @@
-FROM alpine:3.5
-MAINTAINER ianfoster@vorsk.com
+FROM alpine:latest
 
 COPY web /app/web
 COPY templates /app/templates
