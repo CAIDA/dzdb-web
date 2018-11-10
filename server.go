@@ -14,12 +14,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gorilla/context"
 	"github.com/julienschmidt/httprouter"
 	"github.com/justinas/alice"
 	"gopkg.in/throttled/throttled.v2"
 	"gopkg.in/throttled/throttled.v2/store/memstore"
 )
+
+type serverContextType string
+
+var serverContext serverContextType = "params"
 
 // handler for catching a panic
 // returns an HTTP code 500
@@ -50,6 +53,17 @@ func loggingHandler(next http.Handler) http.Handler {
 
 	return http.HandlerFunc(fn)
 }
+
+// prints requests using the log package
+/*func addContextHandler(next http.Handler) http.Handler {
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		//TODO
+		ctx := context.WithValue(r.Context(), serverContext, *spanID)
+		r = r.WithContext(ctx)
+	}
+
+	return http.HandlerFunc(fn)
+}*/
 
 // 404 not found handler
 /*func notFoundJSON(w http.ResponseWriter, r *http.Request) {
@@ -151,7 +165,8 @@ func NewServer(config *Config) *server {
 	server.router = httprouter.New()
 	server.config = config
 	server.handlers = alice.New(
-		context.ClearHandler,
+		//context.ClearHandler,
+		//addContextHandler,
 		makeTimeoutHandler(server.config.API.Timeout),
 		loggingHandler,
 		recoverHandler,
@@ -164,11 +179,12 @@ func NewServer(config *Config) *server {
 // add a method to the router's GET handler
 func (s *server) Get(path string, fn http.HandlerFunc) {
 	handler := s.handlers.ThenFunc(fn)
-	s.router.GET(path,
-		func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-			context.Set(r, "params", ps)
-			handler.ServeHTTP(w, r)
-		})
+	s.router.Handler(http.MethodGet, path, handler)
+	/*s.router.GET(path,
+	func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+		//context.Set(r, serverContext, ps)
+		handler.ServeHTTP(w, r)
+	})*/
 }
 
 // TODO gorilla mux is broken https://github.com/gorilla/context/issues/32
@@ -176,12 +192,13 @@ func (s *server) Get(path string, fn http.HandlerFunc) {
 
 func (s *server) Post(path string, fn http.HandlerFunc) {
 	handler := s.handlers.ThenFunc(fn)
-	s.router.POST(path,
-		func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-			// TODO VIAL this breaks!!!
-			context.Set(r, "params", ps)
-			handler.ServeHTTP(w, r)
-		})
+	s.router.Handler(http.MethodPost, path, handler)
+	/*s.router.POST(path,
+	func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+		// TODO VIAL this breaks!!!
+		//context.Set(r, serverContext, ps)
+		handler.ServeHTTP(w, r)
+	})*/
 }
 
 // Starts the server

@@ -1,11 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"html/template"
 	"net/http"
 	"strings"
 
-	"github.com/gorilla/context"
 	"github.com/julienschmidt/httprouter"
 	"golang.org/x/net/idna"
 )
@@ -126,7 +126,9 @@ func (app *appContext) zoneIndexHandler(w http.ResponseWriter, r *http.Request) 
 }
 
 func (app *appContext) zoneHandler(w http.ResponseWriter, r *http.Request) {
-	params := context.Get(r, "params").(httprouter.Params)
+	//params := context.Get(r, "params").(httprouter.Params)
+	//params := r.Context().Value(serverContext).(httprouter.Params)
+	params := httprouter.ParamsFromContext(r.Context())
 	name := cleanDomain(params.ByName("zone"))
 	data, err := app.ds.getZone(name)
 	if err != nil {
@@ -146,7 +148,9 @@ func (app *appContext) zoneHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *appContext) nameserverHandler(w http.ResponseWriter, r *http.Request) {
-	params := context.Get(r, "params").(httprouter.Params)
+	//params := context.Get(r, "params").(httprouter.Params)
+	//params := r.Context().Value(serverContext).(httprouter.Params)
+	params := httprouter.ParamsFromContext(r.Context())
 	name := cleanDomain(params.ByName("nameserver"))
 	data, err := app.ds.getNameServer(name)
 	if err != nil {
@@ -167,8 +171,11 @@ func (app *appContext) nameserverHandler(w http.ResponseWriter, r *http.Request)
 
 // domainHandler returns domain object for the queried domain
 func (app *appContext) domainHandler(w http.ResponseWriter, r *http.Request) {
-	params := context.Get(r, "params").(httprouter.Params)
+	//params := context.Get(r, "params").(httprouter.Params)
+	//params := r.Context().Value(serverContext).(httprouter.Params)
+	params := httprouter.ParamsFromContext(r.Context())
 	domain := cleanDomain(params.ByName("domain"))
+	fmt.Println("getting param domain: ", domain)
 	data, err := app.ds.getDomain(domain)
 	if err != nil {
 		if err == ErrNoResource {
@@ -188,7 +195,9 @@ func (app *appContext) domainHandler(w http.ResponseWriter, r *http.Request) {
 
 // ipHandler returns ip object for the queried domain
 func (app *appContext) ipHandler(w http.ResponseWriter, r *http.Request) {
-	params := context.Get(r, "params").(httprouter.Params)
+	//params := context.Get(r, "params").(httprouter.Params)
+	//params := r.Context().Value(serverContext).(httprouter.Params)
+	params := httprouter.ParamsFromContext(r.Context())
 	name := cleanDomain(params.ByName("ip"))
 	data, err := app.ds.getIP(name)
 	if err != nil {

@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"regexp"
 
-	"github.com/gorilla/context"
 	"github.com/julienschmidt/httprouter"
 )
 
@@ -122,7 +121,9 @@ func (app *appContext) apiLatestZonesHandler(w http.ResponseWriter, r *http.Requ
 
 // domainHandler returns domain object for the queried domain
 func (app *appContext) apiDomainHandler(w http.ResponseWriter, r *http.Request) {
-	params := context.Get(r, "params").(httprouter.Params)
+	//params := context.Get(r, "params").(httprouter.Params)
+	//params := r.Context().Value(serverContext).(httprouter.Params)
+	params := httprouter.ParamsFromContext(r.Context())
 	domain := cleanDomain(params.ByName("domain"))
 	data, err1 := app.ds.getDomain(domain)
 	if err1 != nil {
@@ -138,7 +139,8 @@ func (app *appContext) apiDomainHandler(w http.ResponseWriter, r *http.Request) 
 }
 
 func (app *appContext) apiIPHandler(w http.ResponseWriter, r *http.Request) {
-	params := context.Get(r, "params").(httprouter.Params)
+	//params := context.Get(r, "params").(httprouter.Params)
+	params := r.Context().Value(serverContext).(httprouter.Params)
 	ip := cleanDomain(params.ByName("ip"))
 	data, err := app.ds.getIP(ip)
 	if err != nil {
@@ -154,7 +156,9 @@ func (app *appContext) apiIPHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *appContext) apiZoneHandler(w http.ResponseWriter, r *http.Request) {
-	params := context.Get(r, "params").(httprouter.Params)
+	//params := context.Get(r, "params").(httprouter.Params)
+	//params := r.Context().Value(serverContext).(httprouter.Params)
+	params := httprouter.ParamsFromContext(r.Context())
 	domain := cleanDomain(params.ByName("zone"))
 	data, err1 := app.ds.getZone(domain)
 	if err1 != nil {
@@ -181,7 +185,9 @@ func (app *appContext) apiRandomDomainHandler(w http.ResponseWriter, r *http.Req
 
 // nameserverHandler returns nameserver object for the queried domain
 func (app *appContext) apiNameserverHandler(w http.ResponseWriter, r *http.Request) {
-	params := context.Get(r, "params").(httprouter.Params)
+	//params := context.Get(r, "params").(httprouter.Params)
+	//params := r.Context().Value(serverContext).(httprouter.Params)
+	params := httprouter.ParamsFromContext(r.Context())
 	domain := cleanDomain(params.ByName("domain"))
 
 	data, err1 := app.ds.getNameServer(domain)
