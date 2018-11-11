@@ -2,7 +2,7 @@
 CC := CGO_ENABLED=0 go build -a -installsuffix cgo
 
 MODULE_SOURCES := $(shell find */ -type f -name '*.go' )
-SOURCES := $(shell find . -type f -name '*.go' -maxdepth 1)
+SOURCES := $(shell find . -maxdepth 1 -type f -name '*.go')
 BIN := web
 
 .PHONY: all fmt docker clean
