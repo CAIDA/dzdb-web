@@ -1,4 +1,4 @@
-package main
+package datastore
 
 import (
 	"database/sql"
@@ -7,7 +7,10 @@ import (
 	"math/rand"
 	"os"
 
-	_ "github.com/lib/pq"
+	"vdz-web/config"
+	"vdz-web/model"
+
+	_ "github.com/lib/pq" // for postgresql
 )
 
 //TODO prepaired statements
@@ -15,8 +18,8 @@ import (
 // ErrNoResource a 404 for a vdz resource
 var ErrNoResource = errors.New("the requested object does not exist")
 
-// connects to the Postgresql database
-func getDB(cfg *DatabaseConfig) (*sql.DB, error) {
+// connectDB connects to the Postgresql database
+func connectDB(cfg *config.DatabaseConfig) (*sql.DB, error) {
 	os.Clearenv() /* because there is a bug when PGHOSTADDR is set */
 	connStr := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
 		cfg.Host,
@@ -43,10 +46,10 @@ type DataStore struct {
 	db *sql.DB
 }
 
-// NewDataStore Creates a new DataStore with the provided database configuration
+// New Creates a new DataStore with the provided database configuration
 // connects to the database on creation
-func NewDataStore(cfg *DatabaseConfig) (*DataStore, error) {
-	db, err := getDB(cfg)
+func New(cfg *config.DatabaseConfig) (*DataStore, error) {
+	db, err := connectDB(cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +69,8 @@ func (ds *DataStore) Close() error {
 	return ds.db.Close()
 }
 
-func (ds *DataStore) getDomainID(domain string) (int64, int64, error) {
+// GetDomainID gets the domain's ID and domain's zone's ID
+func (ds *DataStore) GetDomainID(domain string) (int64, int64, error) {
 	var id, zoneID int64
 	err := ds.db.QueryRow("SELECT id, zone_id FROM domains WHERE domain = $1", domain).Scan(&id, &zoneID)
 	if err == sql.ErrNoRows {
@@ -75,7 +79,8 @@ func (ds *DataStore) getDomainID(domain string) (int64, int64, error) {
 	return id, zoneID, err
 }
 
-func (ds *DataStore) getIPID(ip string) (int64, int, error) {
+// GetIPID gets the IPs ID, and the version (4 or 6)
+func (ds *DataStore) GetIPID(ip string) (int64, int, error) {
 	var id int64
 	var version = 4
 	err := ds.db.QueryRow("SELECT id FROM a WHERE ip = $1", ip).Scan(&id)
@@ -89,7 +94,8 @@ func (ds *DataStore) getIPID(ip string) (int64, int, error) {
 	return id, version, err
 }
 
-func (ds *DataStore) getZoneID(name string) (int64, error) {
+// GetZoneID gets the zoneID with the given name
+func (ds *DataStore) GetZoneID(name string) (int64, error) {
 	var id int64
 	err := ds.db.QueryRow("select id from zones where zone = $1 limit 1", name).Scan(&id)
 	if err == sql.ErrNoRows {
@@ -98,11 +104,12 @@ func (ds *DataStore) getZoneID(name string) (int64, error) {
 	return id, err
 }
 
-func (ds *DataStore) getZone(name string) (*Zone, error) {
-	var z Zone
+// GetZone gets the Zone with the given name
+func (ds *DataStore) GetZone(name string) (*model.Zone, error) {
+	var z model.Zone
 	var err error
 
-	z.ID, err = ds.getZoneID(name)
+	z.ID, err = ds.GetZoneID(name)
 	if err != nil {
 		return nil, err
 	}
@@ -136,9 +143,9 @@ func (ds *DataStore) getZone(name string) (*Zone, error) {
 		return nil, err
 	}
 	defer rows.Close()
-	z.NameServers = make([]*NameServer, 0, 4)
+	z.NameServers = make([]*model.NameServer, 0, 4)
 	for rows.Next() {
-		var ns NameServer
+		var ns model.NameServer
 		err = rows.Scan(&ns.ID, &ns.Name, &ns.FirstSeen, &ns.LastSeen)
 		if err != nil {
 			return nil, err
@@ -152,9 +159,9 @@ func (ds *DataStore) getZone(name string) (*Zone, error) {
 		return nil, err
 	}
 	defer archiveRows.Close()
-	z.ArchiveNameServers = make([]*NameServer, 0, 4)
+	z.ArchiveNameServers = make([]*model.NameServer, 0, 4)
 	for archiveRows.Next() {
-		var ns NameServer
+		var ns model.NameServer
 		err = archiveRows.Scan(&ns.ID, &ns.Name, &ns.FirstSeen, &ns.LastSeen)
 		if err != nil {
 			return nil, err
@@ -165,7 +172,8 @@ func (ds *DataStore) getZone(name string) (*Zone, error) {
 	return &z, err
 }
 
-func (ds *DataStore) getNameServerID(domain string) (int64, error) {
+// GetNameServerID given a nameserver, find its ID
+func (ds *DataStore) GetNameServerID(domain string) (int64, error) {
 	var id int64
 	err := ds.db.QueryRow("SELECT id FROM nameservers WHERE domain = $1", domain).Scan(&id)
 	if err == sql.ErrNoRows {
@@ -174,11 +182,11 @@ func (ds *DataStore) getNameServerID(domain string) (int64, error) {
 	return id, err
 }
 
-// gets information for the provided domain
-func (ds *DataStore) getDomain(domain string) (*Domain, error) {
-	var d Domain
+// GetDomain gets information for the provided domain
+func (ds *DataStore) GetDomain(domain string) (*model.Domain, error) {
+	var d model.Domain
 	var err error
-	d.ID, d.Zone.ID, err = ds.getDomainID(domain)
+	d.ID, d.Zone.ID, err = ds.GetDomainID(domain)
 	if err != nil {
 		return nil, err
 	}
@@ -218,9 +226,9 @@ func (ds *DataStore) getDomain(domain string) (*Domain, error) {
 		return nil, err
 	}
 	defer rows.Close()
-	d.NameServers = make([]*NameServer, 0, 4)
+	d.NameServers = make([]*model.NameServer, 0, 4)
 	for rows.Next() {
-		var ns NameServer
+		var ns model.NameServer
 		err = rows.Scan(&ns.ID, &ns.Name, &ns.FirstSeen, &ns.LastSeen)
 		if err != nil {
 			return nil, err
@@ -234,9 +242,9 @@ func (ds *DataStore) getDomain(domain string) (*Domain, error) {
 		return nil, err
 	}
 	defer archiveRows.Close()
-	d.ArchiveNameServers = make([]*NameServer, 0, 4)
+	d.ArchiveNameServers = make([]*model.NameServer, 0, 4)
 	for archiveRows.Next() {
-		var ns NameServer
+		var ns model.NameServer
 		err = archiveRows.Scan(&ns.ID, &ns.Name, &ns.FirstSeen, &ns.LastSeen)
 		if err != nil {
 			return nil, err
@@ -247,21 +255,21 @@ func (ds *DataStore) getDomain(domain string) (*Domain, error) {
 	return &d, nil
 }
 
-// gets the number of domains in the system
-func (ds *DataStore) getDomainCount() (int64, error) {
+// GetDomainCount gets the number of domains in the system (approx)
+func (ds *DataStore) GetDomainCount() (int64, error) {
 	row := ds.db.QueryRow("SELECT max(id) from domains;")
 	var count int64
 	err := row.Scan(&count)
 	return count, err
 }
 
-// finds a random active domain
-func (ds *DataStore) getRandomDomain() (*Domain, error) {
-	count, err := ds.getDomainCount()
+// GetRandomDomain finds a random active domain
+func (ds *DataStore) GetRandomDomain() (*model.Domain, error) {
+	count, err := ds.GetDomainCount()
 	if err != nil {
 		return nil, err
 	}
-	var domain Domain
+	var domain model.Domain
 	err = sql.ErrNoRows
 	for err == sql.ErrNoRows {
 		rid := rand.Int63n(count)
@@ -277,9 +285,10 @@ func (ds *DataStore) getRandomDomain() (*Domain, error) {
 	return &domain, nil
 }
 
-func (ds *DataStore) getZoneImportResults() (*ZoneImportResults, error) {
-	var zoneImportResults ZoneImportResults
-	zoneImportResults.Zones = make([]*ZoneImportResult, 0, 100)
+// GetZoneImportResults gets the most-recent recent ZoneImportResults for every zone (slow?)
+func (ds *DataStore) GetZoneImportResults() (*model.ZoneImportResults, error) {
+	var zoneImportResults model.ZoneImportResults
+	zoneImportResults.Zones = make([]*model.ZoneImportResult, 0, 100)
 
 	rows, err := ds.db.Query("select id, date, zone, records, domains, duration, old, moved, new, old_ns, new_ns, old_a, new_a, old_aaaa, new_aaaa from import_progress;")
 	if err != nil {
@@ -287,7 +296,7 @@ func (ds *DataStore) getZoneImportResults() (*ZoneImportResults, error) {
 	}
 
 	for rows.Next() {
-		var r ZoneImportResult
+		var r model.ZoneImportResult
 		err = rows.Scan(&r.ID, &r.Date, &r.Zone, &r.Records, &r.Domains, &r.Duration, &r.Old, &r.Moved, &r.New, &r.NewNs, &r.OldNs, &r.NewA, &r.OldA, &r.NewAaaa, &r.OldAaaa)
 		if err != nil {
 			return nil, err
@@ -299,8 +308,9 @@ func (ds *DataStore) getZoneImportResults() (*ZoneImportResults, error) {
 	return &zoneImportResults, nil
 }
 
-func (ds *DataStore) getImportProgress() (*ImportProgress, error) {
-	var ip ImportProgress
+// GetImportProgress gets information on the progress of unimported zones
+func (ds *DataStore) GetImportProgress() (*model.ImportProgress, error) {
+	var ip model.ImportProgress
 	err := ds.db.QueryRow("select count(*) imports, count(distinct date) days from unimported").Scan(&ip.Imports, &ip.Days)
 	if err != nil {
 		return nil, err
@@ -324,11 +334,11 @@ func (ds *DataStore) getImportProgress() (*ImportProgress, error) {
 	return &ip, nil
 }
 
-// gets information for the provided nameserver
-func (ds *DataStore) getNameServer(domain string) (*NameServer, error) {
-	var ns NameServer
+// GetNameServer gets information for the provided nameserver
+func (ds *DataStore) GetNameServer(domain string) (*model.NameServer, error) {
+	var ns model.NameServer
 	var err error
-	ns.ID, err = ds.getNameServerID(domain)
+	ns.ID, err = ds.GetNameServerID(domain)
 	if err != nil {
 		return nil, err
 	}
@@ -365,9 +375,9 @@ func (ds *DataStore) getNameServer(domain string) (*NameServer, error) {
 		return nil, err
 	}
 	defer rows.Close()
-	ns.Domains = make([]*Domain, 0, 4)
+	ns.Domains = make([]*model.Domain, 0, 4)
 	for rows.Next() {
-		var d Domain
+		var d model.Domain
 		err = rows.Scan(&d.ID, &d.Name, &d.FirstSeen, &d.LastSeen)
 		if err != nil {
 			return nil, err
@@ -381,9 +391,9 @@ func (ds *DataStore) getNameServer(domain string) (*NameServer, error) {
 		return nil, err
 	}
 	defer archiveRows.Close()
-	ns.ArchiveDomains = make([]*Domain, 0, 4)
+	ns.ArchiveDomains = make([]*model.Domain, 0, 4)
 	for archiveRows.Next() {
-		var d Domain
+		var d model.Domain
 		err = archiveRows.Scan(&d.ID, &d.Name, &d.FirstSeen, &d.LastSeen)
 		if err != nil {
 			return nil, err
@@ -409,9 +419,9 @@ func (ds *DataStore) getNameServer(domain string) (*NameServer, error) {
 		return nil, err
 	}
 	defer rows.Close()
-	ns.IP4 = make([]*IP4, 0, 4)
+	ns.IP4 = make([]*model.IP4, 0, 4)
 	for rows.Next() {
-		var ip IP4
+		var ip model.IP4
 		err = rows.Scan(&ip.ID, &ip.Name, &ip.FirstSeen, &ip.LastSeen)
 		if err != nil {
 			return nil, err
@@ -426,9 +436,9 @@ func (ds *DataStore) getNameServer(domain string) (*NameServer, error) {
 		return nil, err
 	}
 	defer rows.Close()
-	ns.ArchiveIP4 = make([]*IP4, 0, 4)
+	ns.ArchiveIP4 = make([]*model.IP4, 0, 4)
 	for rows.Next() {
-		var ip IP4
+		var ip model.IP4
 		err = rows.Scan(&ip.ID, &ip.Name, &ip.FirstSeen, &ip.LastSeen)
 		if err != nil {
 			return nil, err
@@ -455,9 +465,9 @@ func (ds *DataStore) getNameServer(domain string) (*NameServer, error) {
 		return nil, err
 	}
 	defer rows.Close()
-	ns.IP6 = make([]*IP6, 0, 4)
+	ns.IP6 = make([]*model.IP6, 0, 4)
 	for rows.Next() {
-		var ip IP6
+		var ip model.IP6
 		err = rows.Scan(&ip.ID, &ip.Name, &ip.FirstSeen, &ip.LastSeen)
 		if err != nil {
 			return nil, err
@@ -472,9 +482,9 @@ func (ds *DataStore) getNameServer(domain string) (*NameServer, error) {
 		return nil, err
 	}
 	defer rows.Close()
-	ns.ArchiveIP6 = make([]*IP6, 0, 4)
+	ns.ArchiveIP6 = make([]*model.IP6, 0, 4)
 	for rows.Next() {
-		var ip IP6
+		var ip model.IP6
 		err = rows.Scan(&ip.ID, &ip.Name, &ip.FirstSeen, &ip.LastSeen)
 		if err != nil {
 			return nil, err
@@ -486,11 +496,11 @@ func (ds *DataStore) getNameServer(domain string) (*NameServer, error) {
 	return &ns, nil
 }
 
-// gets information for the provided domain
-func (ds *DataStore) getIP(name string) (*IP, error) {
-	var ip IP
+// GetIP gets information for the provided IP
+func (ds *DataStore) GetIP(name string) (*model.IP, error) {
+	var ip model.IP
 	var err error
-	ip.ID, ip.Version, err = ds.getIPID(name)
+	ip.ID, ip.Version, err = ds.GetIPID(name)
 	if err != nil {
 		return nil, err
 	}
@@ -525,9 +535,9 @@ func (ds *DataStore) getIP(name string) (*IP, error) {
 			return nil, err
 		}
 		defer rows.Close()
-		ip.NameServers = make([]*NameServer, 0, 4)
+		ip.NameServers = make([]*model.NameServer, 0, 4)
 		for rows.Next() {
-			var ns NameServer
+			var ns model.NameServer
 			err = rows.Scan(&ns.ID, &ns.Name, &ns.FirstSeen, &ns.LastSeen)
 			if err != nil {
 				return nil, err
@@ -541,9 +551,9 @@ func (ds *DataStore) getIP(name string) (*IP, error) {
 			return nil, err
 		}
 		defer rows.Close()
-		ip.ArchiveNameServers = make([]*NameServer, 0, 4)
+		ip.ArchiveNameServers = make([]*model.NameServer, 0, 4)
 		for rows.Next() {
-			var ns NameServer
+			var ns model.NameServer
 			err = rows.Scan(&ns.ID, &ns.Name, &ns.FirstSeen, &ns.LastSeen)
 			if err != nil {
 				return nil, err
@@ -579,9 +589,9 @@ func (ds *DataStore) getIP(name string) (*IP, error) {
 			return nil, err
 		}
 		defer rows.Close()
-		ip.NameServers = make([]*NameServer, 0, 4)
+		ip.NameServers = make([]*model.NameServer, 0, 4)
 		for rows.Next() {
-			var ns NameServer
+			var ns model.NameServer
 			err = rows.Scan(&ns.ID, &ns.Name, &ns.FirstSeen, &ns.LastSeen)
 			if err != nil {
 				return nil, err
@@ -595,9 +605,9 @@ func (ds *DataStore) getIP(name string) (*IP, error) {
 			return nil, err
 		}
 		defer rows.Close()
-		ip.ArchiveNameServers = make([]*NameServer, 0, 4)
+		ip.ArchiveNameServers = make([]*model.NameServer, 0, 4)
 		for rows.Next() {
-			var ns NameServer
+			var ns model.NameServer
 			err = rows.Scan(&ns.ID, &ns.Name, &ns.FirstSeen, &ns.LastSeen)
 			if err != nil {
 				return nil, err

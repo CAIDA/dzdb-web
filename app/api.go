@@ -1,17 +1,19 @@
-package main
+package app
 
 import (
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"regexp"
+	"vdz-web/datastore"
+	"vdz-web/server"
 
 	"github.com/julienschmidt/httprouter"
 )
 
 // APIStart entry point for starting application
 // adds routes to the server so that the correct handlers are registered
-func APIStart(app *appContext, server *server) {
+func APIStart(app *appContext, vdzServer *server.Server) {
 	app.api = make(map[string]string)
 
 	// Adds a method to the router's GET handler but also adds it to the API index map
@@ -20,11 +22,11 @@ func APIStart(app *appContext, server *server) {
 		re := regexp.MustCompile(":[a-zA-Z0-9_]*")
 		paramPath := re.ReplaceAllStringFunc(path, func(s string) string { return fmt.Sprintf("{%s}", s[1:]) })
 		if fn == nil {
-			fn = HandlerNotImplemented
+			fn = server.HandlerNotImplemented
 			description = fmt.Sprintf("[WIP] %s", description)
 		}
 		app.api[description] = paramPath
-		server.Get("/api"+path, fn)
+		vdzServer.Get("/api"+path, fn)
 	}
 
 	// imports
@@ -93,116 +95,109 @@ func APIStart(app *appContext, server *server) {
 	//addAPI("/feeds/moved/:year/:month/:day/page/:page", "feeds_moved_date_paged", nil)
 
 	// API index
-	server.Get("/api/", app.apiIndex)
+	vdzServer.Get("/api/", app.apiIndex)
 }
 
 //TODO expand
 func (app *appContext) apiImportStatusHandler(w http.ResponseWriter, r *http.Request) {
-	ip, err := app.ds.getImportProgress()
+	ip, err := app.ds.GetImportProgress()
 	if err != nil {
 		panic(err)
 	}
 
-	ip.generateMetaData()
-	WriteJSON(w, ip)
+	ip.GenerateMetaData()
+	server.WriteJSON(w, ip)
 }
 
 //TODO expand
 func (app *appContext) apiLatestZonesHandler(w http.ResponseWriter, r *http.Request) {
-	zoneImportResults, err := app.ds.getZoneImportResults()
+	zoneImportResults, err := app.ds.GetZoneImportResults()
 	if err != nil {
 		panic(err)
 	}
 
-	zoneImportResults.generateMetaData()
+	zoneImportResults.GenerateMetaData()
 
-	WriteJSON(w, zoneImportResults)
+	server.WriteJSON(w, zoneImportResults)
 }
 
 // domainHandler returns domain object for the queried domain
 func (app *appContext) apiDomainHandler(w http.ResponseWriter, r *http.Request) {
-	//params := context.Get(r, "params").(httprouter.Params)
-	//params := r.Context().Value(serverContext).(httprouter.Params)
 	params := httprouter.ParamsFromContext(r.Context())
 	domain := cleanDomain(params.ByName("domain"))
-	data, err1 := app.ds.getDomain(domain)
+	data, err1 := app.ds.GetDomain(domain)
 	if err1 != nil {
-		if err1 == ErrNoResource {
-			WriteJSONError(w, ErrResourceNotFound)
+		if err1 == datastore.ErrNoResource {
+			server.WriteJSONError(w, server.ErrResourceNotFound)
 			return
 		}
 		panic(err1)
 	}
 
-	data.generateMetaData()
-	WriteJSON(w, data)
+	data.GenerateMetaData()
+	server.WriteJSON(w, data)
 }
 
 func (app *appContext) apiIPHandler(w http.ResponseWriter, r *http.Request) {
-	//params := context.Get(r, "params").(httprouter.Params)
-	params := r.Context().Value(serverContext).(httprouter.Params)
+	params := httprouter.ParamsFromContext(r.Context())
 	ip := cleanDomain(params.ByName("ip"))
-	data, err := app.ds.getIP(ip)
+	data, err := app.ds.GetIP(ip)
 	if err != nil {
-		if err == ErrNoResource {
-			WriteJSONError(w, ErrResourceNotFound)
+		if err == datastore.ErrNoResource {
+			server.WriteJSONError(w, server.ErrResourceNotFound)
 			return
 		}
 		panic(err)
 	}
 
-	data.generateMetaData()
-	WriteJSON(w, data)
+	data.GenerateMetaData()
+	server.WriteJSON(w, data)
 }
 
 func (app *appContext) apiZoneHandler(w http.ResponseWriter, r *http.Request) {
-	//params := context.Get(r, "params").(httprouter.Params)
-	//params := r.Context().Value(serverContext).(httprouter.Params)
 	params := httprouter.ParamsFromContext(r.Context())
 	domain := cleanDomain(params.ByName("zone"))
-	data, err1 := app.ds.getZone(domain)
+	data, err1 := app.ds.GetZone(domain)
 	if err1 != nil {
-		if err1 == ErrNoResource {
-			WriteJSONError(w, ErrResourceNotFound)
+		if err1 == datastore.ErrNoResource {
+			server.WriteJSONError(w, server.ErrResourceNotFound)
 			return
 		}
 		panic(err1)
 	}
 
-	data.generateMetaData()
-	WriteJSON(w, data)
+	data.GenerateMetaData()
+	server.WriteJSON(w, data)
 }
 
 // randomDomainHandler returns a random domain from the system
 func (app *appContext) apiRandomDomainHandler(w http.ResponseWriter, r *http.Request) {
-	domain, err := app.ds.getRandomDomain()
+	domain, err := app.ds.GetRandomDomain()
 	if err != nil {
 		panic(err)
 	}
-	domain.generateMetaData()
-	WriteJSON(w, domain)
+	domain.GenerateMetaData()
+	server.WriteJSON(w, domain)
 }
 
 // nameserverHandler returns nameserver object for the queried domain
 func (app *appContext) apiNameserverHandler(w http.ResponseWriter, r *http.Request) {
-	//params := context.Get(r, "params").(httprouter.Params)
-	//params := r.Context().Value(serverContext).(httprouter.Params)
 	params := httprouter.ParamsFromContext(r.Context())
 	domain := cleanDomain(params.ByName("domain"))
 
-	data, err1 := app.ds.getNameServer(domain)
+	data, err1 := app.ds.GetNameServer(domain)
 	if err1 != nil {
 		//TODO combine common code below
-		if err1 == ErrNoResource {
-			WriteJSONError(w, ErrResourceNotFound)
+		if err1 == datastore.ErrNoResource {
+			server.WriteJSONError(w, server.ErrResourceNotFound)
 			return
 		}
 
 		panic(err1)
 	}
 
-	data.generateMetaData()
-	WriteJSON(w, data)
+	data.GenerateMetaData()
+	server.WriteJSON(w, data)
 }
 
 // API Index handler

@@ -1,4 +1,4 @@
-package main
+package model
 
 import (
 	"fmt"
@@ -6,12 +6,12 @@ import (
 )
 
 var (
-	DomainType            = "domain"
-	NameServerType        = "nameserver"
-	IPType                = "ip"
-	ImportProgressType    = "import_progress"
-	ZoneImportResultType  = "zone_import_result"
-	ZoneImportResultsType = "zone_import_results"
+	domainType            = "domain"
+	nameServerType        = "nameserver"
+	ipType                = "ip"
+	importProgressType    = "import_progress"
+	zoneImportResultType  = "zone_import_result"
+	zoneImportResultsType = "zone_import_results"
 )
 
 // JSONResponse JSON-API root data object
@@ -30,6 +30,17 @@ type JSONError struct {
 	Status int    `json:"status"`
 	Title  string `json:"title"`
 	Detail string `json:"detail"`
+}
+
+// NewJSONError returns a New JSONError
+func NewJSONError(id string, status int, title, detail string) *JSONError {
+	jsonErr := &JSONError{
+		ID:     id,
+		Status: status,
+		Title:  title,
+		Detail: detail,
+	}
+	return jsonErr
 }
 
 // Err implements the error interface.
@@ -55,8 +66,9 @@ type ImportDate struct {
 	Count uint64 `json:"count"`
 }
 
-func (ip *ImportProgress) generateMetaData() {
-	ip.Type = &ImportProgressType
+// GenerateMetaData generates metadata recursively of member models
+func (ip *ImportProgress) GenerateMetaData() {
+	ip.Type = &importProgressType
 	//ip.Link = "/imports/status"
 	ip.Link = "/imports"
 }
@@ -68,14 +80,16 @@ type ZoneImportResults struct {
 	Zones []*ZoneImportResult `json:"zones"`
 }
 
-func (zirs *ZoneImportResults) generateMetaData() {
-	zirs.Type = &ZoneImportResultsType
+// GenerateMetaData generates metadata recursively of member models
+func (zirs *ZoneImportResults) GenerateMetaData() {
+	zirs.Type = &zoneImportResultsType
 
 	for _, v := range zirs.Zones {
-		v.generateMetaData()
+		v.GenerateMetaData()
 	}
 }
 
+// ZoneImportResult holds data about the results of a single import
 type ZoneImportResult struct {
 	Type    *string    `json:"type"`
 	ID      int64      `json:"id"`
@@ -97,11 +111,13 @@ type ZoneImportResult struct {
 	OldAaaa  *int64  `json:"aaaa_old"`
 }
 
-func (zir *ZoneImportResult) generateMetaData() {
-	zir.Type = &ZoneImportResultType
+// GenerateMetaData generates metadata recursively of member models
+func (zir *ZoneImportResult) GenerateMetaData() {
+	zir.Type = &zoneImportResultType
 	zir.Link = fmt.Sprintf("/zones/%s", zir.Zone)
 }
 
+// Zone holds information about a zone
 type Zone struct {
 	Type                   *string       `json:"type"`
 	Link                   string        `json:"link"`
@@ -115,8 +131,9 @@ type Zone struct {
 	ArchiveNameServerCount *int64        `json:"archive_nameserver_count,omitempty"`
 }
 
-func (z *Zone) generateMetaData() {
-	z.Type = &DomainType
+// GenerateMetaData generates metadata recursively of member models
+func (z *Zone) GenerateMetaData() {
+	z.Type = &domainType
 	z.Link = fmt.Sprintf("/zones/%s", z.Name)
 }
 
@@ -135,26 +152,18 @@ type Domain struct {
 	Zone                   Zone
 }
 
-/*func NewDomain(id int64, domain, string) *Domain {
-	d :=Domain{}
-	d.Id = id
-	d.Domain = domain
-	d.NameServers = make([]*NameServer, 0, 4)
-	d.ArchiveNameServers = make([]*NameServer, 0, 4)
-	return &d
-}*/
-
-func (d *Domain) generateMetaData() {
-	d.Type = &DomainType
+// GenerateMetaData generates metadata recursively of member models
+func (d *Domain) GenerateMetaData() {
+	d.Type = &domainType
 	d.Link = fmt.Sprintf("/domains/%s", d.Name)
 	for _, ns := range d.NameServers {
 		if ns.Type == nil {
-			ns.generateMetaData()
+			ns.GenerateMetaData()
 		}
 	}
 	for _, ns := range d.ArchiveNameServers {
 		if ns.Type == nil {
-			ns.generateMetaData()
+			ns.GenerateMetaData()
 		}
 	}
 }
@@ -181,41 +190,43 @@ type NameServer struct {
 	ArchiveIP6Count    *int64     `json:"archive_ipv6_count,omitempty"`
 }
 
-func (ns *NameServer) generateMetaData() {
-	ns.Type = &NameServerType
+// GenerateMetaData generates metadata recursively of member models
+func (ns *NameServer) GenerateMetaData() {
+	ns.Type = &nameServerType
 	ns.Link = fmt.Sprintf("/nameservers/%s", ns.Name)
 	for _, d := range ns.Domains {
 		if d.Type == nil {
-			d.generateMetaData()
+			d.GenerateMetaData()
 		}
 	}
 	for _, d := range ns.ArchiveDomains {
 		if d.Type == nil {
-			d.generateMetaData()
+			d.GenerateMetaData()
 		}
 	}
 	for _, ip := range ns.IP4 {
 		if ip.Type == nil {
-			ip.generateMetaData()
+			ip.GenerateMetaData()
 		}
 	}
 	for _, ip := range ns.ArchiveIP4 {
 		if ip.Type == nil {
-			ip.generateMetaData()
+			ip.GenerateMetaData()
 		}
 	}
 	for _, ip := range ns.IP6 {
 		if ip.Type == nil {
-			ip.generateMetaData()
+			ip.GenerateMetaData()
 		}
 	}
 	for _, ip := range ns.ArchiveIP6 {
 		if ip.Type == nil {
-			ip.generateMetaData()
+			ip.GenerateMetaData()
 		}
 	}
 }
 
+// IP holds information about an IP address
 type IP struct {
 	Type                   *string       `json:"type"`
 	ID                     int64         `json:"id"`
@@ -230,25 +241,28 @@ type IP struct {
 	ArchiveNameServerCount *int64        `json:"archive_nameserver_count,omitempty"`
 }
 
+// IP4 is an alias to the IP type
 type IP4 struct {
 	IP
 }
 
+// IP6 is an alias to the IP type
 type IP6 struct {
 	IP
 }
 
-func (ip *IP) generateMetaData() {
-	ip.Type = &IPType
+// GenerateMetaData generates metadata recursively of member models
+func (ip *IP) GenerateMetaData() {
+	ip.Type = &ipType
 	ip.Link = fmt.Sprintf("/ip/%s", ip.Name)
 	for _, ns := range ip.NameServers {
 		if ns.Type == nil {
-			ns.generateMetaData()
+			ns.GenerateMetaData()
 		}
 	}
 	for _, ns := range ip.ArchiveNameServers {
 		if ns.Type == nil {
-			ns.generateMetaData()
+			ns.GenerateMetaData()
 		}
 	}
 }

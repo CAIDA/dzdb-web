@@ -1,4 +1,4 @@
-package main
+package config
 
 import (
 	"gopkg.in/gcfg.v1"
@@ -36,9 +36,9 @@ type Config struct {
 	API        APIConfig
 }
 
-// GetConfig parses the configuration file identified by file
+// Parse parses the configuration file identified by file
 // and returns a Config object
-func GetConfig(file string) (*Config, error) {
+func Parse(file string) (*Config, error) {
 	var cfg Config
 	err := gcfg.ReadFileInto(&cfg, file)
 	return &cfg, err

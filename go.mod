@@ -1,4 +1,4 @@
-module github.com/lanrat/vdz-web
+module vdz-web
 
 require (
 	github.com/gomodule/redigo v2.0.0+incompatible // indirect
