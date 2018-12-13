@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"net"
 	"os"
 
 	"vdz-web/config"
@@ -80,18 +81,30 @@ func (ds *DataStore) GetDomainID(domain string) (int64, int64, error) {
 }
 
 // GetIPID gets the IPs ID, and the version (4 or 6)
-func (ds *DataStore) GetIPID(ip string) (int64, int, error) {
+func (ds *DataStore) GetIPID(ipStr string) (int64, int, error) {
 	var id int64
-	var version = 4
-	err := ds.db.QueryRow("SELECT id FROM a WHERE ip = $1", ip).Scan(&id)
-	if err == sql.ErrNoRows {
-		version = 6
-		err = ds.db.QueryRow("SELECT id FROM aaaa WHERE ip = $1", ip).Scan(&id)
+	var version int
+	var err error
+	ip := net.ParseIP(ipStr)
+	if ip.To4() != nil {
+		version = 4
+		// TODO use native golang types
+		// https://github.com/lib/pq/pull/390
+		err = ds.db.QueryRow("SELECT id FROM a WHERE ip = $1", ip.String()).Scan(&id)
 		if err == sql.ErrNoRows {
 			err = ErrNoResource
 		}
+		return id, version, err
 	}
-	return id, version, err
+	if ip.To16() != nil {
+		version = 6
+		err = ds.db.QueryRow("SELECT id FROM aaaa WHERE ip = $1", ip.String()).Scan(&id)
+		if err == sql.ErrNoRows {
+			err = ErrNoResource
+		}
+		return id, version, err
+	}
+	return -1, 0, ErrNoResource
 }
 
 // GetZoneID gets the zoneID with the given name
@@ -315,7 +328,7 @@ func (ds *DataStore) GetImportProgress() (*model.ImportProgress, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	// TODO cache this, materialized view?
 	rows, err := ds.db.Query("select * from import_date_timer limit $1", len(ip.Dates))
 	if err != nil {
 		return nil, err
