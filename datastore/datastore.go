@@ -316,7 +316,7 @@ func (ds *DataStore) GetImportProgress() (*model.ImportProgress, error) {
 		return nil, err
 	}
 
-	rows, err := ds.db.Query("select * from import_date_timer limit $1", len(ip.Dates))
+	rows, err := ds.db.Query("select date, took, count from import_date_timer_view limit $1", len(ip.Dates))
 	if err != nil {
 		return nil, err
 	}
