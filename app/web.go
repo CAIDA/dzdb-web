@@ -250,6 +250,7 @@ func (app *appContext) ipIndexHandler(w http.ResponseWriter, r *http.Request) {
 
 // helper
 func cleanDomain(domain string) string {
+	domain = strings.TrimSpace(domain)
 	domain, err := idna.ToASCII(strings.ToUpper(domain))
 	if err != nil {
 		panic(err)
