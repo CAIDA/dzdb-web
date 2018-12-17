@@ -7,7 +7,7 @@ require (
 	github.com/justinas/alice v0.0.0-20171023064455-03f45bd4b7da
 	github.com/lib/pq v1.0.0
 	github.com/throttled/throttled v2.2.4+incompatible // indirect
-	golang.org/x/net v0.0.0-20181201002055-351d144fa1fc
+	golang.org/x/net v0.0.0-20181213202711-891ebc4b82d6
 	golang.org/x/text v0.3.0 // indirect
 	gopkg.in/gcfg.v1 v1.2.3
 	gopkg.in/throttled/throttled.v2 v2.2.4
