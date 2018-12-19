@@ -303,7 +303,7 @@ func (ds *DataStore) GetZoneImportResults() (*model.ZoneImportResults, error) {
 	var zoneImportResults model.ZoneImportResults
 	zoneImportResults.Zones = make([]*model.ZoneImportResult, 0, 100)
 
-	rows, err := ds.db.Query("select id, date, zone, records, domains, duration, old, moved, new, old_ns, new_ns, old_a, new_a, old_aaaa, new_aaaa from import_progress_view;")
+	rows, err := ds.db.Query("select id, date, zone, records, domains, duration, old, moved, new, old_ns, new_ns, old_a, new_a, old_aaaa, new_aaaa from import_progress_view order by zone asc")
 	if err != nil {
 		return nil, err
 	}
@@ -329,7 +329,7 @@ func (ds *DataStore) GetImportProgress() (*model.ImportProgress, error) {
 		return nil, err
 	}
 
-	rows, err := ds.db.Query("select date, took, count from import_date_timer_view limit $1", len(ip.Dates))
+	rows, err := ds.db.Query("select date, took, count from import_date_timer_view order by date desc limit $1", len(ip.Dates))
 	if err != nil {
 		return nil, err
 	}
