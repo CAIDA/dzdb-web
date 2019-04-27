@@ -11,6 +11,7 @@ import (
 // main
 func main() {
 	// get configuration
+	// TODO move to env vars
 	config, err := config.Parse("config.ini")
 	if err != nil {
 		log.Fatal(err)

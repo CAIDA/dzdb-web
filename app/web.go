@@ -10,6 +10,7 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	"golang.org/x/net/idna"
+	"log"
 )
 
 // object to hold application context and persistent storage
@@ -44,6 +45,7 @@ func Start(ds *datastore.DataStore, server *server.Server) {
 	server.Get("/feeds", app.TodoHandler)
 
 	server.Get("/", app.IndexHandler)
+	server.Get("/robots.txt", app.robotsTxtHandler)
 
 	server.Get("/nameservers", app.nameserverIndexHandler)
 	server.Get("/ip", app.ipIndexHandler)
@@ -61,8 +63,9 @@ func Start(ds *datastore.DataStore, server *server.Server) {
 
 func (app *appContext) searchHandler(w http.ResponseWriter, r *http.Request) {
 	query := cleanDomain(r.FormValue("query"))
-	//t := r.FormValue("type")
+	t := r.FormValue("type")
 	var err error
+	log.Print("Type: ", t);
 
 	_, err = app.ds.GetZoneID(query)
 	if err == nil {
@@ -219,6 +222,13 @@ func (app *appContext) TodoHandler(w http.ResponseWriter, r *http.Request) {
 func (app *appContext) IndexHandler(w http.ResponseWriter, r *http.Request) {
 	p := Page{"Home", "Home", nil}
 	err := app.templates.ExecuteTemplate(w, "home.tmpl", p)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (app *appContext) robotsTxtHandler(w http.ResponseWriter, r *http.Request) {
+	err := app.templates.ExecuteTemplate(w, "robots.tmpl", nil)
 	if err != nil {
 		panic(err)
 	}
