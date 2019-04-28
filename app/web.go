@@ -10,7 +10,7 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	"golang.org/x/net/idna"
-	"log"
+	//"log"
 )
 
 // object to hold application context and persistent storage
@@ -63,9 +63,10 @@ func Start(ds *datastore.DataStore, server *server.Server) {
 
 func (app *appContext) searchHandler(w http.ResponseWriter, r *http.Request) {
 	query := cleanDomain(r.FormValue("query"))
-	t := r.FormValue("type")
+	//t := r.FormValue("type")
+	// TODO re-enable this
 	var err error
-	log.Print("Type: ", t);
+	//log.Print("Type: ", t)
 
 	_, err = app.ds.GetZoneID(query)
 	if err == nil {

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
+	"time"
 	"vdz-web/datastore"
 	"vdz-web/server"
 
@@ -80,17 +81,20 @@ func APIStart(app *appContext, vdzServer *server.Server) {
 
 	// feeds
 	addAPI("/feeds/new", "feeds_new", nil)
-	addAPI("/feeds/new/page/:page", "feeds_new_paged", nil)
-	//addAPI("/feeds/new/:year/:month/:day", "feeds_new_date", nil)
+	addAPI("/feeds/new/date/:date", "feeds_new_date", app.apiFeedsNewHandler)
+	//addAPI("/feeds/new/page/:page", "feeds_new_paged", nil)
+	//addAPI("/feeds/new/:year/:month/:day", "feeds_new_date", app.apiFeedsNewHandler)
 	//addAPI("/feeds/new/:year/:month/:day/page/:page", "feeds_new_date_paged", nil)
 
 	addAPI("/feeds/old", "feeds_old", nil)
-	addAPI("/feeds/old/page/:page", "feeds_old_paged", nil)
+	addAPI("/feeds/old/date/:date", "feeds_old_date", app.apiFeedsOldHandler)
+	//addAPI("/feeds/old/page/:page", "feeds_old_paged", nil)
 	//addAPI("/feeds/old/:year/:month/:day", "feeds_old_date", nil)
 	//addAPI("/feeds/old/:year/:month/:day/page/:page", "feeds_old_date_paged", nil)
 
 	addAPI("/feeds/moved", "feeds_moved", nil)
-	addAPI("/feeds/moved/page/:page", "feeds_moved_paged", nil)
+	addAPI("/feeds/moved/date/:date", "feeds_moved_date", app.apiFeedsMovedHandler)
+	//addAPI("/feeds/moved/page/:page", "feeds_moved_paged", nil)
 	//addAPI("/feeds/moved/:year/:month/:day", "feeds_moved_date", nil)
 	//addAPI("/feeds/moved/:year/:month/:day/page/:page", "feeds_moved_date_paged", nil)
 
@@ -119,6 +123,61 @@ func (app *appContext) apiLatestZonesHandler(w http.ResponseWriter, r *http.Requ
 	zoneImportResults.GenerateMetaData()
 
 	server.WriteJSON(w, zoneImportResults)
+}
+
+func (app *appContext) apiFeedsNewHandler(w http.ResponseWriter, r *http.Request) {
+	params := httprouter.ParamsFromContext(r.Context())
+	date, err := time.Parse("2006-01-02", params.ByName("date"))
+	if err != nil {
+		panic(err)
+	}
+	data, err := app.ds.GetFeedNew(date)
+	if err != nil {
+		if err == datastore.ErrNoResource {
+			server.WriteJSONError(w, server.ErrResourceNotFound)
+			return
+		}
+		panic(err)
+	}
+
+	data.GenerateMetaData()
+	server.WriteJSON(w, data)
+}
+func (app *appContext) apiFeedsMovedHandler(w http.ResponseWriter, r *http.Request) {
+	params := httprouter.ParamsFromContext(r.Context())
+	date, err := time.Parse("2006-01-02", params.ByName("date"))
+	if err != nil {
+		panic(err)
+	}
+	data, err := app.ds.GetFeedMoved(date)
+	if err != nil {
+		if err == datastore.ErrNoResource {
+			server.WriteJSONError(w, server.ErrResourceNotFound)
+			return
+		}
+		panic(err)
+	}
+
+	data.GenerateMetaData()
+	server.WriteJSON(w, data)
+}
+func (app *appContext) apiFeedsOldHandler(w http.ResponseWriter, r *http.Request) {
+	params := httprouter.ParamsFromContext(r.Context())
+	date, err := time.Parse("2006-01-02", params.ByName("date"))
+	if err != nil {
+		panic(err)
+	}
+	data, err := app.ds.GetFeedOld(date)
+	if err != nil {
+		if err == datastore.ErrNoResource {
+			server.WriteJSONError(w, server.ErrResourceNotFound)
+			return
+		}
+		panic(err)
+	}
+
+	data.GenerateMetaData()
+	server.WriteJSON(w, data)
 }
 
 // domainHandler returns domain object for the queried domain

@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"net"
 	"os"
+	"time"
 
 	"vdz-web/config"
 	"vdz-web/model"
@@ -195,9 +196,86 @@ func (ds *DataStore) GetNameServerID(domain string) (int64, error) {
 	return id, err
 }
 
+func (ds *DataStore) GetFeedNew(date time.Time) (*model.Feed, error) {
+	var f model.Feed
+	f.Change = "new"
+	var err error
+	f.Date = date
+
+	// TODO limit?
+	rows, err := ds.db.Query("SELECT domain_id, domain from recent_new_domains where date = $1", date)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	f.Domains = make([]*model.Domain, 0, 100)
+	for rows.Next() {
+		var d model.Domain
+		err = rows.Scan(&d.ID, &d.Name)
+		if err != nil {
+			return nil, err
+		}
+		f.Domains = append(f.Domains, &d)
+	}
+
+	return &f, err
+}
+
+func (ds *DataStore) GetFeedOld(date time.Time) (*model.Feed, error) {
+	var f model.Feed
+	f.Change = "old"
+	var err error
+	f.Date = date
+
+	// TODO limit?
+	rows, err := ds.db.Query("SELECT domain_id, domain from recent_old_domains where date = $1", date)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	f.Domains = make([]*model.Domain, 0, 100)
+	for rows.Next() {
+		var d model.Domain
+		err = rows.Scan(&d.ID, &d.Name)
+		if err != nil {
+			return nil, err
+		}
+		f.Domains = append(f.Domains, &d)
+	}
+
+	return &f, err
+}
+
+func (ds *DataStore) GetFeedMoved(date time.Time) (*model.Feed, error) {
+	var f model.Feed
+	f.Change = "moved"
+	var err error
+	f.Date = date
+
+	// TODO limit?
+	rows, err := ds.db.Query("SELECT domain_id, domain from recent_moved_domains where date = $1", date)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	f.Domains = make([]*model.Domain, 0, 100)
+	for rows.Next() {
+		var d model.Domain
+		err = rows.Scan(&d.ID, &d.Name)
+		if err != nil {
+			return nil, err
+		}
+		f.Domains = append(f.Domains, &d)
+	}
+
+	return &f, err
+}
+
 // GetDomain gets information for the provided domain
 func (ds *DataStore) GetDomain(domain string) (*model.Domain, error) {
 	var d model.Domain
+	var z model.Zone
+	d.Zone = &z
 	var err error
 	d.ID, d.Zone.ID, err = ds.GetDomainID(domain)
 	if err != nil {

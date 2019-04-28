@@ -7,6 +7,7 @@ import (
 
 var (
 	domainType            = "domain"
+	feedType              = "feed"
 	nameServerType        = "nameserver"
 	ipType                = "ip"
 	importProgressType    = "import_progress"
@@ -149,7 +150,7 @@ type Domain struct {
 	ArchiveNameServers     []*NameServer `json:"archive_nameservers,omitempty"`
 	NameServerCount        *int64        `json:"nameserver_count,omitempty"`
 	ArchiveNameServerCount *int64        `json:"archive_nameserver_count,omitempty"`
-	Zone                   Zone
+	Zone                   *Zone          `json:"zone,omitempty"`
 }
 
 // GenerateMetaData generates metadata recursively of member models
@@ -164,6 +165,25 @@ func (d *Domain) GenerateMetaData() {
 	for _, ns := range d.ArchiveNameServers {
 		if ns.Type == nil {
 			ns.GenerateMetaData()
+		}
+	}
+}
+
+type Feed struct {
+	Type    *string   `json:"type"`
+	Link    string    `json:"link"`
+	Change  string    `json:"change,omitempty"`
+	Date    time.Time `json:"date"`
+	Domains []*Domain `json:"domains"`
+}
+
+func (f *Feed) GenerateMetaData() {
+	f.Type = &feedType
+	y, m, d := f.Date.Date()
+	f.Link = fmt.Sprintf("/feeds/%s/%d-%d-%d", f.Change, y, m, d)
+	for _, d := range f.Domains {
+		if d.Type == nil {
+			d.GenerateMetaData()
 		}
 	}
 }
