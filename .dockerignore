@@ -1,0 +1,4 @@
+web
+Dockerfile
+go.sum
+.git*
