@@ -9,7 +9,7 @@ BIN := web
 
 all: web
 
-docker: Dockerfile web
+docker: Dockerfile
 	docker build -t="lanrat/vdz-web" .
 
 $(BIN): $(SOURCES) $(MODULE_SOURCES) go.mod
