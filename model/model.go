@@ -8,6 +8,7 @@ import (
 var (
 	domainType            = "domain"
 	feedType              = "feed"
+	feedNsType            = "feed_ns"
 	nameServerType        = "nameserver"
 	ipType                = "ip"
 	importProgressType    = "import_progress"
@@ -150,7 +151,7 @@ type Domain struct {
 	ArchiveNameServers     []*NameServer `json:"archive_nameservers,omitempty"`
 	NameServerCount        *int64        `json:"nameserver_count,omitempty"`
 	ArchiveNameServerCount *int64        `json:"archive_nameserver_count,omitempty"`
-	Zone                   *Zone          `json:"zone,omitempty"`
+	Zone                   *Zone         `json:"zone,omitempty"`
 }
 
 // GenerateMetaData generates metadata recursively of member models
@@ -180,10 +181,35 @@ type Feed struct {
 func (f *Feed) GenerateMetaData() {
 	f.Type = &feedType
 	y, m, d := f.Date.Date()
-	f.Link = fmt.Sprintf("/feeds/%s/%d-%d-%d", f.Change, y, m, d)
+	f.Link = fmt.Sprintf("/feeds/%s/%04d-%02d-%02d", f.Change, y, m, d)
 	for _, d := range f.Domains {
 		if d.Type == nil {
 			d.GenerateMetaData()
+		}
+	}
+}
+
+type NSFeed struct {
+	Type         *string       `json:"type"`
+	Link         string        `json:"link"`
+	Change       string        `json:"change,omitempty"`
+	Date         time.Time     `json:"date"`
+	Nameservers4 []*NameServer `json:"nameservers_4"`
+	Nameservers6 []*NameServer `json:"nameservers_6"`
+}
+
+func (f *NSFeed) GenerateMetaData() {
+	f.Type = &feedNsType
+	y, m, d := f.Date.Date()
+	f.Link = fmt.Sprintf("/feeds/ns/%s/%04d-%02d-%02d", f.Change, y, m, d)
+	for _, n := range f.Nameservers4 {
+		if n.Type == nil {
+			n.GenerateMetaData()
+		}
+	}
+	for _, n := range f.Nameservers6 {
+		if n.Type == nil {
+			n.GenerateMetaData()
 		}
 	}
 }

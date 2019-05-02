@@ -271,6 +271,111 @@ func (ds *DataStore) GetFeedMoved(date time.Time) (*model.Feed, error) {
 	return &f, err
 }
 
+func (ds *DataStore) GetFeedNsMoved(date time.Time) (*model.NSFeed, error) {
+	var f model.NSFeed
+	f.Change = "moved"
+	var err error
+	f.Date = date
+
+	// TODO limit?
+	rows, err := ds.db.Query("SELECT nameserver_id, nameserver, version from recent_moved_ns where date = $1", date)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	f.Nameservers4 = make([]*model.NameServer, 0, 10)
+	f.Nameservers6 = make([]*model.NameServer, 0, 10)
+	for rows.Next() {
+		var ns model.NameServer
+		var v int
+		err = rows.Scan(&ns.ID, &ns.Name, &v)
+		if err != nil {
+			return nil, err
+		}
+		if v == 4 {
+			f.Nameservers4 = append(f.Nameservers4, &ns)
+		} else if v == 6 {
+			f.Nameservers6 = append(f.Nameservers6, &ns)
+		} else {
+			// TODO log this?
+			// skip unknown versions for now
+			continue
+		}
+	}
+
+	return &f, err
+}
+
+func (ds *DataStore) GetFeedNsNew(date time.Time) (*model.NSFeed, error) {
+	var f model.NSFeed
+	f.Change = "new"
+	var err error
+	f.Date = date
+
+	// TODO limit?
+	rows, err := ds.db.Query("SELECT nameserver_id, nameserver, version from recent_new_ns where date = $1", date)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	f.Nameservers4 = make([]*model.NameServer, 0, 10)
+	f.Nameservers6 = make([]*model.NameServer, 0, 10)
+	for rows.Next() {
+		var ns model.NameServer
+		var v int
+		err = rows.Scan(&ns.ID, &ns.Name, &v)
+		if err != nil {
+			return nil, err
+		}
+		if v == 4 {
+			f.Nameservers4 = append(f.Nameservers4, &ns)
+		} else if v == 6 {
+			f.Nameservers6 = append(f.Nameservers6, &ns)
+		} else {
+			// TODO log this?
+			// skip unknown versions for now
+			continue
+		}
+	}
+
+	return &f, err
+}
+
+func (ds *DataStore) GetFeedNsOld(date time.Time) (*model.NSFeed, error) {
+	var f model.NSFeed
+	f.Change = "old"
+	var err error
+	f.Date = date
+
+	// TODO limit?
+	rows, err := ds.db.Query("SELECT nameserver_id, nameserver, version from recent_old_ns where date = $1", date)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	f.Nameservers4 = make([]*model.NameServer, 0, 10)
+	f.Nameservers6 = make([]*model.NameServer, 0, 10)
+	for rows.Next() {
+		var ns model.NameServer
+		var v int
+		err = rows.Scan(&ns.ID, &ns.Name, &v)
+		if err != nil {
+			return nil, err
+		}
+		if v == 4 {
+			f.Nameservers4 = append(f.Nameservers4, &ns)
+		} else if v == 6 {
+			f.Nameservers6 = append(f.Nameservers6, &ns)
+		} else {
+			// TODO log this?
+			// skip unknown versions for now
+			continue
+		}
+	}
+
+	return &f, err
+}
+
 // GetDomain gets information for the provided domain
 func (ds *DataStore) GetDomain(domain string) (*model.Domain, error) {
 	var d model.Domain

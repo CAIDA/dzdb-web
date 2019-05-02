@@ -82,18 +82,21 @@ func APIStart(app *appContext, vdzServer *server.Server) {
 	// feeds
 	addAPI("/feeds/new", "feeds_new", nil)
 	addAPI("/feeds/new/date/:date", "feeds_new_date", app.apiFeedsNewHandler)
+	addAPI("/feeds/ns/new/date/:date", "feeds_ns_new_date", app.apiFeedsNsNewHandler)
 	//addAPI("/feeds/new/page/:page", "feeds_new_paged", nil)
 	//addAPI("/feeds/new/:year/:month/:day", "feeds_new_date", app.apiFeedsNewHandler)
 	//addAPI("/feeds/new/:year/:month/:day/page/:page", "feeds_new_date_paged", nil)
 
 	addAPI("/feeds/old", "feeds_old", nil)
 	addAPI("/feeds/old/date/:date", "feeds_old_date", app.apiFeedsOldHandler)
+	addAPI("/feeds/ns/old/date/:date", "feeds_ns_old_date", app.apiFeedsNsOldHandler)
 	//addAPI("/feeds/old/page/:page", "feeds_old_paged", nil)
 	//addAPI("/feeds/old/:year/:month/:day", "feeds_old_date", nil)
 	//addAPI("/feeds/old/:year/:month/:day/page/:page", "feeds_old_date_paged", nil)
 
 	addAPI("/feeds/moved", "feeds_moved", nil)
 	addAPI("/feeds/moved/date/:date", "feeds_moved_date", app.apiFeedsMovedHandler)
+	addAPI("/feeds/ns/moved/date/:date", "feeds_ns_moved_date", app.apiFeedsNsMovedHandler)
 	//addAPI("/feeds/moved/page/:page", "feeds_moved_paged", nil)
 	//addAPI("/feeds/moved/:year/:month/:day", "feeds_moved_date", nil)
 	//addAPI("/feeds/moved/:year/:month/:day/page/:page", "feeds_moved_date_paged", nil)
@@ -168,6 +171,61 @@ func (app *appContext) apiFeedsOldHandler(w http.ResponseWriter, r *http.Request
 		panic(err)
 	}
 	data, err := app.ds.GetFeedOld(date)
+	if err != nil {
+		if err == datastore.ErrNoResource {
+			server.WriteJSONError(w, server.ErrResourceNotFound)
+			return
+		}
+		panic(err)
+	}
+
+	data.GenerateMetaData()
+	server.WriteJSON(w, data)
+}
+
+func (app *appContext) apiFeedsNsNewHandler(w http.ResponseWriter, r *http.Request) {
+	params := httprouter.ParamsFromContext(r.Context())
+	date, err := time.Parse("2006-01-02", params.ByName("date"))
+	if err != nil {
+		panic(err)
+	}
+	data, err := app.ds.GetFeedNsNew(date)
+	if err != nil {
+		if err == datastore.ErrNoResource {
+			server.WriteJSONError(w, server.ErrResourceNotFound)
+			return
+		}
+		panic(err)
+	}
+
+	data.GenerateMetaData()
+	server.WriteJSON(w, data)
+}
+func (app *appContext) apiFeedsNsMovedHandler(w http.ResponseWriter, r *http.Request) {
+	params := httprouter.ParamsFromContext(r.Context())
+	date, err := time.Parse("2006-01-02", params.ByName("date"))
+	if err != nil {
+		panic(err)
+	}
+	data, err := app.ds.GetFeedNsMoved(date)
+	if err != nil {
+		if err == datastore.ErrNoResource {
+			server.WriteJSONError(w, server.ErrResourceNotFound)
+			return
+		}
+		panic(err)
+	}
+
+	data.GenerateMetaData()
+	server.WriteJSON(w, data)
+}
+func (app *appContext) apiFeedsNsOldHandler(w http.ResponseWriter, r *http.Request) {
+	params := httprouter.ParamsFromContext(r.Context())
+	date, err := time.Parse("2006-01-02", params.ByName("date"))
+	if err != nil {
+		panic(err)
+	}
+	data, err := app.ds.GetFeedNsOld(date)
 	if err != nil {
 		if err == datastore.ErrNoResource {
 			server.WriteJSONError(w, server.ErrResourceNotFound)
