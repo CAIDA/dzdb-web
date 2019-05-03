@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"time"
 	"vdz-web/app"
 	"vdz-web/config"
 	"vdz-web/datastore"
@@ -18,11 +19,17 @@ func main() {
 	}
 
 	// get datstore
-	ds, err := datastore.New(&config.Postgresql)
-	defer ds.Close()
-	if err != nil {
-		log.Fatal(err)
+	// if no DB wait for valid connection
+	var ds *datastore.DataStore
+	for {
+		ds, err = datastore.New(&config.Postgresql)
+		if err != nil {
+			log.Println(err)
+			time.Sleep(30 * time.Second)
+		}
+		break
 	}
+	defer ds.Close()
 
 	// get server and start application
 	vdzServer := server.New(config)
