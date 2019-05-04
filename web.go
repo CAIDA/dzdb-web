@@ -26,8 +26,9 @@ func main() {
 		if err != nil {
 			log.Println(err)
 			time.Sleep(30 * time.Second)
+		} else {
+			break
 		}
-		break
 	}
 	defer ds.Close()
 
