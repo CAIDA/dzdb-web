@@ -5,18 +5,25 @@ package server
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"time"
 
-	"vdz-web/config"
 	"vdz-web/model"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/justinas/alice"
 	"gopkg.in/throttled/throttled.v2"
 	"gopkg.in/throttled/throttled.v2/store/memstore"
+)
+
+const (
+	// Default enviroment variables
+	defaultServerAddress        = "127.0.0.1:8080" // HTTP_LISTEN_ADDR
+	defaultAPITimeout           = 60               // API_TIMEOUT
+	defaultAPIRequestsPerMinute = 30               // API_REQUESTS_PER_MINUTE
+	defaultAPIMaxRequestHistory = 16384            // API_MAX_HISTORY
+	defaultAPIRequestsBurst     = 5                // API_REQUEST_BURST
 )
 
 // handler for catching a panic
@@ -123,25 +130,45 @@ type Server struct {
 	// Alice chain of http handlers
 	handlers alice.Chain
 
-	// Configuration
-	config *config.Config
+	// ListenAddr address to bind http server too
+	ListenAddr string
 }
 
 // New creates a new server object with the default (included) handlers
-func New(config *config.Config) *Server {
+func New() (*Server, error) {
 	server := &Server{}
+
+	// get settings
+	server.ListenAddr = model.GetStringEnv("HTTP_LISTEN_ADDR", defaultServerAddress)
+	apiTimeout, err := model.GetIntEnv("API_TIMEOUT", defaultAPITimeout)
+	if err != nil {
+		return nil, err
+	}
+	apiRequestsPerMinute, err := model.GetIntEnv("API_REQUESTS_PER_MINUTE", defaultAPIRequestsPerMinute)
+	if err != nil {
+		return nil, err
+	}
+	apiMaxHistory, err := model.GetIntEnv("API_MAX_HISTORY", defaultAPIMaxRequestHistory)
+	if err != nil {
+		return nil, err
+	}
+	apiRequestsBurst, err := model.GetIntEnv("API_REQUEST_BURST", defaultAPIRequestsBurst)
+	if err != nil {
+		return nil, err
+	}
+
+	// setup server
 	server.router = httprouter.New()
-	server.config = config
 	server.handlers = alice.New(
 		//context.ClearHandler,
 		//addContextHandler,
-		makeTimeoutHandler(server.config.API.Timeout),
+		makeTimeoutHandler(apiTimeout),
 		loggingHandler,
 		recoverHandler,
-		makeThrottleHandler(server.config.API.RequestsPerMinute, server.config.API.RequestsBurst, server.config.API.RequestsMaxHistory),
+		makeThrottleHandler(apiRequestsPerMinute, apiRequestsBurst, apiMaxHistory),
 	)
 	//server.router.NotFound = notFoundJSON
-	return server
+	return server, nil
 }
 
 // Get registers a HTTP GET to the router & handler
@@ -158,5 +185,5 @@ func (s *Server) Post(path string, fn http.HandlerFunc) {
 
 // Start Starts the server, blocking function
 func (s *Server) Start() error {
-	return http.ListenAndServe(fmt.Sprintf("%s:%d", s.config.HTTP.IP, s.config.HTTP.Port), s.router)
+	return http.ListenAndServe(s.ListenAddr, s.router)
 }

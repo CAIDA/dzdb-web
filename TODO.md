@@ -8,11 +8,7 @@
 
 update templates so that first/last seen are in a box or something...
 
-use environment vars instead of config.ini
-docker^^
-
 ## Stats
-
 Total zones
 actively tracked zones
 total tracked zones
@@ -29,10 +25,8 @@ top NS
 ## Feeds
 all
 
-
 ## Domains
 whois?
-
 
 ## IPs
 some statS on index (total ip4/6)?

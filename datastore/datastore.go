@@ -6,10 +6,8 @@ import (
 	"fmt"
 	"math/rand"
 	"net"
-	"os"
 	"time"
 
-	"vdz-web/config"
 	"vdz-web/model"
 
 	_ "github.com/lib/pq" // for postgresql
@@ -21,15 +19,7 @@ import (
 var ErrNoResource = errors.New("the requested object does not exist")
 
 // connectDB connects to the Postgresql database
-func connectDB(cfg *config.DatabaseConfig) (*sql.DB, error) {
-	os.Clearenv() /* because there is a bug when PGHOSTADDR is set */
-	connStr := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-		cfg.Host,
-		cfg.Port,
-		cfg.User,
-		cfg.Password,
-		cfg.Database,
-	)
+func connectDB(connStr string) (*sql.DB, error) {
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		return nil, err
@@ -49,14 +39,14 @@ type DataStore struct {
 }
 
 // New Creates a new DataStore with the provided database configuration
-// connects to the database on creation
-func New(cfg *config.DatabaseConfig) (*DataStore, error) {
-	db, err := connectDB(cfg)
+// database connection variables can also be set as environment variables
+func New(connStr string) (*DataStore, error) {
+	db, err := connectDB(connStr)
 	if err != nil {
 		return nil, err
 	}
 	ds := DataStore{db}
-	err = ds.setSQLTimeout(cfg.Timeout)
+	//err = ds.setSQLTimeout(cfg.Timeout)
 	return &ds, err
 }
 
