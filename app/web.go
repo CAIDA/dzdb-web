@@ -43,6 +43,7 @@ func Start(ds *datastore.DataStore, server *server.Server) {
 
 	//TODO
 	server.Get("/feeds", app.TodoHandler)
+	server.Get("/about", app.AboutHandler)
 
 	server.Get("/", app.IndexHandler)
 	server.Get("/robots.txt", app.robotsTxtHandler)
@@ -215,6 +216,14 @@ func (app *appContext) ipHandler(w http.ResponseWriter, r *http.Request) {
 func (app *appContext) TodoHandler(w http.ResponseWriter, r *http.Request) {
 	p := Page{"TODO", "", nil}
 	err := app.templates.ExecuteTemplate(w, "todo.tmpl", p)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (app *appContext) AboutHandler(w http.ResponseWriter, r *http.Request) {
+	p := Page{"About", "About", nil}
+	err := app.templates.ExecuteTemplate(w, "about.tmpl", p)
 	if err != nil {
 		panic(err)
 	}

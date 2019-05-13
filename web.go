@@ -18,6 +18,7 @@ func main() {
 		ds, err = datastore.New("") // use standard env vars
 		if err != nil {
 			log.Println(err)
+			log.Println("waiting for 30s")
 			time.Sleep(30 * time.Second)
 		} else {
 			break

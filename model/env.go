@@ -5,7 +5,7 @@ import (
 	"strconv"
 )
 
-// GetStringEnv returns the enviroment variable with the key
+// GetStringEnv returns the environment variable with the key
 // if it is not set the fallback is provided
 func GetStringEnv(key, fallback string) string {
 	value, exists := os.LookupEnv(key)
@@ -15,7 +15,7 @@ func GetStringEnv(key, fallback string) string {
 	return value
 }
 
-// GetIntEnv returns the enviroment variable with the key
+// GetIntEnv returns the environment variable with the key
 // if it is not set the fallback is provided
 func GetIntEnv(key string, fallback int) (int, error) {
 	value, exists := os.LookupEnv(key)
@@ -29,7 +29,7 @@ func GetIntEnv(key string, fallback int) (int, error) {
 	return v, nil
 }
 
-// GetBoolEnv returns the enviroment variable with the key
+// GetBoolEnv returns the environment variable with the key
 // if it is not set the fallback is provided
 func GetBoolEnv(key string, fallback bool) (bool, error) {
 	value, exists := os.LookupEnv(key)

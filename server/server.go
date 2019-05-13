@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	// Default enviroment variables
+	// Default environment variables
 	defaultServerAddress        = "127.0.0.1:8080" // HTTP_LISTEN_ADDR
 	defaultAPITimeout           = 60               // API_TIMEOUT
 	defaultAPIRequestsPerMinute = 30               // API_REQUESTS_PER_MINUTE

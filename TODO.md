@@ -70,7 +70,15 @@ drop table last_pp;
 ### first_seen
 update whenever inserting new NS
 ### last_seen
+TODO!
 
+temp solution: 
+select nameserver_id, NULLIF(MAX(COALESCE(last_seen, 'infinity'::date)), 'infinity'::date) as last_seen from domains_nameservers group by nameserver_id;
+~33min
+
+update:
+vdz=# with ls2 as (select nameserver_id, NULLIF(MAX(COALESCE(last_seen, 'infinity'::date)), 'infinity'::date) as last_seen from domains_nameservers group by nameserver_id) update nameserver_metadata set last_seen2 = ls2.last_seen from ls2 where ls2.nameserver_id = nameserver_metadata.nameserver_id;
+~45min
 
 ## import_delta_counts
 does not need to be public, keep internal

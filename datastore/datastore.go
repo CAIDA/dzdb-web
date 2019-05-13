@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log"
 	"math/rand"
 	"net"
 	"time"
@@ -287,7 +288,8 @@ func (ds *DataStore) GetFeedNsMoved(date time.Time) (*model.NSFeed, error) {
 		} else if v == 6 {
 			f.Nameservers6 = append(f.Nameservers6, &ns)
 		} else {
-			// TODO log this?
+			// log this
+			log.Printf("Got NS Feed wth unknown IP version %d for %s\n", v, date)
 			// skip unknown versions for now
 			continue
 		}
@@ -322,7 +324,8 @@ func (ds *DataStore) GetFeedNsNew(date time.Time) (*model.NSFeed, error) {
 		} else if v == 6 {
 			f.Nameservers6 = append(f.Nameservers6, &ns)
 		} else {
-			// TODO log this?
+			// log this
+			log.Printf("Got NS Feed wth unknown IP version %d for %s\n", v, date)
 			// skip unknown versions for now
 			continue
 		}
@@ -357,7 +360,8 @@ func (ds *DataStore) GetFeedNsOld(date time.Time) (*model.NSFeed, error) {
 		} else if v == 6 {
 			f.Nameservers6 = append(f.Nameservers6, &ns)
 		} else {
-			// TODO log this?
+			// log this
+			log.Printf("Got NS Feed wth unknown IP version %d for %s\n", v, date)
 			// skip unknown versions for now
 			continue
 		}
