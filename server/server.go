@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"runtime"
 	"time"
 
 	"vdz-web/model"
@@ -32,7 +33,18 @@ func recoverHandler(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if err := recover(); err != nil {
-				log.Printf("panic: %+v", err)
+				//log.Printf("panic: %+v", err)
+				// notice that we're using 1, so it will actually log the where
+				// the error happened, 0 = this function, we don't want that.
+				pc, fn, line, _ := runtime.Caller(2)
+				log.Printf("[panic] in %s[%s:%d] %v", runtime.FuncForPC(pc).Name(), fn, line, err)
+				//log.Println("stacktrace from panic: \n" + string(debug.Stack()))
+				//debug.PrintStack()
+				// postgresql error check
+				// pqErr, ok := err.(*pq.Error)
+				// if ok {
+				// 	log.Printf("%+v\n", pqErr)
+				// }
 				WriteJSONError(w, ErrInternalServer)
 			}
 		}()

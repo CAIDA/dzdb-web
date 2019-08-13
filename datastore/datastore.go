@@ -111,6 +111,7 @@ func (ds *DataStore) GetZoneID(name string) (int64, error) {
 
 // GetZone gets the Zone with the given name
 func (ds *DataStore) GetZone(name string) (*model.Zone, error) {
+	// TODO support getting NS from root zone?
 	var z model.Zone
 	var err error
 
@@ -123,11 +124,20 @@ func (ds *DataStore) GetZone(name string) (*model.Zone, error) {
 	// get first_seen & last_seen
 	err = ds.db.QueryRow("select first_seen from zones_nameservers where zone_id = $1 order by first_seen nulls first limit 1", z.ID).Scan(&z.FirstSeen)
 	if err != nil {
-		return nil, err
+		if err == sql.ErrNoRows {
+			z.FirstSeen = nil
+		} else {
+			return nil, err
+		}
 	}
+
 	err = ds.db.QueryRow("select last_seen from zones_nameservers where zone_id = $1 order by last_seen nulls first limit 1", z.ID).Scan(&z.LastSeen)
 	if err != nil {
-		return nil, err
+		if err == sql.ErrNoRows {
+			z.LastSeen = nil
+		} else {
+			return nil, err
+		}
 	}
 
 	// get num NS

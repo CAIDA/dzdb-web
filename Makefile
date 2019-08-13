@@ -20,3 +20,6 @@ clean:
 
 fmt:
 	gofmt -s -w -l .
+
+run: web
+	PGSSLMODE=disable ./web

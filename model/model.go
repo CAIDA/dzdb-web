@@ -120,6 +120,7 @@ func (zir *ZoneImportResult) GenerateMetaData() {
 }
 
 // Zone holds information about a zone
+// TODO change time.Time to nulltime?
 type Zone struct {
 	Type                   *string       `json:"type"`
 	Link                   string        `json:"link"`
