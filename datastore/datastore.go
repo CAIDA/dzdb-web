@@ -697,6 +697,7 @@ func (ds *DataStore) GetNameServer(domain string) (*model.NameServer, error) {
 }
 
 // GetIP gets information for the provided IP
+// TODO this can panic with SQL no rows
 func (ds *DataStore) GetIP(name string) (*model.IP, error) {
 	var ip model.IP
 	var err error
