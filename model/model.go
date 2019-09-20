@@ -63,7 +63,7 @@ type ImportProgress struct {
 type ImportDate struct {
 	Date *time.Time `json:"date"`
 	//TODO make duration
-	//Took			time.Duration `json:"took"`
+	//Took time.Duration `json:"took"` // time.Duration not allowed on pq, see https://github.com/lib/pq/issues/78
 	Took  string `json:"took"`
 	Count uint64 `json:"count"`
 }

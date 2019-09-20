@@ -7,6 +7,7 @@ import (
 	"log"
 	"math/rand"
 	"net"
+	"strings"
 	"time"
 
 	"vdz-web/model"
@@ -516,7 +517,8 @@ func (ds *DataStore) GetImportProgress() (*model.ImportProgress, error) {
 		return nil, err
 	}
 
-	rows, err := ds.db.Query("select date, took, count from import_date_timer_view order by date desc limit $1", len(ip.Dates))
+	//rows, err := ds.db.Query("select date, took, count from import_date_timer_view order by date desc limit $1", len(ip.Dates))
+	rows, err := ds.db.Query("select date, sum(duration) took, count(imports.id) from imports, import_timer where imports.id = import_timer.import_id group by date order by date desc limit $1", len(ip.Dates))
 	if err != nil {
 		return nil, err
 	}
@@ -528,6 +530,7 @@ func (ds *DataStore) GetImportProgress() (*model.ImportProgress, error) {
 		if err != nil {
 			return nil, err
 		}
+		ipd.Took = strings.SplitN(ipd.Took, ".", 2)[0] // hack to avoid  duration.Round()
 		i++
 	}
 
