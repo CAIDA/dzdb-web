@@ -69,28 +69,28 @@ func (app *appContext) searchHandler(w http.ResponseWriter, r *http.Request) {
 	var err error
 	//log.Print("Type: ", t)
 
-	_, err = app.ds.GetZoneID(query)
+	_, err = app.ds.GetZoneID(r.Context(), query)
 	if err == nil {
 		// redirect
 		http.Redirect(w, r, "/zones/"+query, http.StatusFound)
 		return
 	}
 
-	_, _, err = app.ds.GetDomainID(query)
+	_, _, err = app.ds.GetDomainID(r.Context(), query)
 	if err == nil {
 		// redirect
 		http.Redirect(w, r, "/domains/"+query, http.StatusFound)
 		return
 	}
 
-	_, err = app.ds.GetNameServerID(query)
+	_, err = app.ds.GetNameServerID(r.Context(), query)
 	if err == nil {
 		// redirect
 		http.Redirect(w, r, "/nameservers/"+query, http.StatusFound)
 		return
 	}
 
-	_, _, err = app.ds.GetIPID(query)
+	_, _, err = app.ds.GetIPID(r.Context(), query)
 	if err == nil {
 		// redirect
 		http.Redirect(w, r, "/ip/"+query, http.StatusFound)
@@ -106,7 +106,7 @@ func (app *appContext) searchHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *appContext) statsHandler(w http.ResponseWriter, r *http.Request) {
-	data, err := app.ds.GetImportProgress()
+	data, err := app.ds.GetImportProgress(r.Context())
 	if err != nil {
 		panic(err)
 	}
@@ -119,7 +119,7 @@ func (app *appContext) statsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *appContext) zoneIndexHandler(w http.ResponseWriter, r *http.Request) {
-	data, err := app.ds.GetZoneImportResults()
+	data, err := app.ds.GetZoneImportResults(r.Context())
 	if err != nil {
 		panic(err)
 	}
@@ -134,7 +134,7 @@ func (app *appContext) zoneIndexHandler(w http.ResponseWriter, r *http.Request) 
 func (app *appContext) zoneHandler(w http.ResponseWriter, r *http.Request) {
 	params := httprouter.ParamsFromContext(r.Context())
 	name := cleanDomain(params.ByName("zone"))
-	data, err := app.ds.GetZone(name)
+	data, err := app.ds.GetZone(r.Context(), name)
 	if err != nil {
 		if err == datastore.ErrNoResource {
 			// TODO make http err (not json)
@@ -154,7 +154,7 @@ func (app *appContext) zoneHandler(w http.ResponseWriter, r *http.Request) {
 func (app *appContext) nameserverHandler(w http.ResponseWriter, r *http.Request) {
 	params := httprouter.ParamsFromContext(r.Context())
 	name := cleanDomain(params.ByName("nameserver"))
-	data, err := app.ds.GetNameServer(name)
+	data, err := app.ds.GetNameServer(r.Context(), name)
 	if err != nil {
 		if err == datastore.ErrNoResource {
 			// TODO make http err (not json)
@@ -175,7 +175,7 @@ func (app *appContext) nameserverHandler(w http.ResponseWriter, r *http.Request)
 func (app *appContext) domainHandler(w http.ResponseWriter, r *http.Request) {
 	params := httprouter.ParamsFromContext(r.Context())
 	domain := cleanDomain(params.ByName("domain"))
-	data, err := app.ds.GetDomain(domain)
+	data, err := app.ds.GetDomain(r.Context(), domain)
 	if err != nil {
 		if err == datastore.ErrNoResource {
 			// TODO make http err (not json)
@@ -196,7 +196,7 @@ func (app *appContext) domainHandler(w http.ResponseWriter, r *http.Request) {
 func (app *appContext) ipHandler(w http.ResponseWriter, r *http.Request) {
 	params := httprouter.ParamsFromContext(r.Context())
 	name := cleanDomain(params.ByName("ip"))
-	data, err := app.ds.GetIP(name)
+	data, err := app.ds.GetIP(r.Context(), name)
 	if err != nil {
 		if err == datastore.ErrNoResource {
 			// TODO make http err (not json)

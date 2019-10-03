@@ -80,6 +80,9 @@ func makeTimeoutHandler(sec int) func(http.Handler) http.Handler {
 		log.Fatal(err)
 	}
 	return func(h http.Handler) http.Handler {
+		// TODO verify this works and plays nicely with contexts
+		// potential example: https://www.sohamkamani.com/blog/golang/2018-06-17-golang-using-context-cancellation/
+		// another https://blog.cloudflare.com/the-complete-guide-to-golang-net-http-timeouts/
 		return http.TimeoutHandler(h, time.Duration(sec)*time.Second, string(timeoutErrorJSON))
 	}
 }

@@ -107,7 +107,7 @@ func APIStart(app *appContext, vdzServer *server.Server) {
 
 //TODO expand
 func (app *appContext) apiImportStatusHandler(w http.ResponseWriter, r *http.Request) {
-	ip, err := app.ds.GetImportProgress()
+	ip, err := app.ds.GetImportProgress(r.Context())
 	if err != nil {
 		panic(err)
 	}
@@ -118,7 +118,7 @@ func (app *appContext) apiImportStatusHandler(w http.ResponseWriter, r *http.Req
 
 //TODO expand
 func (app *appContext) apiLatestZonesHandler(w http.ResponseWriter, r *http.Request) {
-	zoneImportResults, err := app.ds.GetZoneImportResults()
+	zoneImportResults, err := app.ds.GetZoneImportResults(r.Context())
 	if err != nil {
 		panic(err)
 	}
@@ -134,7 +134,7 @@ func (app *appContext) apiFeedsNewHandler(w http.ResponseWriter, r *http.Request
 	if err != nil {
 		panic(err)
 	}
-	data, err := app.ds.GetFeedNew(date)
+	data, err := app.ds.GetFeedNew(r.Context(), date)
 	if err != nil {
 		if err == datastore.ErrNoResource {
 			server.WriteJSONError(w, server.ErrResourceNotFound)
@@ -152,7 +152,7 @@ func (app *appContext) apiFeedsMovedHandler(w http.ResponseWriter, r *http.Reque
 	if err != nil {
 		panic(err)
 	}
-	data, err := app.ds.GetFeedMoved(date)
+	data, err := app.ds.GetFeedMoved(r.Context(), date)
 	if err != nil {
 		if err == datastore.ErrNoResource {
 			server.WriteJSONError(w, server.ErrResourceNotFound)
@@ -170,7 +170,7 @@ func (app *appContext) apiFeedsOldHandler(w http.ResponseWriter, r *http.Request
 	if err != nil {
 		panic(err)
 	}
-	data, err := app.ds.GetFeedOld(date)
+	data, err := app.ds.GetFeedOld(r.Context(), date)
 	if err != nil {
 		if err == datastore.ErrNoResource {
 			server.WriteJSONError(w, server.ErrResourceNotFound)
@@ -189,7 +189,7 @@ func (app *appContext) apiFeedsNsNewHandler(w http.ResponseWriter, r *http.Reque
 	if err != nil {
 		panic(err)
 	}
-	data, err := app.ds.GetFeedNsNew(date)
+	data, err := app.ds.GetFeedNsNew(r.Context(), date)
 	if err != nil {
 		if err == datastore.ErrNoResource {
 			server.WriteJSONError(w, server.ErrResourceNotFound)
@@ -207,7 +207,7 @@ func (app *appContext) apiFeedsNsMovedHandler(w http.ResponseWriter, r *http.Req
 	if err != nil {
 		panic(err)
 	}
-	data, err := app.ds.GetFeedNsMoved(date)
+	data, err := app.ds.GetFeedNsMoved(r.Context(), date)
 	if err != nil {
 		if err == datastore.ErrNoResource {
 			server.WriteJSONError(w, server.ErrResourceNotFound)
@@ -225,7 +225,7 @@ func (app *appContext) apiFeedsNsOldHandler(w http.ResponseWriter, r *http.Reque
 	if err != nil {
 		panic(err)
 	}
-	data, err := app.ds.GetFeedNsOld(date)
+	data, err := app.ds.GetFeedNsOld(r.Context(), date)
 	if err != nil {
 		if err == datastore.ErrNoResource {
 			server.WriteJSONError(w, server.ErrResourceNotFound)
@@ -242,7 +242,7 @@ func (app *appContext) apiFeedsNsOldHandler(w http.ResponseWriter, r *http.Reque
 func (app *appContext) apiDomainHandler(w http.ResponseWriter, r *http.Request) {
 	params := httprouter.ParamsFromContext(r.Context())
 	domain := cleanDomain(params.ByName("domain"))
-	data, err1 := app.ds.GetDomain(domain)
+	data, err1 := app.ds.GetDomain(r.Context(), domain)
 	if err1 != nil {
 		if err1 == datastore.ErrNoResource {
 			server.WriteJSONError(w, server.ErrResourceNotFound)
@@ -258,7 +258,7 @@ func (app *appContext) apiDomainHandler(w http.ResponseWriter, r *http.Request) 
 func (app *appContext) apiIPHandler(w http.ResponseWriter, r *http.Request) {
 	params := httprouter.ParamsFromContext(r.Context())
 	ip := cleanDomain(params.ByName("ip"))
-	data, err := app.ds.GetIP(ip)
+	data, err := app.ds.GetIP(r.Context(), ip)
 	if err != nil {
 		if err == datastore.ErrNoResource {
 			server.WriteJSONError(w, server.ErrResourceNotFound)
@@ -274,7 +274,7 @@ func (app *appContext) apiIPHandler(w http.ResponseWriter, r *http.Request) {
 func (app *appContext) apiZoneHandler(w http.ResponseWriter, r *http.Request) {
 	params := httprouter.ParamsFromContext(r.Context())
 	domain := cleanDomain(params.ByName("zone"))
-	data, err1 := app.ds.GetZone(domain)
+	data, err1 := app.ds.GetZone(r.Context(), domain)
 	if err1 != nil {
 		if err1 == datastore.ErrNoResource {
 			server.WriteJSONError(w, server.ErrResourceNotFound)
@@ -289,7 +289,7 @@ func (app *appContext) apiZoneHandler(w http.ResponseWriter, r *http.Request) {
 
 // randomDomainHandler returns a random domain from the system
 func (app *appContext) apiRandomDomainHandler(w http.ResponseWriter, r *http.Request) {
-	domain, err := app.ds.GetRandomDomain()
+	domain, err := app.ds.GetRandomDomain(r.Context())
 	if err != nil {
 		panic(err)
 	}
@@ -302,7 +302,7 @@ func (app *appContext) apiNameserverHandler(w http.ResponseWriter, r *http.Reque
 	params := httprouter.ParamsFromContext(r.Context())
 	domain := cleanDomain(params.ByName("domain"))
 
-	data, err1 := app.ds.GetNameServer(domain)
+	data, err1 := app.ds.GetNameServer(r.Context(), domain)
 	if err1 != nil {
 		//TODO combine common code below
 		if err1 == datastore.ErrNoResource {

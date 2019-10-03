@@ -1,6 +1,7 @@
 package datastore
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -27,7 +28,7 @@ func connectDB(connStr string) (*sql.DB, error) {
 		return nil, err
 	}
 	// test connection
-	err = db.Ping()
+	err = db.Ping() // TODO PingContext()
 	if err != nil {
 		return db, err
 	}
@@ -53,8 +54,8 @@ func New(connStr string) (*DataStore, error) {
 }
 
 // sets the amount of time a SQL query can run before timing out
-func (ds *DataStore) setSQLTimeout(sec int) error {
-	_, err := ds.db.Exec(fmt.Sprintf("SET statement_timeout TO %d;", (1000 * sec)))
+func (ds *DataStore) setSQLTimeout(ctx context.Context, sec int) error {
+	_, err := ds.db.ExecContext(ctx, fmt.Sprintf("SET statement_timeout TO %d;", (1000*sec)))
 	return err
 }
 
@@ -64,9 +65,9 @@ func (ds *DataStore) Close() error {
 }
 
 // GetDomainID gets the domain's ID and domain's zone's ID
-func (ds *DataStore) GetDomainID(domain string) (int64, int64, error) {
+func (ds *DataStore) GetDomainID(ctx context.Context, domain string) (int64, int64, error) {
 	var id, zoneID int64
-	err := ds.db.QueryRow("SELECT id, zone_id FROM domains WHERE domain = $1", domain).Scan(&id, &zoneID)
+	err := ds.db.QueryRowContext(ctx, "SELECT id, zone_id FROM domains WHERE domain = $1", domain).Scan(&id, &zoneID)
 	if err == sql.ErrNoRows {
 		err = ErrNoResource
 	}
@@ -74,7 +75,7 @@ func (ds *DataStore) GetDomainID(domain string) (int64, int64, error) {
 }
 
 // GetIPID gets the IPs ID, and the version (4 or 6)
-func (ds *DataStore) GetIPID(ipStr string) (int64, int, error) {
+func (ds *DataStore) GetIPID(ctx context.Context, ipStr string) (int64, int, error) {
 	var id int64
 	var version int
 	var err error
@@ -83,7 +84,7 @@ func (ds *DataStore) GetIPID(ipStr string) (int64, int, error) {
 		version = 4
 		// TODO use native golang types
 		// https://github.com/lib/pq/pull/390
-		err = ds.db.QueryRow("SELECT id FROM a WHERE ip = $1", ip.String()).Scan(&id)
+		err = ds.db.QueryRowContext(ctx, "SELECT id FROM a WHERE ip = $1", ip.String()).Scan(&id)
 		if err == sql.ErrNoRows {
 			err = ErrNoResource
 		}
@@ -91,7 +92,7 @@ func (ds *DataStore) GetIPID(ipStr string) (int64, int, error) {
 	}
 	if ip.To16() != nil {
 		version = 6
-		err = ds.db.QueryRow("SELECT id FROM aaaa WHERE ip = $1", ip.String()).Scan(&id)
+		err = ds.db.QueryRowContext(ctx, "SELECT id FROM aaaa WHERE ip = $1", ip.String()).Scan(&id)
 		if err == sql.ErrNoRows {
 			err = ErrNoResource
 		}
@@ -101,9 +102,9 @@ func (ds *DataStore) GetIPID(ipStr string) (int64, int, error) {
 }
 
 // GetZoneID gets the zoneID with the given name
-func (ds *DataStore) GetZoneID(name string) (int64, error) {
+func (ds *DataStore) GetZoneID(ctx context.Context, name string) (int64, error) {
 	var id int64
-	err := ds.db.QueryRow("select id from zones where zone = $1 limit 1", name).Scan(&id)
+	err := ds.db.QueryRowContext(ctx, "select id from zones where zone = $1 limit 1", name).Scan(&id)
 	if err == sql.ErrNoRows {
 		err = ErrNoResource
 	}
@@ -111,19 +112,19 @@ func (ds *DataStore) GetZoneID(name string) (int64, error) {
 }
 
 // GetZone gets the Zone with the given name
-func (ds *DataStore) GetZone(name string) (*model.Zone, error) {
+func (ds *DataStore) GetZone(ctx context.Context, name string) (*model.Zone, error) {
 	// TODO support getting NS from root zone?
 	var z model.Zone
 	var err error
 
-	z.ID, err = ds.GetZoneID(name)
+	z.ID, err = ds.GetZoneID(ctx, name)
 	if err != nil {
 		return nil, err
 	}
 	z.Name = name
 
 	// get first_seen & last_seen
-	err = ds.db.QueryRow("select first_seen from zones_nameservers where zone_id = $1 order by first_seen nulls first limit 1", z.ID).Scan(&z.FirstSeen)
+	err = ds.db.QueryRowContext(ctx, "select first_seen from zones_nameservers where zone_id = $1 order by first_seen nulls first limit 1", z.ID).Scan(&z.FirstSeen)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			z.FirstSeen = nil
@@ -132,7 +133,7 @@ func (ds *DataStore) GetZone(name string) (*model.Zone, error) {
 		}
 	}
 
-	err = ds.db.QueryRow("select last_seen from zones_nameservers where zone_id = $1 order by last_seen nulls first limit 1", z.ID).Scan(&z.LastSeen)
+	err = ds.db.QueryRowContext(ctx, "select last_seen from zones_nameservers where zone_id = $1 order by last_seen nulls first limit 1", z.ID).Scan(&z.LastSeen)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			z.LastSeen = nil
@@ -142,19 +143,19 @@ func (ds *DataStore) GetZone(name string) (*model.Zone, error) {
 	}
 
 	// get num NS
-	err = ds.db.QueryRow("SELECT count(*) FROM zones_nameservers WHERE zone_id = $1 AND last_seen IS NULL", z.ID).Scan(&z.NameServerCount)
+	err = ds.db.QueryRowContext(ctx, "SELECT count(*) FROM zones_nameservers WHERE zone_id = $1 AND last_seen IS NULL", z.ID).Scan(&z.NameServerCount)
 	if err != nil {
 		return nil, err
 	}
 
 	// get num archive NS
-	err = ds.db.QueryRow("SELECT count(*) FROM zones_nameservers WHERE zone_id = $1 AND last_seen IS NOT NULL", z.ID).Scan(&z.ArchiveNameServerCount)
+	err = ds.db.QueryRowContext(ctx, "SELECT count(*) FROM zones_nameservers WHERE zone_id = $1 AND last_seen IS NOT NULL", z.ID).Scan(&z.ArchiveNameServerCount)
 	if err != nil {
 		return nil, err
 	}
 
 	// get active NS
-	rows, err := ds.db.Query("SELECT ns.ID, ns.domain, zns.first_seen, zns.last_seen FROM zones_nameservers zns, nameservers ns WHERE zns.nameserver_id = ns.ID AND zns.last_seen IS NULL AND zns.zone_id = $1 limit 100", z.ID)
+	rows, err := ds.db.QueryContext(ctx, "SELECT ns.ID, ns.domain, zns.first_seen, zns.last_seen FROM zones_nameservers zns, nameservers ns WHERE zns.nameserver_id = ns.ID AND zns.last_seen IS NULL AND zns.zone_id = $1 limit 100", z.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -170,7 +171,7 @@ func (ds *DataStore) GetZone(name string) (*model.Zone, error) {
 	}
 
 	// get archive NS
-	archiveRows, err := ds.db.Query("SELECT ns.ID, ns.domain, zns.first_seen, zns.last_seen FROM zones_nameservers zns, nameservers ns WHERE zns.nameserver_id = ns.ID AND zns.last_seen IS NOT NULL AND zns.zone_id = $1 ORDER BY last_seen desc limit 100", z.ID)
+	archiveRows, err := ds.db.QueryContext(ctx, "SELECT ns.ID, ns.domain, zns.first_seen, zns.last_seen FROM zones_nameservers zns, nameservers ns WHERE zns.nameserver_id = ns.ID AND zns.last_seen IS NOT NULL AND zns.zone_id = $1 ORDER BY last_seen desc limit 100", z.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -189,23 +190,23 @@ func (ds *DataStore) GetZone(name string) (*model.Zone, error) {
 }
 
 // GetNameServerID given a nameserver, find its ID
-func (ds *DataStore) GetNameServerID(domain string) (int64, error) {
+func (ds *DataStore) GetNameServerID(ctx context.Context, domain string) (int64, error) {
 	var id int64
-	err := ds.db.QueryRow("SELECT id FROM nameservers WHERE domain = $1", domain).Scan(&id)
+	err := ds.db.QueryRowContext(ctx, "SELECT id FROM nameservers WHERE domain = $1", domain).Scan(&id)
 	if err == sql.ErrNoRows {
 		err = ErrNoResource
 	}
 	return id, err
 }
 
-func (ds *DataStore) GetFeedNew(date time.Time) (*model.Feed, error) {
+func (ds *DataStore) GetFeedNew(ctx context.Context, date time.Time) (*model.Feed, error) {
 	var f model.Feed
 	f.Change = "new"
 	var err error
 	f.Date = date
 
 	// TODO limit?
-	rows, err := ds.db.Query("SELECT domain_id, domain from recent_new_domains where date = $1", date)
+	rows, err := ds.db.QueryContext(ctx, "SELECT domain_id, domain from recent_new_domains where date = $1", date)
 	if err != nil {
 		return nil, err
 	}
@@ -223,14 +224,14 @@ func (ds *DataStore) GetFeedNew(date time.Time) (*model.Feed, error) {
 	return &f, err
 }
 
-func (ds *DataStore) GetFeedOld(date time.Time) (*model.Feed, error) {
+func (ds *DataStore) GetFeedOld(ctx context.Context, date time.Time) (*model.Feed, error) {
 	var f model.Feed
 	f.Change = "old"
 	var err error
 	f.Date = date
 
 	// TODO limit?
-	rows, err := ds.db.Query("SELECT domain_id, domain from recent_old_domains where date = $1", date)
+	rows, err := ds.db.QueryContext(ctx, "SELECT domain_id, domain from recent_old_domains where date = $1", date)
 	if err != nil {
 		return nil, err
 	}
@@ -248,14 +249,14 @@ func (ds *DataStore) GetFeedOld(date time.Time) (*model.Feed, error) {
 	return &f, err
 }
 
-func (ds *DataStore) GetFeedMoved(date time.Time) (*model.Feed, error) {
+func (ds *DataStore) GetFeedMoved(ctx context.Context, date time.Time) (*model.Feed, error) {
 	var f model.Feed
 	f.Change = "moved"
 	var err error
 	f.Date = date
 
 	// TODO limit?
-	rows, err := ds.db.Query("SELECT domain_id, domain from recent_moved_domains where date = $1", date)
+	rows, err := ds.db.QueryContext(ctx, "SELECT domain_id, domain from recent_moved_domains where date = $1", date)
 	if err != nil {
 		return nil, err
 	}
@@ -273,14 +274,14 @@ func (ds *DataStore) GetFeedMoved(date time.Time) (*model.Feed, error) {
 	return &f, err
 }
 
-func (ds *DataStore) GetFeedNsMoved(date time.Time) (*model.NSFeed, error) {
+func (ds *DataStore) GetFeedNsMoved(ctx context.Context, date time.Time) (*model.NSFeed, error) {
 	var f model.NSFeed
 	f.Change = "moved"
 	var err error
 	f.Date = date
 
 	// TODO limit?
-	rows, err := ds.db.Query("SELECT nameserver_id, nameserver, version from recent_moved_ns where date = $1", date)
+	rows, err := ds.db.QueryContext(ctx, "SELECT nameserver_id, nameserver, version from recent_moved_ns where date = $1", date)
 	if err != nil {
 		return nil, err
 	}
@@ -309,14 +310,14 @@ func (ds *DataStore) GetFeedNsMoved(date time.Time) (*model.NSFeed, error) {
 	return &f, err
 }
 
-func (ds *DataStore) GetFeedNsNew(date time.Time) (*model.NSFeed, error) {
+func (ds *DataStore) GetFeedNsNew(ctx context.Context, date time.Time) (*model.NSFeed, error) {
 	var f model.NSFeed
 	f.Change = "new"
 	var err error
 	f.Date = date
 
 	// TODO limit?
-	rows, err := ds.db.Query("SELECT nameserver_id, nameserver, version from recent_new_ns where date = $1", date)
+	rows, err := ds.db.QueryContext(ctx, "SELECT nameserver_id, nameserver, version from recent_new_ns where date = $1", date)
 	if err != nil {
 		return nil, err
 	}
@@ -345,14 +346,14 @@ func (ds *DataStore) GetFeedNsNew(date time.Time) (*model.NSFeed, error) {
 	return &f, err
 }
 
-func (ds *DataStore) GetFeedNsOld(date time.Time) (*model.NSFeed, error) {
+func (ds *DataStore) GetFeedNsOld(ctx context.Context, date time.Time) (*model.NSFeed, error) {
 	var f model.NSFeed
 	f.Change = "old"
 	var err error
 	f.Date = date
 
 	// TODO limit?
-	rows, err := ds.db.Query("SELECT nameserver_id, nameserver, version from recent_old_ns where date = $1", date)
+	rows, err := ds.db.QueryContext(ctx, "SELECT nameserver_id, nameserver, version from recent_old_ns where date = $1", date)
 	if err != nil {
 		return nil, err
 	}
@@ -382,47 +383,47 @@ func (ds *DataStore) GetFeedNsOld(date time.Time) (*model.NSFeed, error) {
 }
 
 // GetDomain gets information for the provided domain
-func (ds *DataStore) GetDomain(domain string) (*model.Domain, error) {
+func (ds *DataStore) GetDomain(ctx context.Context, domain string) (*model.Domain, error) {
 	var d model.Domain
 	var z model.Zone
 	d.Zone = &z
 	var err error
-	d.ID, d.Zone.ID, err = ds.GetDomainID(domain)
+	d.ID, d.Zone.ID, err = ds.GetDomainID(ctx, domain)
 	if err != nil {
 		return nil, err
 	}
 	d.Name = domain
 
 	// zone queries
-	err = ds.db.QueryRow("select zones.zone, imports.date from zones, imports where zones.ID = imports.zone_id and zones.ID = $1 order by date desc limit 1", d.Zone.ID).Scan(&d.Zone.Name, &d.Zone.LastSeen)
+	err = ds.db.QueryRowContext(ctx, "select zones.zone, imports.date from zones, imports where zones.ID = imports.zone_id and zones.ID = $1 order by date desc limit 1", d.Zone.ID).Scan(&d.Zone.Name, &d.Zone.LastSeen)
 	if err != nil {
 		return nil, err
 	}
 
 	// get first_seen & last_seen
-	err = ds.db.QueryRow("select first_seen from domains_nameservers where domain_id = $1 order by first_seen nulls first limit 1", d.ID).Scan(&d.FirstSeen)
+	err = ds.db.QueryRowContext(ctx, "select first_seen from domains_nameservers where domain_id = $1 order by first_seen nulls first limit 1", d.ID).Scan(&d.FirstSeen)
 	if err != nil {
 		return nil, err
 	}
-	err = ds.db.QueryRow("select last_seen from domains_nameservers where domain_id = $1 order by last_seen nulls first limit 1", d.ID).Scan(&d.LastSeen)
+	err = ds.db.QueryRowContext(ctx, "select last_seen from domains_nameservers where domain_id = $1 order by last_seen nulls first limit 1", d.ID).Scan(&d.LastSeen)
 	if err != nil {
 		return nil, err
 	}
 
 	// get num NS
-	err = ds.db.QueryRow("SELECT count(*) FROM domains_nameservers WHERE domain_id = $1 AND last_seen IS NULL", d.ID).Scan(&d.NameServerCount)
+	err = ds.db.QueryRowContext(ctx, "SELECT count(*) FROM domains_nameservers WHERE domain_id = $1 AND last_seen IS NULL", d.ID).Scan(&d.NameServerCount)
 	if err != nil {
 		return nil, err
 	}
 
 	// get num archive NS
-	err = ds.db.QueryRow("SELECT count(*) FROM domains_nameservers WHERE domain_id = $1 AND last_seen IS NOT NULL", d.ID).Scan(&d.ArchiveNameServerCount)
+	err = ds.db.QueryRowContext(ctx, "SELECT count(*) FROM domains_nameservers WHERE domain_id = $1 AND last_seen IS NOT NULL", d.ID).Scan(&d.ArchiveNameServerCount)
 	if err != nil {
 		return nil, err
 	}
 
 	// get active NS
-	rows, err := ds.db.Query("SELECT ns.ID, ns.domain, dns.first_seen, dns.last_seen FROM domains_nameservers dns, nameservers ns WHERE dns.nameserver_id = ns.ID AND dns.last_seen IS NULL AND dns.domain_id = $1 limit 100", d.ID)
+	rows, err := ds.db.QueryContext(ctx, "SELECT ns.ID, ns.domain, dns.first_seen, dns.last_seen FROM domains_nameservers dns, nameservers ns WHERE dns.nameserver_id = ns.ID AND dns.last_seen IS NULL AND dns.domain_id = $1 limit 100", d.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -438,7 +439,7 @@ func (ds *DataStore) GetDomain(domain string) (*model.Domain, error) {
 	}
 
 	// get archive NS
-	archiveRows, err := ds.db.Query("SELECT ns.ID, ns.domain, dns.first_seen, dns.last_seen FROM domains_nameservers dns, nameservers ns WHERE dns.nameserver_id = ns.ID AND dns.last_seen IS NOT NULL AND dns.domain_id = $1 ORDER BY last_seen desc limit 100", d.ID)
+	archiveRows, err := ds.db.QueryContext(ctx, "SELECT ns.ID, ns.domain, dns.first_seen, dns.last_seen FROM domains_nameservers dns, nameservers ns WHERE dns.nameserver_id = ns.ID AND dns.last_seen IS NOT NULL AND dns.domain_id = $1 ORDER BY last_seen desc limit 100", d.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -457,16 +458,16 @@ func (ds *DataStore) GetDomain(domain string) (*model.Domain, error) {
 }
 
 // GetDomainCount gets the number of domains in the system (approx)
-func (ds *DataStore) GetDomainCount() (int64, error) {
-	row := ds.db.QueryRow("SELECT max(id) from domains;")
+func (ds *DataStore) GetDomainCount(ctx context.Context) (int64, error) {
+	row := ds.db.QueryRowContext(ctx, "SELECT max(id) from domains;")
 	var count int64
 	err := row.Scan(&count)
 	return count, err
 }
 
 // GetRandomDomain finds a random active domain
-func (ds *DataStore) GetRandomDomain() (*model.Domain, error) {
-	count, err := ds.GetDomainCount()
+func (ds *DataStore) GetRandomDomain(ctx context.Context) (*model.Domain, error) {
+	count, err := ds.GetDomainCount(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -477,7 +478,7 @@ func (ds *DataStore) GetRandomDomain() (*model.Domain, error) {
 		/* any domain */
 		//row := db.QueryRow("Select domain from domains where id = $1", rid)
 		/* active domains (slower) */
-		row := ds.db.QueryRow("select domains.ID, domain from domains, domains_nameservers dns where dns.domain_id = id and domain_id = $1 and last_seen is null limit 1;", rid)
+		row := ds.db.QueryRowContext(ctx, "select domains.ID, domain from domains, domains_nameservers dns where dns.domain_id = id and domain_id = $1 and last_seen is null limit 1;", rid)
 		err = row.Scan(&domain.ID, &domain.Name)
 	}
 	if err != nil {
@@ -487,11 +488,11 @@ func (ds *DataStore) GetRandomDomain() (*model.Domain, error) {
 }
 
 // GetZoneImportResults gets the most-recent recent ZoneImportResults for every zone (slow?)
-func (ds *DataStore) GetZoneImportResults() (*model.ZoneImportResults, error) {
+func (ds *DataStore) GetZoneImportResults(ctx context.Context) (*model.ZoneImportResults, error) {
 	var zoneImportResults model.ZoneImportResults
 	zoneImportResults.Zones = make([]*model.ZoneImportResult, 0, 100)
 
-	rows, err := ds.db.Query("select id, date, zone, records, domains, duration, old, moved, new, old_ns, new_ns, old_a, new_a, old_aaaa, new_aaaa from import_progress_view order by zone asc")
+	rows, err := ds.db.QueryContext(ctx, "select id, date, zone, records, domains, duration, old, moved, new, old_ns, new_ns, old_a, new_a, old_aaaa, new_aaaa from import_progress_view order by zone asc")
 	if err != nil {
 		return nil, err
 	}
@@ -510,15 +511,15 @@ func (ds *DataStore) GetZoneImportResults() (*model.ZoneImportResults, error) {
 }
 
 // GetImportProgress gets information on the progress of unimported zones
-func (ds *DataStore) GetImportProgress() (*model.ImportProgress, error) {
+func (ds *DataStore) GetImportProgress(ctx context.Context) (*model.ImportProgress, error) {
 	var ip model.ImportProgress
-	err := ds.db.QueryRow("select count(*) imports, count(distinct date) days from unimported").Scan(&ip.Imports, &ip.Days)
+	err := ds.db.QueryRowContext(ctx, "select count(*) imports, count(distinct date) days from unimported").Scan(&ip.Imports, &ip.Days)
 	if err != nil {
 		return nil, err
 	}
 
-	//rows, err := ds.db.Query("select date, took, count from import_date_timer_view order by date desc limit $1", len(ip.Dates))
-	rows, err := ds.db.Query("select date, sum(duration) took, count(imports.id) from imports, import_timer where imports.id = import_timer.import_id group by date order by date desc limit $1", len(ip.Dates))
+	//rows, err := ds.db.QueryContext(ctx,"select date, took, count from import_date_timer_view order by date desc limit $1", len(ip.Dates))
+	rows, err := ds.db.QueryContext(ctx, "select date, sum(duration) took, count(imports.id) from imports, import_timer where imports.id = import_timer.import_id group by date order by date desc limit $1", len(ip.Dates))
 	if err != nil {
 		return nil, err
 	}
@@ -538,10 +539,10 @@ func (ds *DataStore) GetImportProgress() (*model.ImportProgress, error) {
 }
 
 // GetNameServer gets information for the provided nameserver
-func (ds *DataStore) GetNameServer(domain string) (*model.NameServer, error) {
+func (ds *DataStore) GetNameServer(ctx context.Context, domain string) (*model.NameServer, error) {
 	var ns model.NameServer
 	var err error
-	ns.ID, err = ds.GetNameServerID(domain)
+	ns.ID, err = ds.GetNameServerID(ctx, domain)
 	if err != nil {
 		return nil, err
 	}
@@ -549,31 +550,31 @@ func (ds *DataStore) GetNameServer(domain string) (*model.NameServer, error) {
 
 	// get first_seen & last_seen
 	// times out
-	/*err = ds.db.QueryRow("select first_seen from domains_nameservers where nameserver_id = $1 order by first_seen nulls first limit 1", ns.ID).Scan(&ns.FirstSeen)
+	/*err = ds.db.QueryRowContext(ctx,"select first_seen from domains_nameservers where nameserver_id = $1 order by first_seen nulls first limit 1", ns.ID).Scan(&ns.FirstSeen)
 	if err != nil {
 		return nil, err
 	}
-	err = ds.db.QueryRow("select last_seen from domains_nameservers where nameserver_id = $1 order by last_seen nulls first limit 1", ns.ID).Scan(&ns.LastSeen)
+	err = ds.db.QueryRowContext(ctx,"select last_seen from domains_nameservers where nameserver_id = $1 order by last_seen nulls first limit 1", ns.ID).Scan(&ns.LastSeen)
 	if err != nil {
 		return nil, err
 	}*/
 
 	// get num Domains
 	// times out
-	/*err = ds.db.QueryRow("SELECT count(*) FROM domains_nameservers WHERE nameserver_id = $1 AND last_seen IS NULL", ns.ID).Scan(&ns.DomainCount)
+	/*err = ds.db.QueryRowContext(ctx,"SELECT count(*) FROM domains_nameservers WHERE nameserver_id = $1 AND last_seen IS NULL", ns.ID).Scan(&ns.DomainCount)
 	if err != nil {
 		return nil, err
 	}
 
 	// get num archive Domains
 	// TODO times out
-	err = ds.db.QueryRow("SELECT count(*) FROM domains_nameservers WHERE nameserver_id = $1 AND last_seen IS NOT NULL", ns.ID).Scan(&ns.ArchiveDomainCount)
+	err = ds.db.QueryRowContext(ctx,"SELECT count(*) FROM domains_nameservers WHERE nameserver_id = $1 AND last_seen IS NOT NULL", ns.ID).Scan(&ns.ArchiveDomainCount)
 	if err != nil {
 		return nil, err
 	}*/
 
 	// get some active Domains
-	rows, err := ds.db.Query("SELECT d.ID, d.domain, dns.first_seen, dns.last_seen FROM domains_nameservers dns, domains d WHERE d.ID = dns.domain_id AND dns.last_seen IS NULL AND dns.nameserver_id = $1 limit 100", ns.ID)
+	rows, err := ds.db.QueryContext(ctx, "SELECT d.ID, d.domain, dns.first_seen, dns.last_seen FROM domains_nameservers dns, domains d WHERE d.ID = dns.domain_id AND dns.last_seen IS NULL AND dns.nameserver_id = $1 limit 100", ns.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -589,7 +590,7 @@ func (ds *DataStore) GetNameServer(domain string) (*model.NameServer, error) {
 	}
 
 	// get some old Domains
-	archiveRows, err := ds.db.Query("SELECT d.ID, d.domain, dns.first_seen, dns.last_seen FROM domains_nameservers dns, domains d WHERE d.ID = dns.domain_id AND dns.last_seen IS NOT NULL AND dns.nameserver_id = $1 limit 100", ns.ID)
+	archiveRows, err := ds.db.QueryContext(ctx, "SELECT d.ID, d.domain, dns.first_seen, dns.last_seen FROM domains_nameservers dns, domains d WHERE d.ID = dns.domain_id AND dns.last_seen IS NOT NULL AND dns.nameserver_id = $1 limit 100", ns.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -605,19 +606,19 @@ func (ds *DataStore) GetNameServer(domain string) (*model.NameServer, error) {
 	}
 
 	// get num IP4
-	err = ds.db.QueryRow("SELECT count(*) FROM a_nameservers WHERE nameserver_id = $1 AND last_seen IS NULL", ns.ID).Scan(&ns.IP4Count)
+	err = ds.db.QueryRowContext(ctx, "SELECT count(*) FROM a_nameservers WHERE nameserver_id = $1 AND last_seen IS NULL", ns.ID).Scan(&ns.IP4Count)
 	if err != nil {
 		return nil, err
 	}
 
 	// get num archive IP4
-	err = ds.db.QueryRow("SELECT count(*) FROM a_nameservers WHERE nameserver_id = $1 AND last_seen IS NOT NULL", ns.ID).Scan(&ns.ArchiveIP4Count)
+	err = ds.db.QueryRowContext(ctx, "SELECT count(*) FROM a_nameservers WHERE nameserver_id = $1 AND last_seen IS NOT NULL", ns.ID).Scan(&ns.ArchiveIP4Count)
 	if err != nil {
 		return nil, err
 	}
 
 	// get current IP4
-	rows, err = ds.db.Query("SELECT ip.ID, ip.ip, dns.first_seen, dns.last_seen FROM a_nameservers dns, a ip WHERE ip.ID = dns.a_id AND dns.last_seen IS NULL AND dns.nameserver_id = $1 limit 100", ns.ID)
+	rows, err = ds.db.QueryContext(ctx, "SELECT ip.ID, ip.ip, dns.first_seen, dns.last_seen FROM a_nameservers dns, a ip WHERE ip.ID = dns.a_id AND dns.last_seen IS NULL AND dns.nameserver_id = $1 limit 100", ns.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -634,7 +635,7 @@ func (ds *DataStore) GetNameServer(domain string) (*model.NameServer, error) {
 	}
 
 	//get archive ipv4
-	rows, err = ds.db.Query("SELECT ip.ID, ip.ip, dns.first_seen, dns.last_seen FROM a_nameservers dns, a ip WHERE ip.ID = dns.a_id AND dns.last_seen IS NOT NULL AND dns.nameserver_id = $1 limit 100", ns.ID)
+	rows, err = ds.db.QueryContext(ctx, "SELECT ip.ID, ip.ip, dns.first_seen, dns.last_seen FROM a_nameservers dns, a ip WHERE ip.ID = dns.a_id AND dns.last_seen IS NOT NULL AND dns.nameserver_id = $1 limit 100", ns.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -651,19 +652,19 @@ func (ds *DataStore) GetNameServer(domain string) (*model.NameServer, error) {
 	}
 
 	// get num IP6
-	err = ds.db.QueryRow("SELECT count(*) FROM aaaa_nameservers WHERE nameserver_id = $1 AND last_seen IS NULL", ns.ID).Scan(&ns.IP6Count)
+	err = ds.db.QueryRowContext(ctx, "SELECT count(*) FROM aaaa_nameservers WHERE nameserver_id = $1 AND last_seen IS NULL", ns.ID).Scan(&ns.IP6Count)
 	if err != nil {
 		return nil, err
 	}
 
 	// get num archive IP6
-	err = ds.db.QueryRow("SELECT count(*) FROM aaaa_nameservers WHERE nameserver_id = $1 AND last_seen IS NOT NULL", ns.ID).Scan(&ns.ArchiveIP6Count)
+	err = ds.db.QueryRowContext(ctx, "SELECT count(*) FROM aaaa_nameservers WHERE nameserver_id = $1 AND last_seen IS NOT NULL", ns.ID).Scan(&ns.ArchiveIP6Count)
 	if err != nil {
 		return nil, err
 	}
 
 	// get current IP6
-	rows, err = ds.db.Query("SELECT ip.ID, ip.ip, dns.first_seen, dns.last_seen FROM aaaa_nameservers dns, aaaa ip WHERE ip.ID = dns.aaaa_id AND dns.last_seen IS NULL AND dns.nameserver_id = $1 limit 100", ns.ID)
+	rows, err = ds.db.QueryContext(ctx, "SELECT ip.ID, ip.ip, dns.first_seen, dns.last_seen FROM aaaa_nameservers dns, aaaa ip WHERE ip.ID = dns.aaaa_id AND dns.last_seen IS NULL AND dns.nameserver_id = $1 limit 100", ns.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -680,7 +681,7 @@ func (ds *DataStore) GetNameServer(domain string) (*model.NameServer, error) {
 	}
 
 	//get archive ipv6
-	rows, err = ds.db.Query("SELECT ip.ID, ip.ip, dns.first_seen, dns.last_seen FROM aaaa_nameservers dns, aaaa ip WHERE ip.ID = dns.aaaa_id AND dns.last_seen IS NOT NULL AND dns.nameserver_id = $1 limit 100", ns.ID)
+	rows, err = ds.db.QueryContext(ctx, "SELECT ip.ID, ip.ip, dns.first_seen, dns.last_seen FROM aaaa_nameservers dns, aaaa ip WHERE ip.ID = dns.aaaa_id AND dns.last_seen IS NOT NULL AND dns.nameserver_id = $1 limit 100", ns.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -701,10 +702,10 @@ func (ds *DataStore) GetNameServer(domain string) (*model.NameServer, error) {
 
 // GetIP gets information for the provided IP
 // TODO this can panic with SQL no rows
-func (ds *DataStore) GetIP(name string) (*model.IP, error) {
+func (ds *DataStore) GetIP(ctx context.Context, name string) (*model.IP, error) {
 	var ip model.IP
 	var err error
-	ip.ID, ip.Version, err = ds.GetIPID(name)
+	ip.ID, ip.Version, err = ds.GetIPID(ctx, name)
 	if err != nil {
 		return nil, err
 	}
@@ -712,29 +713,29 @@ func (ds *DataStore) GetIP(name string) (*model.IP, error) {
 
 	if ip.Version == 4 {
 		// get first_seen & last_seen
-		err = ds.db.QueryRow("select first_seen from a_nameservers where a_id = $1 order by first_seen nulls first limit 1", ip.ID).Scan(&ip.FirstSeen)
+		err = ds.db.QueryRowContext(ctx, "select first_seen from a_nameservers where a_id = $1 order by first_seen nulls first limit 1", ip.ID).Scan(&ip.FirstSeen)
 		if err != nil {
 			return nil, err
 		}
-		err = ds.db.QueryRow("select last_seen from a_nameservers where a_id = $1 order by last_seen nulls first limit 1", ip.ID).Scan(&ip.LastSeen)
+		err = ds.db.QueryRowContext(ctx, "select last_seen from a_nameservers where a_id = $1 order by last_seen nulls first limit 1", ip.ID).Scan(&ip.LastSeen)
 		if err != nil {
 			return nil, err
 		}
 
 		// get num NS
-		err = ds.db.QueryRow("SELECT count(*) FROM a_nameservers WHERE a_id = $1 AND last_seen IS NULL", ip.ID).Scan(&ip.NameServerCount)
+		err = ds.db.QueryRowContext(ctx, "SELECT count(*) FROM a_nameservers WHERE a_id = $1 AND last_seen IS NULL", ip.ID).Scan(&ip.NameServerCount)
 		if err != nil {
 			return nil, err
 		}
 
 		// get num archive NS
-		err = ds.db.QueryRow("SELECT count(*) FROM a_nameservers WHERE a_id = $1 AND last_seen IS NOT NULL", ip.ID).Scan(&ip.ArchiveNameServerCount)
+		err = ds.db.QueryRowContext(ctx, "SELECT count(*) FROM a_nameservers WHERE a_id = $1 AND last_seen IS NOT NULL", ip.ID).Scan(&ip.ArchiveNameServerCount)
 		if err != nil {
 			return nil, err
 		}
 
 		// get current NS
-		rows, err := ds.db.Query("SELECT ns.ID, ns.domain, dns.first_seen, dns.last_seen FROM a_nameservers dns, nameservers ns WHERE dns.nameserver_id = ns.ID AND dns.last_seen IS NULL AND dns.a_id = $1 limit 100", ip.ID)
+		rows, err := ds.db.QueryContext(ctx, "SELECT ns.ID, ns.domain, dns.first_seen, dns.last_seen FROM a_nameservers dns, nameservers ns WHERE dns.nameserver_id = ns.ID AND dns.last_seen IS NULL AND dns.a_id = $1 limit 100", ip.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -750,7 +751,7 @@ func (ds *DataStore) GetIP(name string) (*model.IP, error) {
 		}
 
 		// get archive NS
-		rows, err = ds.db.Query("SELECT ns.ID, ns.domain, dns.first_seen, dns.last_seen FROM a_nameservers dns, nameservers ns WHERE dns.nameserver_id = ns.ID AND dns.last_seen IS NOT NULL AND dns.a_id = $1 ORDER BY last_seen desc limit 100", ip.ID)
+		rows, err = ds.db.QueryContext(ctx, "SELECT ns.ID, ns.domain, dns.first_seen, dns.last_seen FROM a_nameservers dns, nameservers ns WHERE dns.nameserver_id = ns.ID AND dns.last_seen IS NOT NULL AND dns.a_id = $1 ORDER BY last_seen desc limit 100", ip.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -766,29 +767,29 @@ func (ds *DataStore) GetIP(name string) (*model.IP, error) {
 		}
 	} else {
 		// get first_seen & last_seen
-		err = ds.db.QueryRow("select first_seen from aaaa_nameservers where aaaa_id = $1 order by first_seen nulls first limit 1", ip.ID).Scan(&ip.FirstSeen)
+		err = ds.db.QueryRowContext(ctx, "select first_seen from aaaa_nameservers where aaaa_id = $1 order by first_seen nulls first limit 1", ip.ID).Scan(&ip.FirstSeen)
 		if err != nil {
 			return nil, err
 		}
-		err = ds.db.QueryRow("select last_seen from aaaa_nameservers where aaaa_id = $1 order by last_seen nulls first limit 1", ip.ID).Scan(&ip.LastSeen)
+		err = ds.db.QueryRowContext(ctx, "select last_seen from aaaa_nameservers where aaaa_id = $1 order by last_seen nulls first limit 1", ip.ID).Scan(&ip.LastSeen)
 		if err != nil {
 			return nil, err
 		}
 
 		// get num NS
-		err = ds.db.QueryRow("SELECT count(*) FROM aaaa_nameservers WHERE aaaa_id = $1 AND last_seen IS NULL", ip.ID).Scan(&ip.NameServerCount)
+		err = ds.db.QueryRowContext(ctx, "SELECT count(*) FROM aaaa_nameservers WHERE aaaa_id = $1 AND last_seen IS NULL", ip.ID).Scan(&ip.NameServerCount)
 		if err != nil {
 			return nil, err
 		}
 
 		// get num archive NS
-		err = ds.db.QueryRow("SELECT count(*) FROM aaaa_nameservers WHERE aaaa_id = $1 AND last_seen IS NOT NULL", ip.ID).Scan(&ip.ArchiveNameServerCount)
+		err = ds.db.QueryRowContext(ctx, "SELECT count(*) FROM aaaa_nameservers WHERE aaaa_id = $1 AND last_seen IS NOT NULL", ip.ID).Scan(&ip.ArchiveNameServerCount)
 		if err != nil {
 			return nil, err
 		}
 
 		// get current NS
-		rows, err := ds.db.Query("SELECT ns.ID, ns.domain, dns.first_seen, dns.last_seen FROM aaaa_nameservers dns, nameservers ns WHERE dns.nameserver_id = ns.ID AND dns.last_seen IS NULL AND dns.aaaa_id = $1 limit 100", ip.ID)
+		rows, err := ds.db.QueryContext(ctx, "SELECT ns.ID, ns.domain, dns.first_seen, dns.last_seen FROM aaaa_nameservers dns, nameservers ns WHERE dns.nameserver_id = ns.ID AND dns.last_seen IS NULL AND dns.aaaa_id = $1 limit 100", ip.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -804,7 +805,7 @@ func (ds *DataStore) GetIP(name string) (*model.IP, error) {
 		}
 
 		// get archive NS
-		rows, err = ds.db.Query("SELECT ns.ID, ns.domain, dns.first_seen, dns.last_seen FROM aaaa_nameservers dns, nameservers ns WHERE dns.nameserver_id = ns.ID AND dns.last_seen IS NOT NULL AND dns.aaaa_id = $1 ORDER BY last_seen desc limit 100", ip.ID)
+		rows, err = ds.db.QueryContext(ctx, "SELECT ns.ID, ns.domain, dns.first_seen, dns.last_seen FROM aaaa_nameservers dns, nameservers ns WHERE dns.nameserver_id = ns.ID AND dns.last_seen IS NOT NULL AND dns.aaaa_id = $1 ORDER BY last_seen desc limit 100", ip.ID)
 		if err != nil {
 			return nil, err
 		}
