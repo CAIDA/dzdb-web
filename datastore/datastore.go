@@ -513,7 +513,7 @@ func (ds *DataStore) GetZoneImportResults(ctx context.Context) (*model.ZoneImpor
 // GetImportProgress gets information on the progress of unimported zones
 func (ds *DataStore) GetImportProgress(ctx context.Context) (*model.ImportProgress, error) {
 	var ip model.ImportProgress
-	err := ds.db.QueryRowContext(ctx, "select count(*) imports, count(distinct date) days from unimported").Scan(&ip.Imports, &ip.Days)
+	err := ds.db.QueryRowContext(ctx, "select count(*), count(distinct date) from imports where imported = false").Scan(&ip.Imports, &ip.Days)
 	if err != nil {
 		return nil, err
 	}
