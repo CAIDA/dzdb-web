@@ -7,6 +7,8 @@
       <th>Zone</th>
       <th>Domains</th>
       <th>Records</th>
+      <th>Imports</th>
+      <th>First Updated</th>
       <th>Last Updated</th>
     </tr>
   </thead>
@@ -16,7 +18,9 @@
       <td><a href="/zones/{{$value.Zone}}">{{$value.Zone}}</a></td>
       <td>{{$value.Domains}}</td>
       <td>{{$value.Records}}</td>
-      <td>{{$value.Date.Format "Jan 02, 2006"}}</td>
+      <td>{{$value.Count}}</td>
+      <td>{{$value.FirstImportDate.Format "Jan 02, 2006"}}</td>
+      <td>{{$value.LastImportDate.Format "Jan 02, 2006"}}</td>
     </tr>
   {{ end }}
   </tbody>

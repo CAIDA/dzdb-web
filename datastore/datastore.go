@@ -492,14 +492,14 @@ func (ds *DataStore) GetZoneImportResults(ctx context.Context) (*model.ZoneImpor
 	var zoneImportResults model.ZoneImportResults
 	zoneImportResults.Zones = make([]*model.ZoneImportResult, 0, 100)
 
-	rows, err := ds.db.QueryContext(ctx, "select id, date, zone, records, domains, duration, old, moved, new, old_ns, new_ns, old_a, new_a, old_aaaa, new_aaaa from import_progress_view order by zone asc")
+	rows, err := ds.db.QueryContext(ctx, "select zones.zone, import_zone_counts.domains, import_zone_counts.records, zones_imports.first_import_date, zones_imports.first_import_id, zones_imports.last_import_date,zones_imports.last_import_id, zones_imports.count from zones, zones_imports, import_zone_counts where zones.id = zones_imports.zone_id and zones_imports.last_import_id = import_zone_counts.import_id order by zone asc")
 	if err != nil {
 		return nil, err
 	}
 
 	for rows.Next() {
 		var r model.ZoneImportResult
-		err = rows.Scan(&r.ID, &r.Date, &r.Zone, &r.Records, &r.Domains, &r.Duration, &r.Old, &r.Moved, &r.New, &r.NewNs, &r.OldNs, &r.NewA, &r.OldA, &r.NewAaaa, &r.OldAaaa)
+		err = rows.Scan(&r.Zone, &r.Domains, &r.Records, &r.FirstImportDate, &r.FirstImportID, &r.LastImportDate, &r.LastImportID, &r.Count)
 		if err != nil {
 			return nil, err
 		}
@@ -518,7 +518,6 @@ func (ds *DataStore) GetImportProgress(ctx context.Context) (*model.ImportProgre
 		return nil, err
 	}
 
-	//rows, err := ds.db.QueryContext(ctx,"select date, took, count from import_date_timer_view order by date desc limit $1", len(ip.Dates))
 	rows, err := ds.db.QueryContext(ctx, "select date, sum(duration) took, count(imports.id) from imports, import_timer where imports.id = import_timer.import_id group by date order by date desc limit $1", len(ip.Dates))
 	if err != nil {
 		return nil, err

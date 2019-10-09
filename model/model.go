@@ -93,16 +93,19 @@ func (zirs *ZoneImportResults) GenerateMetaData() {
 
 // ZoneImportResult holds data about the results of a single import
 type ZoneImportResult struct {
-	Type    *string    `json:"type"`
-	ID      int64      `json:"id"`
-	Link    string     `json:"link"`
-	Date    *time.Time `json:"date"`
-	Zone    string     `json:"zone"`
-	Records int64      `json:"records"`
-	Domains int64      `json:"domains"`
+	Type            *string    `json:"type"`
+	FirstImportID   int64      `json:"first_import_id"`
+	LastImportID    int64      `json:"last_import_id"`
+	Link            string     `json:"link"`
+	FirstImportDate *time.Time `json:"first_date"`
+	LastImportDate  *time.Time `json:"last_date"`
+	Zone            string     `json:"zone"`
+	Records         int64      `json:"records"`
+	Domains         int64      `json:"domains"`
+	Count           int64      `json:"count"`
 	// TODO make duration
-	Duration *string `json:"duration"`
-	Old      *int64  `json:"domains_old"`
+	//Duration *string `json:"duration"`
+	/*Old      *int64  `json:"domains_old"`
 	Moved    *int64  `json:"domains_moved"`
 	New      *int64  `json:"domains_new"`
 	NewNs    *int64  `json:"ns_new"`
@@ -110,7 +113,7 @@ type ZoneImportResult struct {
 	NewA     *int64  `json:"a_new"`
 	OldA     *int64  `json:"a_old"`
 	NewAaaa  *int64  `json:"aaaa_new"`
-	OldAaaa  *int64  `json:"aaaa_old"`
+	OldAaaa  *int64  `json:"aaaa_old"`*/
 }
 
 // GenerateMetaData generates metadata recursively of member models
