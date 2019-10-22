@@ -25,10 +25,6 @@
       <td>{{if $value.FirstSeen}}{{$value.FirstSeen.Format "Jan 02, 2006"}}{{end}}</td>
     </tr>
   {{ end }}
-  <tr>
-  <td></td>
-      <td><span class="badge">{{if not $.Data.DomainCount}}{{if eq (len $.Data.Domains) 100}}100 of many{{else}}{{(len $.Data.Domains)}}{{end}}{{else}}{{$.Data.DomainCount}}{{end}}</span></td>
-    </tr>
   </tbody>
   </table>
 </div>
@@ -50,11 +46,6 @@
       <td>{{if $value.LastSeen}}{{$value.LastSeen.Format "Jan 02, 2006"}}{{end}}</td>
     </tr>
   {{ end }}
-    <tr>
-  <td></td>
-   <td></td>
-      <td><span class="badge">{{if not $.Data.ArchiveDomainCount}}{{if eq (len $.Data.ArchiveDomains) 100}}100 of many{{else}}{{(len $.Data.ArchiveDomains)}}{{end}}{{else}}{{$.Data.ArchiveDomainCount}}{{end}}</span></td>
-    </tr>
   </tbody>
   </table>
 </div>
