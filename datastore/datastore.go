@@ -124,7 +124,7 @@ func (ds *DataStore) GetZone(ctx context.Context, name string) (*model.Zone, err
 	z.Name = name
 
 	// get first_seen & last_seen
-	err = ds.db.QueryRowContext(ctx, "select first_seen from zones_nameservers where zone_id = $1 order by first_seen nulls first limit 1", z.ID).Scan(&z.FirstSeen)
+	err = ds.db.QueryRowContext(ctx, "select first_seen from zones_nameservers where zone_id = $1 order by first_seen asc nulls first limit 1", z.ID).Scan(&z.FirstSeen)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			z.FirstSeen = nil
@@ -133,7 +133,7 @@ func (ds *DataStore) GetZone(ctx context.Context, name string) (*model.Zone, err
 		}
 	}
 
-	err = ds.db.QueryRowContext(ctx, "select last_seen from zones_nameservers where zone_id = $1 order by last_seen nulls first limit 1", z.ID).Scan(&z.LastSeen)
+	err = ds.db.QueryRowContext(ctx, "select last_seen from zones_nameservers where zone_id = $1 order by last_seen desc nulls first limit 1", z.ID).Scan(&z.LastSeen)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			z.LastSeen = nil
@@ -401,11 +401,11 @@ func (ds *DataStore) GetDomain(ctx context.Context, domain string) (*model.Domai
 	}
 
 	// get first_seen & last_seen
-	err = ds.db.QueryRowContext(ctx, "select first_seen from domains_nameservers where domain_id = $1 order by first_seen nulls first limit 1", d.ID).Scan(&d.FirstSeen)
+	err = ds.db.QueryRowContext(ctx, "select first_seen from domains_nameservers where domain_id = $1 order by first_seen asc nulls first limit 1", d.ID).Scan(&d.FirstSeen)
 	if err != nil {
 		return nil, err
 	}
-	err = ds.db.QueryRowContext(ctx, "select last_seen from domains_nameservers where domain_id = $1 order by last_seen nulls first limit 1", d.ID).Scan(&d.LastSeen)
+	err = ds.db.QueryRowContext(ctx, "select last_seen from domains_nameservers where domain_id = $1 order by last_seen desc nulls first limit 1", d.ID).Scan(&d.LastSeen)
 	if err != nil {
 		return nil, err
 	}
@@ -549,11 +549,11 @@ func (ds *DataStore) GetNameServer(ctx context.Context, domain string) (*model.N
 
 	// get first_seen & last_seen
 	// times out
-	/*err = ds.db.QueryRowContext(ctx,"select first_seen from domains_nameservers where nameserver_id = $1 order by first_seen nulls first limit 1", ns.ID).Scan(&ns.FirstSeen)
+	/*err = ds.db.QueryRowContext(ctx,"select first_seen from domains_nameservers where nameserver_id = $1 order by first_seen asc nulls first limit 1", ns.ID).Scan(&ns.FirstSeen)
 	if err != nil {
 		return nil, err
 	}
-	err = ds.db.QueryRowContext(ctx,"select last_seen from domains_nameservers where nameserver_id = $1 order by last_seen nulls first limit 1", ns.ID).Scan(&ns.LastSeen)
+	err = ds.db.QueryRowContext(ctx,"select last_seen from domains_nameservers where nameserver_id = $1 order by last_seen desc nulls first limit 1", ns.ID).Scan(&ns.LastSeen)
 	if err != nil {
 		return nil, err
 	}*/
@@ -712,11 +712,11 @@ func (ds *DataStore) GetIP(ctx context.Context, name string) (*model.IP, error) 
 
 	if ip.Version == 4 {
 		// get first_seen & last_seen
-		err = ds.db.QueryRowContext(ctx, "select first_seen from a_nameservers where a_id = $1 order by first_seen nulls first limit 1", ip.ID).Scan(&ip.FirstSeen)
+		err = ds.db.QueryRowContext(ctx, "select first_seen from a_nameservers where a_id = $1 order by first_seen asc nulls first limit 1", ip.ID).Scan(&ip.FirstSeen)
 		if err != nil {
 			return nil, err
 		}
-		err = ds.db.QueryRowContext(ctx, "select last_seen from a_nameservers where a_id = $1 order by last_seen nulls first limit 1", ip.ID).Scan(&ip.LastSeen)
+		err = ds.db.QueryRowContext(ctx, "select last_seen from a_nameservers where a_id = $1 order by last_seen desc nulls first limit 1", ip.ID).Scan(&ip.LastSeen)
 		if err != nil {
 			return nil, err
 		}
@@ -766,11 +766,11 @@ func (ds *DataStore) GetIP(ctx context.Context, name string) (*model.IP, error) 
 		}
 	} else {
 		// get first_seen & last_seen
-		err = ds.db.QueryRowContext(ctx, "select first_seen from aaaa_nameservers where aaaa_id = $1 order by first_seen nulls first limit 1", ip.ID).Scan(&ip.FirstSeen)
+		err = ds.db.QueryRowContext(ctx, "select first_seen from aaaa_nameservers where aaaa_id = $1 order by first_seen asc nulls first limit 1", ip.ID).Scan(&ip.FirstSeen)
 		if err != nil {
 			return nil, err
 		}
-		err = ds.db.QueryRowContext(ctx, "select last_seen from aaaa_nameservers where aaaa_id = $1 order by last_seen nulls first limit 1", ip.ID).Scan(&ip.LastSeen)
+		err = ds.db.QueryRowContext(ctx, "select last_seen from aaaa_nameservers where aaaa_id = $1 order by last_seen desc nulls first limit 1", ip.ID).Scan(&ip.LastSeen)
 		if err != nil {
 			return nil, err
 		}
