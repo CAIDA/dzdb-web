@@ -101,6 +101,9 @@ func APIStart(app *appContext, vdzServer *server.Server) {
 	//addAPI("/feeds/moved/:year/:month/:day", "feeds_moved_date", nil)
 	//addAPI("/feeds/moved/:year/:month/:day/page/:page", "feeds_moved_date_paged", nil)
 
+	// research
+	addAPI("/research/ipnszonecount/:ip", "ip_ns_zone_count", app.apiIPNsZoneCount)
+
 	// API index
 	vdzServer.Get("/api/", app.apiIndex)
 }

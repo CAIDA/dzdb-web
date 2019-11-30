@@ -11,3 +11,5 @@ require (
 	golang.org/x/text v0.3.2 // indirect
 	gopkg.in/throttled/throttled.v2 v2.2.4
 )
+
+go 1.13
