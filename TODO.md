@@ -1,10 +1,8 @@
-## TODOs from KEEP
+# from KEEP
 
- * add contact / about page
  * Need TLD zone page to list current number of domains (and history graph)
  * reverse index on NS
  * log 404s and other failures to app log
-
 
 update templates so that first/last seen are in a box or something...
 
@@ -25,9 +23,6 @@ top NS
 ## Feeds
 all
 
-## Domains
-whois?
-
 ## IPs
 some statS on index (total ip4/6)?
 
@@ -36,49 +31,6 @@ some statS on index (total ip4/6)?
 
 # metadata tables
 
-
-## new table
-vdz=# \d nameserver_metadata 
-  Table "public.nameserver_metadata"
-  ┌───────────────┬─────────┬───────────┐
-  │    Column     │  Type   │ Modifiers │
-  ├───────────────┼─────────┼───────────┤
-  │ nameserver_id │ bigint  │ not null  │
-  │ first_seen    │ date    │           │
-  │ last_seen     │ date    │           │
-  │ domains       │ integer │           │
-  │ archive       │ integer │           │
-  └───────────────┴─────────┴───────────┘
-  Indexes:
-      "nameserver_metadata_pkey" PRIMARY KEY, btree (nameserver_id)
-
-### queries
--- add first data
-insert into nameserver_metadata (nameserver_id, first_seen) select nameserver_id, min(coalesce(first_seen,'12-27-1990')) first_seen from domains_nameservers group by nameserver_id;
--- set nulls
-update nameserver_metadata set first_seen = NULL where first_seen = '1990-12-27'; 
--- insert remaining IDs
-insert into nameserver_metadata (nameserver_id) SELECT id from nameservers where not exists (select nameserver_id from nameserver_metadata where nameserver_id = id);
--- add last data
-create TABLE last_pp as select nameserver_id, max(last_seen) from domains_nameservers where last_seen is not null group by nameserver_id;
-create table last_null as select distinct nameserver_id from domains_nameservers where last_seen is null; 
-delete from last_pp where nameserver_id in (select * from last_null);
-drop table last_null;
-update nameserver_metadata set last_seen = max from last_pp where last_pp.nameserver_id = nameserver_metadata.nameserver_id;
-drop table last_pp;
-## edit import to add these fields
-### first_seen
-update whenever inserting new NS
-### last_seen
-TODO!
-
-temp solution: 
-select nameserver_id, NULLIF(MAX(COALESCE(last_seen, 'infinity'::date)), 'infinity'::date) as last_seen from domains_nameservers group by nameserver_id;
-~33min
-
-update:
-vdz=# with ls2 as (select nameserver_id, NULLIF(MAX(COALESCE(last_seen, 'infinity'::date)), 'infinity'::date) as last_seen from domains_nameservers group by nameserver_id) update nameserver_metadata set last_seen2 = ls2.last_seen from ls2 where ls2.nameserver_id = nameserver_metadata.nameserver_id;
-~45min
 
 ## import_delta_counts
 does not need to be public, keep internal
@@ -115,5 +67,3 @@ use for global stats in zones and total stats
 │ 2013-10-07 │       7 │  2591275 │ 1912 │  2679 │ 2701 │
 │ 2013-10-07 │     183 │  1155958 │  711 │  1941 │ 1686 │
 └────────────┴─────────┴──────────┴──────┴───────┴──────┘
-
-
