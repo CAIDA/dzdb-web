@@ -1,0 +1,21 @@
+{{template "top" $}}
+<div class="list-group">
+  <a href="/ip/{{$.Data.IP}}" class="list-group-item active">IP Nameserver Zone Count<span class="badge">{{$.Data.IP}}</span></a>
+  <table class="table table-striped table-hover ">
+  <thead>
+    <tr>
+      <th>Zone</th>
+      <th>Number of Nameservers</th>
+    </tr>
+  </thead>
+  <tbody>
+  {{ range $key, $value := $.Data.ZoneNSCounts}}
+    <tr>
+      <td><a href="/zones/{{$key}}">{{$key}}</a></td>
+      <td>{{$value}}</td>
+    </tr>
+  {{ end }}
+  </tbody>
+  </table>
+</div>
+{{template "bottom" $}}

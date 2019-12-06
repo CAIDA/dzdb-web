@@ -60,6 +60,10 @@ func Start(ds *datastore.DataStore, server *server.Server) {
 	server.Get("/zones/:zone", app.zoneHandler)
 	server.Get("/zones", app.zoneIndexHandler)
 	server.Get("/stats", app.statsHandler)
+
+	// research
+	server.Get("/ipnszonecount/:ip", app.ipNsZoneCountHandler)
+
 }
 
 func (app *appContext) searchHandler(w http.ResponseWriter, r *http.Request) {
@@ -263,6 +267,27 @@ func (app *appContext) nameserverIndexHandler(w http.ResponseWriter, r *http.Req
 func (app *appContext) ipIndexHandler(w http.ResponseWriter, r *http.Request) {
 	p := Page{"IPs", "IPs", nil}
 	err := app.templates.ExecuteTemplate(w, "ips.tmpl", p)
+	if err != nil {
+		panic(err)
+	}
+}
+
+// research
+func (app *appContext) ipNsZoneCountHandler(w http.ResponseWriter, r *http.Request) {
+	params := httprouter.ParamsFromContext(r.Context())
+	ip := cleanDomain(params.ByName("ip"))
+
+	data, err := app.ds.GetIPNsZoneCount(r.Context(), ip)
+	if err != nil {
+		if err == datastore.ErrNoResource {
+			server.WriteJSONError(w, server.ErrResourceNotFound)
+			return
+		}
+		panic(err)
+	}
+
+	p := Page{"IP NS Zone Count", "IP NS Zone Count", data}
+	err = app.templates.ExecuteTemplate(w, "ipnszonecount.tmpl", p)
 	if err != nil {
 		panic(err)
 	}
