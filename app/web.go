@@ -62,7 +62,7 @@ func Start(ds *datastore.DataStore, server *server.Server) {
 	server.Get("/stats", app.statsHandler)
 
 	// research
-	server.Get("/ipnszonecount/:ip", app.ipNsZoneCountHandler)
+	server.Get("/research/ipnszonecount/:ip", app.ipNsZoneCountHandler)
 
 }
 

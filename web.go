@@ -32,6 +32,7 @@ func main() {
 		log.Fatal(err)
 	}
 	app.Start(ds, vdzServer)
+	// TODO allow setting addr/port
 	log.Printf("Server starting on %s", vdzServer.ListenAddr)
 	log.Fatal(vdzServer.Start())
 }
