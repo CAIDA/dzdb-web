@@ -5,10 +5,15 @@ var (
 )
 
 type IpNsZoneCount struct {
-	Type         *string          `json:"type"`
-	Link         string           `json:"link"`
-	IP           string           `json:"ip"`
-	ZoneNSCounts map[string]int64 `json:"zone_ns_counts"`
+	Type         *string     `json:"type"`
+	Link         string      `json:"link"`
+	IP           string      `json:"ip"`
+	ZoneNSCounts []ZoneCount `json:"zone_counts"`
+}
+
+type ZoneCount struct {
+	Zone  string `json:"zone"`
+	Count int64  `json:"count"`
 }
 
 // GenerateMetaData generates metadata recursively of member models

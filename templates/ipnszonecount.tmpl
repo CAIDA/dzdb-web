@@ -16,8 +16,8 @@
   <tbody>
   {{ range $key, $value := $.Data.ZoneNSCounts}}
     <tr>
-      <td><a href="/zones/{{$key}}">{{$key}}</a></td>
-      <td>{{$value}}</td>
+      <td><a href="/zones/{{$value.Zone}}">{{$value.Zone}}</a></td>
+      <td>{{$value.Count}}</td>
     </tr>
   {{ end }}
   </tbody>
