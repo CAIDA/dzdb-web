@@ -518,7 +518,7 @@ func (ds *DataStore) GetImportProgress(ctx context.Context) (*model.ImportProgre
 		return nil, err
 	}
 
-	rows, err := ds.db.QueryContext(ctx, "select date, sum(duration) took, count(imports.id) from imports, import_timer where imports.id = import_timer.import_id group by date order by date desc limit $1", len(ip.Dates))
+	rows, err := ds.db.QueryContext(ctx, "select date, sum(import_duration+diff_duration) took, count(CASE WHEN imports.imported THEN 1 END) from imports, import_progress where imports.id = import_progress.import_id group by date order by date desc limit $1", len(ip.Dates))
 	if err != nil {
 		return nil, err
 	}
