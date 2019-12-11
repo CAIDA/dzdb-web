@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	"vdz-web/app/temfun"
 	"vdz-web/datastore"
 	"vdz-web/server"
 
@@ -36,7 +37,8 @@ func Start(ds *datastore.DataStore, server *server.Server) {
 	var app appContext
 	app.ds = ds
 	// compile all templates and cache them
-	app.templates = template.Must(template.ParseGlob("templates/*.tmpl"))
+	//app.templates = template.Must(template.ParseGlob("templates/*.tmpl").Funcs(temfun.Funcs))
+	app.templates = template.Must(template.New("main").Funcs(temfun.Funcs).ParseGlob("templates/*.tmpl"))
 
 	// load the api
 	APIStart(&app, server)

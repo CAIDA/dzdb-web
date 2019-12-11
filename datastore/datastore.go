@@ -22,13 +22,13 @@ import (
 var ErrNoResource = errors.New("the requested object does not exist")
 
 // connectDB connects to the Postgresql database
-func connectDB(connStr string) (*sql.DB, error) {
-	db, err := sql.Open("postgres", connStr)
+func connectDB(ctx context.Context) (*sql.DB, error) {
+	db, err := sql.Open("postgres", "")
 	if err != nil {
 		return nil, err
 	}
 	// test connection
-	err = db.Ping() // TODO PingContext()
+	err = db.PingContext(ctx)
 	if err != nil {
 		return db, err
 	}
@@ -42,9 +42,9 @@ type DataStore struct {
 }
 
 // New Creates a new DataStore with the provided database configuration
-// database connection variables can also be set as environment variables
-func New(connStr string) (*DataStore, error) {
-	db, err := connectDB(connStr)
+// database connection variables are set from environment variables
+func New(ctx context.Context) (*DataStore, error) {
+	db, err := connectDB(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -82,8 +82,9 @@ func (ds *DataStore) GetIPID(ctx context.Context, ipStr string) (int64, int, err
 	ip := net.ParseIP(ipStr)
 	if ip.To4() != nil {
 		version = 4
-		// TODO use native golang types
+		// TODO use native golang IP types
 		// https://github.com/lib/pq/pull/390
+		// looks like solution is to use pgx
 		err = ds.db.QueryRowContext(ctx, "SELECT id FROM a WHERE ip = $1", ip.String()).Scan(&id)
 		if err == sql.ErrNoRows {
 			err = ErrNoResource
@@ -558,30 +559,11 @@ func (ds *DataStore) GetNameServer(ctx context.Context, domain string) (*model.N
 	}
 	ns.Name = domain
 
-	// get first_seen & last_seen
-	// times out
-	/*err = ds.db.QueryRowContext(ctx,"select first_seen from domains_nameservers where nameserver_id = $1 order by first_seen asc nulls first limit 1", ns.ID).Scan(&ns.FirstSeen)
+	// get NS metadata
+	err = ds.db.QueryRowContext(ctx, "select first_seen, last_seen, domains_count, domains_archive_count, a_count, a_archive_count, aaaa_count, aaaa_archive_count from nameserver_metadata where nameserver_id = $1", ns.ID).Scan(&ns.FirstSeen, &ns.LastSeen, &ns.DomainCount, &ns.ArchiveDomainCount, &ns.IP4Count, &ns.ArchiveIP4Count, &ns.IP6Count, &ns.IP6Count)
 	if err != nil {
 		return nil, err
 	}
-	err = ds.db.QueryRowContext(ctx,"select last_seen from domains_nameservers where nameserver_id = $1 order by last_seen desc nulls first limit 1", ns.ID).Scan(&ns.LastSeen)
-	if err != nil {
-		return nil, err
-	}*/
-
-	// get num Domains
-	// times out
-	/*err = ds.db.QueryRowContext(ctx,"SELECT count(*) FROM domains_nameservers WHERE nameserver_id = $1 AND last_seen IS NULL", ns.ID).Scan(&ns.DomainCount)
-	if err != nil {
-		return nil, err
-	}
-
-	// get num archive Domains
-	// TODO times out
-	err = ds.db.QueryRowContext(ctx,"SELECT count(*) FROM domains_nameservers WHERE nameserver_id = $1 AND last_seen IS NOT NULL", ns.ID).Scan(&ns.ArchiveDomainCount)
-	if err != nil {
-		return nil, err
-	}*/
 
 	// get some active Domains
 	rows, err := ds.db.QueryContext(ctx, "SELECT d.ID, d.domain, dns.first_seen, dns.last_seen FROM domains_nameservers dns, domains d WHERE d.ID = dns.domain_id AND dns.last_seen IS NULL AND dns.nameserver_id = $1 limit 100", ns.ID)
@@ -613,18 +595,6 @@ func (ds *DataStore) GetNameServer(ctx context.Context, domain string) (*model.N
 			return nil, err
 		}
 		ns.ArchiveDomains = append(ns.ArchiveDomains, &d)
-	}
-
-	// get num IP4
-	err = ds.db.QueryRowContext(ctx, "SELECT count(*) FROM a_nameservers WHERE nameserver_id = $1 AND last_seen IS NULL", ns.ID).Scan(&ns.IP4Count)
-	if err != nil {
-		return nil, err
-	}
-
-	// get num archive IP4
-	err = ds.db.QueryRowContext(ctx, "SELECT count(*) FROM a_nameservers WHERE nameserver_id = $1 AND last_seen IS NOT NULL", ns.ID).Scan(&ns.ArchiveIP4Count)
-	if err != nil {
-		return nil, err
 	}
 
 	// get current IP4
@@ -659,18 +629,6 @@ func (ds *DataStore) GetNameServer(ctx context.Context, domain string) (*model.N
 		}
 		ip.Version = 4
 		ns.ArchiveIP4 = append(ns.ArchiveIP4, &ip)
-	}
-
-	// get num IP6
-	err = ds.db.QueryRowContext(ctx, "SELECT count(*) FROM aaaa_nameservers WHERE nameserver_id = $1 AND last_seen IS NULL", ns.ID).Scan(&ns.IP6Count)
-	if err != nil {
-		return nil, err
-	}
-
-	// get num archive IP6
-	err = ds.db.QueryRowContext(ctx, "SELECT count(*) FROM aaaa_nameservers WHERE nameserver_id = $1 AND last_seen IS NOT NULL", ns.ID).Scan(&ns.ArchiveIP6Count)
-	if err != nil {
-		return nil, err
 	}
 
 	// get current IP6

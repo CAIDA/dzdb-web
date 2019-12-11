@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"log"
 	"time"
@@ -20,8 +21,9 @@ func main() {
 	// if no DB wait for valid connection
 	var ds *datastore.DataStore
 	var err error
+	ctx := context.Background()
 	for {
-		ds, err = datastore.New("") // use standard env vars
+		ds, err = datastore.New(ctx)
 		if err != nil {
 			log.Println(err)
 			log.Println("waiting for 30s")
