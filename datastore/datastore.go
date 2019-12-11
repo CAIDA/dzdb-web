@@ -8,12 +8,12 @@ import (
 	"log"
 	"math/rand"
 	"net"
-	"strings"
 	"time"
 
 	"vdz-web/model"
 
 	_ "github.com/lib/pq" // for postgresql
+	"github.com/teepark/pqinterval"
 )
 
 //TODO prepaired statements
@@ -524,14 +524,24 @@ func (ds *DataStore) GetImportProgress(ctx context.Context) (*model.ImportProgre
 	}
 	defer rows.Close()
 	var i int
+	var diffDuration, importDuration pqinterval.Interval
+
 	for rows.Next() {
 		ipd := &ip.Dates[i]
-		err = rows.Scan(&ipd.Date, &ipd.DiffTook, &ipd.ImportTook, &ipd.Count)
+		err = rows.Scan(&ipd.Date, &diffDuration, &importDuration, &ipd.Count)
 		if err != nil {
 			return nil, err
 		}
-		ipd.DiffTook = strings.SplitN(ipd.DiffTook, ".", 2)[0] // hack to avoid  duration.Round()
-		ipd.ImportTook = strings.SplitN(ipd.ImportTook, ".", 2)[0] // hack to avoid  duration.Round()
+		ipd.DiffDuration, err = diffDuration.Duration()
+		if err != nil {
+			return nil, err
+		}
+		ipd.ImportDuration, err = importDuration.Duration()
+		if err != nil {
+			return nil, err
+		}
+		ipd.DiffDuration = ipd.DiffDuration.Round(time.Second)
+		ipd.ImportDuration = ipd.ImportDuration.Round(time.Second)
 		i++
 	}
 
