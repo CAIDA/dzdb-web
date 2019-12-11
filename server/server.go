@@ -18,14 +18,19 @@ import (
 	"gopkg.in/throttled/throttled.v2/store/memstore"
 )
 
-const (
-	// Default environment variables
-	defaultServerAddress        = "127.0.0.1:8080" // HTTP_LISTEN_ADDR
-	defaultAPITimeout           = 60               // API_TIMEOUT
-	defaultAPIRequestsPerMinute = 30               // API_REQUESTS_PER_MINUTE
-	defaultAPIMaxRequestHistory = 16384            // API_MAX_HISTORY
-	defaultAPIRequestsBurst     = 5                // API_REQUEST_BURST
-)
+type ServerApiConfig struct {
+	ApiTimeout           int
+	ApiRequestsPerMinute int
+	ApiMaxRequestHistory int
+	ApiRequestsBurst     int
+}
+
+var DefailtServerApiConfig = ServerApiConfig{
+	ApiTimeout:           60,
+	ApiRequestsPerMinute: 30,
+	ApiMaxRequestHistory: 16384,
+	ApiRequestsBurst:     5,
+}
 
 // handler for catching a panic
 // returns an HTTP code 500
@@ -145,31 +150,16 @@ type Server struct {
 	// Alice chain of http handlers
 	handlers alice.Chain
 
-	// ListenAddr address to bind http server too
-	ListenAddr string
+	listenAddr string
+
+	apiConfig ServerApiConfig
 }
 
 // New creates a new server object with the default (included) handlers
-func New() (*Server, error) {
-	server := &Server{}
-
-	// get settings
-	server.ListenAddr = model.GetStringEnv("HTTP_LISTEN_ADDR", defaultServerAddress)
-	apiTimeout, err := model.GetIntEnv("API_TIMEOUT", defaultAPITimeout)
-	if err != nil {
-		return nil, err
-	}
-	apiRequestsPerMinute, err := model.GetIntEnv("API_REQUESTS_PER_MINUTE", defaultAPIRequestsPerMinute)
-	if err != nil {
-		return nil, err
-	}
-	apiMaxHistory, err := model.GetIntEnv("API_MAX_HISTORY", defaultAPIMaxRequestHistory)
-	if err != nil {
-		return nil, err
-	}
-	apiRequestsBurst, err := model.GetIntEnv("API_REQUEST_BURST", defaultAPIRequestsBurst)
-	if err != nil {
-		return nil, err
+func New(listenAddr string, apiConfig ServerApiConfig) (*Server, error) {
+	server := &Server{
+		listenAddr: listenAddr,
+		apiConfig:  apiConfig,
 	}
 
 	// setup server
@@ -177,10 +167,10 @@ func New() (*Server, error) {
 	server.handlers = alice.New(
 		//context.ClearHandler,
 		//addContextHandler,
-		makeTimeoutHandler(apiTimeout),
+		makeTimeoutHandler(server.apiConfig.ApiTimeout),
 		loggingHandler,
 		recoverHandler,
-		makeThrottleHandler(apiRequestsPerMinute, apiRequestsBurst, apiMaxHistory),
+		makeThrottleHandler(server.apiConfig.ApiRequestsPerMinute, server.apiConfig.ApiRequestsBurst, server.apiConfig.ApiMaxRequestHistory),
 	)
 	//server.router.NotFound = notFoundJSON
 	return server, nil
@@ -200,5 +190,5 @@ func (s *Server) Post(path string, fn http.HandlerFunc) {
 
 // Start Starts the server, blocking function
 func (s *Server) Start() error {
-	return http.ListenAndServe(s.ListenAddr, s.router)
+	return http.ListenAndServe(s.listenAddr, s.router)
 }

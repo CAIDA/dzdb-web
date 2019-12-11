@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"log"
 	"time"
 	"vdz-web/app"
@@ -8,8 +9,13 @@ import (
 	"vdz-web/server"
 )
 
+var (
+	listenAddr = flag.String("listen", "127.0.0.1:8080", "ip:port to listen on")
+)
+
 // main
 func main() {
+	flag.Parse()
 	// get datstore
 	// if no DB wait for valid connection
 	var ds *datastore.DataStore
@@ -27,12 +33,11 @@ func main() {
 	defer ds.Close()
 
 	// get server and start application
-	vdzServer, err := server.New()
+	vdzServer, err := server.New(*listenAddr, server.DefailtServerApiConfig)
 	if err != nil {
 		log.Fatal(err)
 	}
 	app.Start(ds, vdzServer)
-	// TODO allow setting addr/port
-	log.Printf("Server starting on %s", vdzServer.ListenAddr)
+	log.Printf("Server starting on %s", *listenAddr)
 	log.Fatal(vdzServer.Start())
 }

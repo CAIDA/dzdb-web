@@ -27,7 +27,6 @@ func getIPAddress(r *http.Request) string {
 		for i, p := range parts {
 			parts[i] = strings.TrimSpace(p)
 		}
-		// TODO: should return first non-local address
 		return parts[0]
 	}
 	return hdrRealIP
