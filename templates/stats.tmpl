@@ -19,7 +19,8 @@
     <tr>
       <th>Date</th>
       <th>Zones</th>
-      <th>Duration</th>
+      <th>Diff Duration</th>
+      <th>Import Duration</th>
     </tr>
   </thead>
   <tbody>
@@ -27,7 +28,8 @@
     <tr>
       <td>{{if $value.Date}}{{$value.Date.Format "Mon Jan 02, 2006"}}{{end}}</td>
       <td>{{$value.Count}}</td>
-      <td>{{$value.Took}}</td>
+      <td>{{$value.DiffTook}}</td>
+      <td>{{$value.ImportTook}}</td>
       
     </tr>
   {{ end }}

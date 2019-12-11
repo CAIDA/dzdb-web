@@ -518,7 +518,7 @@ func (ds *DataStore) GetImportProgress(ctx context.Context) (*model.ImportProgre
 		return nil, err
 	}
 
-	rows, err := ds.db.QueryContext(ctx, "select date, sum(import_duration+diff_duration) took, count(CASE WHEN imports.imported THEN 1 END) from imports, import_progress where imports.id = import_progress.import_id group by date order by date desc limit $1", len(ip.Dates))
+	rows, err := ds.db.QueryContext(ctx, "select date, sum(diff_duration) took_diff, sum(import_duration) took_import, count(CASE WHEN imports.imported THEN 1 END) from imports, import_progress where imports.id = import_progress.import_id group by date order by date desc limit $1", len(ip.Dates))
 	if err != nil {
 		return nil, err
 	}
@@ -526,11 +526,12 @@ func (ds *DataStore) GetImportProgress(ctx context.Context) (*model.ImportProgre
 	var i int
 	for rows.Next() {
 		ipd := &ip.Dates[i]
-		err = rows.Scan(&ipd.Date, &ipd.Took, &ipd.Count)
+		err = rows.Scan(&ipd.Date, &ipd.DiffTook, &ipd.ImportTook, &ipd.Count)
 		if err != nil {
 			return nil, err
 		}
-		ipd.Took = strings.SplitN(ipd.Took, ".", 2)[0] // hack to avoid  duration.Round()
+		ipd.DiffTook = strings.SplitN(ipd.DiffTook, ".", 2)[0] // hack to avoid  duration.Round()
+		ipd.ImportTook = strings.SplitN(ipd.ImportTook, ".", 2)[0] // hack to avoid  duration.Round()
 		i++
 	}
 

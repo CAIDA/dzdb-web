@@ -56,7 +56,7 @@ type ImportProgress struct {
 	Link    string         `json:"link"`
 	Imports int64          `json:"imports_left"`
 	Days    int            `json:"days_left"`
-	Dates   [15]ImportDate `json:"dates"` // gets last 15 days
+	Dates   [45]ImportDate `json:"dates"` // gets last 15 days
 }
 
 // ImportDate import date data
@@ -64,8 +64,9 @@ type ImportDate struct {
 	Date *time.Time `json:"date"`
 	//TODO make duration
 	//Took time.Duration `json:"took"` // time.Duration not allowed on pq, see https://github.com/lib/pq/issues/78
-	Took  string `json:"took"`
-	Count uint64 `json:"count"`
+	DiffTook   string `json:"took"`
+	ImportTook string `json:"took"`
+	Count      uint64 `json:"count"`
 }
 
 // GenerateMetaData generates metadata recursively of member models
