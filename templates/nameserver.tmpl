@@ -102,7 +102,7 @@
   {{ range $key, $value := $.Data.IP6 }}
     <tr>
       <td><a href="/ip/{{$value.Name}}">{{$value.Name}}</a></td>
-      <td>{{date $value.FirstSeen}}}</td>
+      <td>{{date $value.FirstSeen}}</td>
     </tr>
   {{ end }}
   </tbody>
