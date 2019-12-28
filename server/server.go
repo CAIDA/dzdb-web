@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"runtime"
+	"strings"
 	"time"
 
 	"vdz-web/model"
@@ -164,14 +165,24 @@ func New(listenAddr string, apiConfig ServerApiConfig) (*Server, error) {
 
 	// setup server
 	server.router = httprouter.New()
-	server.handlers = alice.New(
+	handlers := alice.New(
 		//context.ClearHandler,
 		//addContextHandler,
 		makeTimeoutHandler(server.apiConfig.ApiTimeout),
 		loggingHandler,
 		recoverHandler,
-		makeThrottleHandler(server.apiConfig.ApiRequestsPerMinute, server.apiConfig.ApiRequestsBurst, server.apiConfig.ApiMaxRequestHistory),
 	)
+	// serve static content
+	static := http.StripPrefix("/static/", http.FileServer(http.Dir("static")))
+	server.router.Handler(http.MethodGet, "/static/*path", handlers.Then(neuterDirectoryListing(static)))
+
+	// add rate limiting after static handler
+	server.handlers = handlers.Append(makeThrottleHandler(
+		server.apiConfig.ApiRequestsPerMinute,
+		server.apiConfig.ApiRequestsBurst,
+		server.apiConfig.ApiMaxRequestHistory,
+	))
+
 	//server.router.NotFound = notFoundJSON
 	return server, nil
 }
@@ -191,4 +202,14 @@ func (s *Server) Post(path string, fn http.HandlerFunc) {
 // Start Starts the server, blocking function
 func (s *Server) Start() error {
 	return http.ListenAndServe(s.listenAddr, s.router)
+}
+
+func neuterDirectoryListing(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "/") {
+			http.NotFound(w, r)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }

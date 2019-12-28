@@ -1,10 +1,20 @@
 {{template "top" $}}
-<div class="input-group input-group-lg">
-<form class="navbar-form navbar-left" role="search" method="post" action="/search">
-  <span class="input-group-addon" id="sizing-addon1">Name Server</span>
-  <input type="text" name="query" class="form-control" placeholder="ns1.example.com" aria-describedby="sizing-addon1">
-  <button type="submit" class="btn btn-default">Submit</button>
-  <input type="hidden" name="type" value="nameserver">
-  </form>
+
+<div class="col-lg-4">
+  <div class="card mb-3">
+    <h3 class="card-header">Nameserver Search</h3>
+    <form method="POST" action="/search">
+      <div class="card-body">
+        <div class="form-group">
+          <input class="form-control form-control-lg" type="text" name="query" placeholder="ns1.example.com"
+            id="search">
+        </div>
+        <div class="form-group">
+          <button type="submit" class="btn btn-primary">Submit</button>
+        </div>
+      </div>
+    </form>
+  </div>
 </div>
+
 {{template "bottom" $}}

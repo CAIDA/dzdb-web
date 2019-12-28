@@ -48,7 +48,7 @@ func Start(ds *datastore.DataStore, server *server.Server) {
 	server.Get("/about", app.AboutHandler)
 
 	server.Get("/", app.IndexHandler)
-	server.Get("/robots.txt", app.robotsTxtHandler)
+	server.Get("/robots.txt", app.robotsTxtHandler) // TODO move to server static handling
 
 	server.Get("/nameservers", app.nameserverIndexHandler)
 	server.Get("/ip", app.ipIndexHandler)

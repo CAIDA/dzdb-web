@@ -1,9 +1,20 @@
 {{template "top" $}}
-<div class="input-group input-group-lg">
-<form class="navbar-form navbar-left" role="search" method="post" action="/search">
-  <span class="input-group-addon" id="sizing-addon1">Search</span>
-  <input type="text" name="query" class="form-control" placeholder="example.com" aria-describedby="sizing-addon1">
-  <button type="submit" class="btn btn-default">Submit</button>
-</form>
+
+<div class="col-lg-4">
+  <div class="card mb-3">
+    <h3 class="card-header">DNS Search</h3>
+    <form method="post" action="/search">
+      <div class="card-body">
+        <div class="form-group">
+          <input class="form-control form-control-lg" type="text" name="query" placeholder="example.com"
+            id="search">
+        </div>
+        <div class="form-group">
+          <button type="submit" class="btn btn-primary">Submit</button>
+        </div>
+      </div>
+    </form>
+  </div>
 </div>
+
 {{template "bottom" $}}

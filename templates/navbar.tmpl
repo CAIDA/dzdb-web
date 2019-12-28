@@ -1,29 +1,54 @@
-<!-- Static navbar -->
-<nav class="navbar navbar-default">
-    <div class="container-fluid">
-        <div class="navbar-header">
-            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
-                <span class="sr-only">Toggle navigation</span>
-                <span class="icon-bar"></span>
-                <span class="icon-bar"></span>
-                <span class="icon-bar"></span>
-            </button>
-            <a class="navbar-brand" href="/">DNS Coffee ☕</a>
+<div class="navbar navbar-expand-lg fixed-top navbar-dark bg-primary">
+    <div class="container">
+        <a href="/" class="navbar-brand">DNS Coffee ☕</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarResponsive"
+            aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarResponsive">
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a class="nav-link" href="/">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/domains">Domains</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/nameservers">Nameservers</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/zones">Zones</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/ip">IPs</a>
+                </li>
+            </ul>
+
+
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item navbar-right">
+                    <form class="form-inline my-2 my-lg-0" method="post" action="/search">
+                        <input class="form-control mr-sm-2" type="text" name="query" placeholder="example.com">
+                        <button class="btn btn-secondary my-2 my-sm-0" type="submit">Search</button>
+                    </form>
+                </li>
+                    <!-- <li class="nav-item">
+                    <a class="nav-link" href="/feeds">Feeds</a>
+                </li> -->
+                <li class="nav-item navbar-right">
+                    <a class="nav-link" href="/about">About</a>
+                </li>
+                <!-- <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#" id="download">Link<span
+                            class="caret"></span></a>
+                    <div class="dropdown-menu" aria-labelledby="download">
+                        <a class="dropdown-item" target="_blank" href="#">A</a>
+                        <div class="dropdown-divider"></div>
+                        <a class="dropdown-item" href="#" download>B</a>
+                        <a class="dropdown-item" href="#" download>B</a>
+                    </div>
+                </li> -->
+            </ul>
         </div>
-        <div id="navbar" class="navbar-collapse collapse">
-            <ul class="nav navbar-nav">
-                <!-- <li class="active"><a href="/">Home</a></li> -->
-                <li><a href="/">Home</a></li>
-                <li><a href="/domains">Domains</a></li>
-                <li><a href="/nameservers">Nameservers</a></li>
-                <li><a href="/zones">Zones</a></li>
-                <li><a href="/ip">IPs</a></li>
-                <!--<li><a href="/feeds">Feeds</a></li>-->
-            </ul>
-            <ul class="nav navbar-nav navbar-right">
-                <li><a href="/about">About</a></li>
-                <!--<li><a href="/api">API</a></li>-->
-            </ul>
-        </div><!--/.nav-collapse -->
-    </div><!--/.container-fluid -->
-</nav>
+    </div>
+</div>

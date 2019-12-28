@@ -669,7 +669,6 @@ func (ds *DataStore) GetNameServer(ctx context.Context, domain string) (*model.N
 }
 
 // GetIP gets information for the provided IP
-// TODO this can panic with SQL no rows
 func (ds *DataStore) GetIP(ctx context.Context, name string) (*model.IP, error) {
 	var ip model.IP
 	var err error

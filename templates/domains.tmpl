@@ -1,31 +1,43 @@
 {{template "top" $}}
-<div class="input-group input-group-lg">
-<form class="navbar-form navbar-left" role="search" method="post" action="/search">
-  <span class="input-group-addon" id="sizing-addon1">Domain</span>
-  <input type="text" name="query" class="form-control" placeholder="example.com" aria-describedby="sizing-addon1">
-  <button type="submit" class="btn btn-default">Submit</button>
-  <input type="hidden" name="type" value="domain">
-  </form>
-</div>
-<button type="submit" class="btn btn-warning" onclick="doRandom();">Random Domain</button>
-<script type="text/javascript">
-function doRandom() {
-    var url = "/api/random";
-    var xmlhttp = new XMLHttpRequest();
 
-    xmlhttp.onreadystatechange = function() {
-        if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
-            var data = JSON.parse(xmlhttp.responseText);
-            // got response
-            if (data.data && data.data.type == "domain") {
-                window.location.replace(data.data.link);
-            }else {
-                console.log(data);
+<div class="col-lg-4">
+    <div class="card mb-3">
+        <h3 class="card-header">DNS Search</h3>
+        <form method="POST" action="/search">
+            <div class="card-body">
+                <div class="form-group">
+                    <input class="form-control form-control-lg" type="text" name="query" placeholder="example.com"
+                        id="search">
+                </div>
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary">Submit</button>
+                    <button type="button" class="btn btn-warning" onclick="doRandom();">Random Domain</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+<script type="text/javascript">
+    function doRandom() {
+        var url = "/api/random";
+        var xmlhttp = new XMLHttpRequest();
+
+        xmlhttp.onreadystatechange = function () {
+            if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                var data = JSON.parse(xmlhttp.responseText);
+                // got response
+                if (data.data && data.data.type == "domain") {
+                    window.location.replace(data.data.link);
+                } else {
+                    console.log(data);
+                }
             }
-        }
-    };
-    xmlhttp.open("GET", url, true);
-    xmlhttp.send();
-}
+        };
+        xmlhttp.open("GET", url, true);
+        xmlhttp.send();
+    }
 </script>
+
 {{template "bottom" $}}

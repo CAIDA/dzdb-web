@@ -1,0 +1,9 @@
+body{
+    padding-top:120px
+}
+.card {
+    margin-bottom: 1rem;
+}
+.card table {
+    margin-bottom: 0;
+}
