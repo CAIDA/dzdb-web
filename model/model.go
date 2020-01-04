@@ -315,3 +315,18 @@ func (ip *IP) GenerateMetaData() {
 		}
 	}
 }
+
+type PrefixResult struct {
+	Domain   string     `json:"domain"`
+	LastSeen *time.Time `json:"lastseen,omitempty"`
+}
+
+// PrefixList holds information about an IP address
+type PrefixList struct {
+	Type   *string `json:"type"`
+	Prefix string  `json:"prefix"`
+	//Link    string   `json:"link"`
+	Domains []PrefixResult `json:"domains"`
+}
+
+// TODO PrefixList GenerateMetaData and API

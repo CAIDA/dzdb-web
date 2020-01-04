@@ -790,3 +790,83 @@ func (ds *DataStore) GetIP(ctx context.Context, name string) (*model.IP, error) 
 
 	return &ip, nil
 }
+
+// GetAvaiblePrefixes returns avaible prefixes for the queried prefix
+func (ds *DataStore) GetAvaiblePrefixes(ctx context.Context, name string) (*model.PrefixList, error) {
+	var prefixes model.PrefixList
+	var err error
+	prefixes.Prefix = name
+	prefixes.Domains = make([]model.PrefixResult, 0, 10)
+
+	rows, err := ds.db.QueryContext(ctx, `With available_domains as 
+	(
+	   WITH available AS 
+	   (
+		  WITH taken AS 
+		  (
+			 SELECT DISTINCT
+				domains.zone_id 
+			 FROM
+				domains,
+				domains_nameservers 
+			 WHERE
+				domains.id = domains_nameservers.domain_id 
+				AND domains_nameservers.last_seen IS NULL 
+				AND domains.domain LIKE $1 || '.%'
+		  )
+		  SELECT
+			 zones_imports.zone_id 
+		  FROM
+		  	 zones,
+			 zones_imports 
+			 LEFT JOIN
+				taken 
+				ON taken.zone_id = zones_imports.zone_id 
+		  WHERE
+			 taken.zone_id IS NULL
+			 AND zones.id = zones_imports.zone_id
+			 AND zones.zone != 'ROOT'
+			 AND zones.zone != 'ARPA'
+	   )
+	   SELECT
+		  $1 || '.' || zones.zone AS domain 
+	   FROM
+		  zones,
+		  available 
+	   WHERE
+		  available.zone_id = zones.id 
+	)
+	Select
+	   available_domains.domain,
+	   max(Domains_nameservers.last_seen) last_Seen 
+	from
+	   available_domains 
+	   Left join
+		  domains 
+		  on domains.domain = available_domains.domain 
+	   Left join
+		  domains_nameservers 
+		  on domains.id = domains_nameservers.domain_id 
+	Group by
+	   available_domains.domain 
+	ORDER BY
+	   Char_length(available_domains.domain),
+	   1,  2`, name)
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		var domain model.PrefixResult
+		var lastSeen sql.NullTime
+		err = rows.Scan(&domain.Domain, &lastSeen)
+		if err != nil {
+			return nil, err
+		}
+		if lastSeen.Valid {
+			domain.LastSeen = &lastSeen.Time
+		}
+		prefixes.Domains = append(prefixes.Domains, domain)
+	}
+
+	return &prefixes, nil
+}

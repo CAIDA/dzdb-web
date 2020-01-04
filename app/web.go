@@ -44,7 +44,7 @@ func Start(ds *datastore.DataStore, server *server.Server) {
 	APIStart(&app, server)
 
 	//TODO
-	server.Get("/feeds", app.TodoHandler)
+	//server.Get("/feeds", app.TodoHandler)
 	server.Get("/about", app.AboutHandler)
 
 	server.Get("/", app.IndexHandler)
@@ -62,6 +62,7 @@ func Start(ds *datastore.DataStore, server *server.Server) {
 	server.Get("/zones/:zone", app.zoneHandler)
 	server.Get("/zones", app.zoneIndexHandler)
 	server.Get("/stats", app.statsHandler)
+	server.Get("/prefix/:prefix", app.prefixHandler)
 
 	// research
 	server.Get("/research/ipnszonecount/:ip", app.ipNsZoneCountHandler)
@@ -219,9 +220,22 @@ func (app *appContext) ipHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (app *appContext) TodoHandler(w http.ResponseWriter, r *http.Request) {
-	p := Page{"TODO", "", nil}
-	err := app.templates.ExecuteTemplate(w, "todo.tmpl", p)
+// prefixHandler returns avaible prefixes for the queried prefix
+func (app *appContext) prefixHandler(w http.ResponseWriter, r *http.Request) {
+	params := httprouter.ParamsFromContext(r.Context())
+	name := cleanDomain(params.ByName("prefix"))
+	data, err := app.ds.GetAvaiblePrefixes(r.Context(), name)
+	if err != nil {
+		if err == datastore.ErrNoResource {
+			// TODO make http err (not json)
+			server.WriteJSONError(w, server.ErrResourceNotFound)
+			return
+		}
+		panic(err)
+	}
+
+	p := Page{name, "", data}
+	err = app.templates.ExecuteTemplate(w, "prefix.tmpl", p)
 	if err != nil {
 		panic(err)
 	}
