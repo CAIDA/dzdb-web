@@ -23,6 +23,7 @@ func (ds *DataStore) GetIPNsZoneCount(ctx context.Context, ip string) (*model.Ip
 		return nil, err
 	}
 	defer rows.Close()
+	total := float64(0)
 
 	ipzc.ZoneNSCounts = make([]model.ZoneCount, 0)
 	for rows.Next() {
@@ -31,7 +32,12 @@ func (ds *DataStore) GetIPNsZoneCount(ctx context.Context, ip string) (*model.Ip
 		if err != nil {
 			return nil, err
 		}
+		total = total + float64(zc.Count)
 		ipzc.ZoneNSCounts = append(ipzc.ZoneNSCounts, zc)
+	}
+	// set percents
+	for i := range ipzc.ZoneNSCounts {
+		ipzc.ZoneNSCounts[i].Percent = 100 * float64(ipzc.ZoneNSCounts[i].Count) / total
 	}
 
 	return &ipzc, nil

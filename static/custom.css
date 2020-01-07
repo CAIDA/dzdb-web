@@ -7,3 +7,20 @@ body{
 .card table {
     margin-bottom: 0;
 }
+.table td.perc {
+    position:relative;
+    /* text-align:right; */
+    width:3em;
+}
+.table td.perc div {
+    /* position:absolute; */
+    right:0;
+    top:5%;
+    z-index:-1;
+    background-color: #18BC9C;
+    height:85%;
+    text-align: right;
+}
+.table td.perc span {
+    color:black;
+}

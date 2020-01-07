@@ -12,8 +12,9 @@ type IpNsZoneCount struct {
 }
 
 type ZoneCount struct {
-	Zone  string `json:"zone"`
-	Count int64  `json:"count"`
+	Zone    string  `json:"zone"`
+	Count   int64   `json:"count"`
+	Percent float64 `json:"percent"`
 }
 
 // GenerateMetaData generates metadata recursively of member models
