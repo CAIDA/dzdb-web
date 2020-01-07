@@ -33,6 +33,48 @@
       </table>
     </div>
   </div>
+
+ <div class="col-md-6">
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <div class="card">
+      <a href="#" class="list-group-item d-flex justify-content-between align-items-center active">
+        Pie
+        <!-- <span class="badge badge-light badge-pill">{{len $.Data.ZoneNSCounts}}</span> -->
+      </a>
+      <div id='pieDiv'><!-- pie chart here --></div>
+    </div>
+    <script>
+    // data is stored in a seperate file
+    fetch("/api/research/ipnszonecount/{{$.Data.IP}}")
+            .then(response => response.json())
+            .then(api_response => {
+                values = [];
+                labels = [];
+                api_response.data.zone_counts.forEach(function(e) {
+                    values.push(e.count);
+                    labels.push(e.zone);
+                });
+
+                var data = [{
+                values: values,
+                labels: labels,
+                textinfo: "label+percent",
+                hoverinfo: 'label+value',
+                automargin: true,
+                type: 'pie'
+                }];
+
+                var layout = {
+                  height: 400,
+                  width: 400,
+                  showlegend: false,
+                };
+
+                Plotly.newPlot('pieDiv', data, layout,  {displayModeBar: false});
+            });
+    </script>
+  </div>
+
 </div>
 
 {{template "bottom" $}}

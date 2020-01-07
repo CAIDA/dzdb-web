@@ -9,11 +9,12 @@ body{
 }
 .table td.perc {
     position:relative;
-    /* text-align:right; */
+    text-align:right;
     width:3em;
+    z-index:1;
 }
 .table td.perc div {
-    /* position:absolute; */
+    position:absolute;
     right:0;
     top:5%;
     z-index:-1;
