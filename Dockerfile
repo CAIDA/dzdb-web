@@ -11,6 +11,7 @@ FROM alpine
 
 COPY --from=build-env /go/app/web /app/
 COPY --from=build-env /go/app/templates /app/templates
+COPY --from=build-env /go/app/static /app/static
 
 WORKDIR /app/
 

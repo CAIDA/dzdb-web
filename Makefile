@@ -12,7 +12,7 @@ all: web
 docker: Dockerfile
 	docker build -t="lanrat/vdz-web" .
 
-$(BIN): $(SOURCES) $(MODULE_SOURCES) go.mod
+$(BIN): $(SOURCES) $(MODULE_SOURCES) go.mod go.sum
 	$(CC) -o $@ $(SOURCES)
 
 clean:
