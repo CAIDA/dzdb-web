@@ -1,6 +1,51 @@
 {{template "top" $}}
 
 <div class="row">
+  <div class="col-lg-6">
+    <div class="card">
+      <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+      <div class="card">
+        <a href="#" class="list-group-item d-flex justify-content-between align-items-center active">
+          Zones Pie Chart
+          <!-- <span class="badge badge-light badge-pill"></span> -->
+        </a>
+        <div id='pieDiv'><!-- pie chart here --></div>
+      </div>
+      <script>
+      fetch("/api/zones")
+              .then(response => response.json())
+              .then(api_response => {
+                  values = [];
+                  labels = [];
+                  api_response.data.zones.forEach(function(e) {
+                      values.push(e.domains);
+                      labels.push(e.zone);
+                  });
+  
+                  var data = [{
+                  values: values,
+                  labels: labels,
+                  textinfo: "label",
+                  hoverinfo: 'label+value+percent',
+                  automargin: true,
+                  textposition: "inside",
+                  type: 'pie'
+                  }];
+
+                  var layout = {
+                    height: 400,
+                    width: 400,
+                    showlegend: false,
+                  };
+  
+                  Plotly.newPlot('pieDiv', data, layout,  {displayModeBar: false});
+              });
+      </script>
+    </div>
+  </div>
+</div>
+
+<div class="row">
   <div class="col-md-12">
     <div class="card">
       <a href="#" class="list-group-item d-flex justify-content-between align-items-center active">
