@@ -35,11 +35,14 @@ func APIStart(app *appContext, vdzServer *server.Server) {
 	addAPI("/imports/:year/:month/:day", "import_day_view", nil)
 	addAPI("/imports/:year/:month/:day/:zone", "import_day_view_zone", nil)
 
+	// counts
+	addAPI("/counts/", "zone_counts", app.apiInternetHistoryCountsHandler)
+	addAPI("/counts/:zone", "internet_counts", app.apiZoneHistoryCountsHandler)
+
 	// zones
 	addAPI("/zones", "zones", app.apiLatestZonesHandler)
 	addAPI("/zones/:zone", "zone_view", app.apiZoneHandler)
 	addAPI("/zones/:zone/import", "zone_import", app.apiZoneImportHandler)
-	addAPI("/zones/:zone/counts", "zone_import_counts", app.apiZoneHistoryCountsHandler)
 	addAPI("/zones/:zone/nameservers", "zone_nameservers", nil)
 	addAPI("/zones/:zone/nameservers/current", "zone_nameservers_current", nil)
 	addAPI("/zones/:zone/nameservers/archive", "zone_nameservers_archive", nil)
@@ -317,6 +320,20 @@ func (app *appContext) apiZoneHistoryCountsHandler(w http.ResponseWriter, r *htt
 			return
 		}
 		panic(err1)
+	}
+
+	data.GenerateMetaData()
+	server.WriteJSON(w, data)
+}
+
+func (app *appContext) apiInternetHistoryCountsHandler(w http.ResponseWriter, r *http.Request) {
+	data, err := app.ds.GetInternetHistoryCounts(r.Context())
+	if err != nil {
+		if err == datastore.ErrNoResource {
+			server.WriteJSONError(w, server.ErrResourceNotFound)
+			return
+		}
+		panic(err)
 	}
 
 	data.GenerateMetaData()

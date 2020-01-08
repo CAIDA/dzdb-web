@@ -27,7 +27,7 @@
       <div id='historyDiv'></div>
     </div>
     <script>
-      fetch("/api/zones/ROOT/counts")
+      fetch("/api/counts/ROOT")
         .then(response => response.json())
         .then(api_response => {
           dates = [];
@@ -89,6 +89,45 @@
           };
 
           Plotly.newPlot('pieDiv', data, layout, { displayModeBar: false });
+        });
+    </script>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-12">
+    <div class="card">
+      <a href="#chart" id="chart" class="list-group-item d-flex justify-content-between align-items-center active">
+        Internet Domains Growth
+      </a>
+      <div id='domainHistoryDiv'></div>
+    </div>
+    <script>
+      fetch("/api/counts/")
+        .then(response => response.json())
+        .then(api_response => {
+          dates = [];
+          domains = [];
+          api_response.data.history.forEach(function (e) {
+            dates.push(e.week);
+            domains.push(e.domains);
+          });
+
+          var data = [{
+            x: dates,
+            y: domains,
+            type: 'scatter',
+            mode: "lines",
+            name: "Domains",
+          }];
+
+          var layout = {
+            autosize: true,
+            showlegend: false,
+            automargin: true,
+          };
+
+          Plotly.newPlot('domainHistoryDiv', data, layout, { displayModeBar: false });
         });
     </script>
   </div>

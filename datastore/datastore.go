@@ -528,6 +528,30 @@ func (ds *DataStore) GetZoneImportResults(ctx context.Context) (*model.ZoneImpor
 	return &zoneImportResults, nil
 }
 
+// GetInternetHistoryCounts returns the counts averages weekly for the past imports for all zones
+func (ds *DataStore) GetInternetHistoryCounts(ctx context.Context) (*model.ZoneCount, error) {
+	var zc model.ZoneCount
+	zc.History = make([]*model.ZoneCounts, 0, 100)
+	zc.Zone = ""
+	limit := 300
+
+	rows, err := ds.db.QueryContext(ctx, "with s as (select date, sum(domains) as domains, sum(old) as old, sum(moved) as moved, sum(new) as new from weighted_counts group by 1 order by 1 desc limit (52 * $1)) select date_trunc('week', date) AS week, floor(AVG(domains)) as domains, floor(avg(old)) as old, floor(avg(moved)) as moved, floor(avg(new)) as new from s group by 1 order by 1 desc limit $1", limit)
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		var c model.ZoneCounts
+		err = rows.Scan(&c.Week, &c.Domains, &c.Old, &c.Moved, &c.New)
+		if err != nil {
+			return nil, err
+		}
+		zc.History = append(zc.History, &c)
+	}
+
+	return &zc, nil
+}
+
 // GetZoneHistoryCounts returns the counts averages weekly for the past imports for a given zone
 func (ds *DataStore) GetZoneHistoryCounts(ctx context.Context, zone string) (*model.ZoneCount, error) {
 	var zc model.ZoneCount

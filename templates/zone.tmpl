@@ -90,7 +90,7 @@
       <div id='historyDiv'></div>
     </div>
     <script>
-      fetch("/api/zones/{{$.Data.Name}}/counts")
+      fetch("/api/counts/{{$.Data.Name}}")
         .then(response => response.json())
         .then(api_response => {
           dates = [];
