@@ -19,7 +19,7 @@
 </div>
 
 <div class="row">
-  <div class="col-md-12">
+  <div class="col-md-6">
     <div class="card">
       <a href="#chart" id="chart" class="list-group-item d-flex justify-content-between align-items-center active">
         TLD ROOT Zone Growth
@@ -52,6 +52,43 @@
           };
 
           Plotly.newPlot('historyDiv', data, layout, { displayModeBar: false });
+        });
+    </script>
+  </div>
+  <div class="col-md-6">
+    <div class="card">
+      <a href="#" class="list-group-item d-flex justify-content-between align-items-center active">
+        Domain Distribution Over Zones
+      </a>
+      <div id='pieDiv'></div>
+    </div>
+    <script>
+      fetch("/api/zones")
+        .then(response => response.json())
+        .then(api_response => {
+          values = [];
+          labels = [];
+          api_response.data.zones.forEach(function (e) {
+            values.push(e.domains);
+            labels.push(e.zone);
+          });
+
+          var data = [{
+            values: values,
+            labels: labels,
+            textinfo: "label+percent",
+            hoverinfo: 'label+value+percent',
+            textposition: "inside",
+            type: 'pie'
+          }];
+
+          var layout = {
+            autosize: true,
+            showlegend: false,
+            automargin: true,
+          };
+
+          Plotly.newPlot('pieDiv', data, layout, { displayModeBar: false });
         });
     </script>
   </div>
