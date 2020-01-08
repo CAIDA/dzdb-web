@@ -24,7 +24,12 @@
       <a href="#chart" id="chart" class="list-group-item d-flex justify-content-between align-items-center active">
         TLD ROOT Zone Growth
       </a>
-      <div id='historyDiv'></div>
+      <div id="spinner1" class="spinner">
+        <div class="bounce1"></div>
+        <div class="bounce2"></div>
+        <div class="bounce3"></div>
+      </div>
+      <div id="historyDiv"></div>
     </div>
     <script>
       fetch("/api/counts/zone/ROOT")
@@ -51,7 +56,7 @@
             automargin: true,
           };
 
-          Plotly.newPlot('historyDiv', data, layout, { displaylogo: false });
+          Plotly.newPlot('historyDiv', data, layout, { displaylogo: false }).then(function(){$("#spinner1").hide()});
         });
     </script>
   </div>
@@ -60,6 +65,11 @@
       <a href="#" class="list-group-item d-flex justify-content-between align-items-center active">
         Domain Distribution Over Zones
       </a>
+      <div id="spinner2" class="spinner">
+        <div class="bounce1"></div>
+        <div class="bounce2"></div>
+        <div class="bounce3"></div>
+      </div>
       <div id='pieDiv'></div>
     </div>
     <script>
@@ -88,7 +98,7 @@
             automargin: true,
           };
 
-          Plotly.newPlot('pieDiv', data, layout, { displaylogo: false });
+          Plotly.newPlot('pieDiv', data, layout, { displaylogo: false }).then(function(){$("#spinner2").hide()});
         });
     </script>
   </div>
@@ -100,6 +110,11 @@
       <a href="#chart" id="chart" class="list-group-item d-flex justify-content-between align-items-center active">
         Internet Domains Growth
       </a>
+      <div id="spinner3" class="spinner">
+        <div class="bounce1"></div>
+        <div class="bounce2"></div>
+        <div class="bounce3"></div>
+      </div>
       <div id='domainHistoryDiv'></div>
     </div>
     <script>
@@ -127,7 +142,7 @@
             automargin: true,
           };
 
-          Plotly.newPlot('domainHistoryDiv', data, layout, { displaylogo: false });
+          Plotly.newPlot('domainHistoryDiv', data, layout, { displaylogo: false }).then(function(){$("#spinner3").hide()});
         });
     </script>
   </div>
