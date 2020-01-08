@@ -1,19 +1,59 @@
 {{template "top" $}}
 
-<div class="col-lg-4">
-  <div class="card mb-3">
-    <h3 class="card-header">DNS Search</h3>
-    <form method="post" action="/search">
-      <div class="card-body">
-        <div class="form-group">
-          <input class="form-control form-control-lg" type="text" name="query" placeholder="example.com"
-            id="search">
+<div class="row">
+  <div class="col-lg-4">
+    <div class="card mb-3">
+      <h3 class="card-header">DNS Search</h3>
+      <form method="post" action="/search">
+        <div class="card-body">
+          <div class="form-group">
+            <input class="form-control form-control-lg" type="text" name="query" placeholder="example.com" id="search">
+          </div>
+          <div class="form-group">
+            <button type="submit" class="btn btn-primary">Submit</button>
+          </div>
         </div>
-        <div class="form-group">
-          <button type="submit" class="btn btn-primary">Submit</button>
-        </div>
-      </div>
-    </form>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-12">
+    <div class="card">
+      <a href="#chart" id="chart" class="list-group-item d-flex justify-content-between align-items-center active">
+        TLD ROOT Zone Growth
+      </a>
+      <div id='historyDiv'></div>
+    </div>
+    <script>
+      fetch("/api/zones/ROOT/counts")
+        .then(response => response.json())
+        .then(api_response => {
+          dates = [];
+          domains = [];
+          api_response.data.history.forEach(function (e) {
+            dates.push(e.week);
+            domains.push(e.domains);
+          });
+
+          var data = [{
+            x: dates,
+            y: domains,
+            type: 'scatter',
+            mode: "lines",
+            name: "TLDs",
+          }];
+
+          var layout = {
+            autosize: true,
+            showlegend: true,
+            automargin: true,
+          };
+
+          Plotly.newPlot('historyDiv', data, layout, { displayModeBar: false });
+        });
+    </script>
   </div>
 </div>
 
