@@ -534,7 +534,7 @@ func (ds *DataStore) GetZoneHistoryCounts(ctx context.Context, zone string) (*mo
 	zc.History = make([]*model.ZoneCounts, 0, 100)
 	zc.Zone = zone
 
-	rows, err := ds.db.QueryContext(ctx, "select date_trunc('week', date) AS week, floor(AVG(domains)) as domains, floor(AVG(new)) as old, floor(AVG(new)) as moved, floor(AVG(new)) as new from import_zone_counts, zones where zone_id = zones.id and zones.zone = $1 group by 1 order by 1 desc limit 300", zone)
+	rows, err := ds.db.QueryContext(ctx, "select date_trunc('week', date) AS week, floor(AVG(domains)) as domains, floor(AVG(old)) as old, floor(AVG(moved)) as moved, floor(AVG(new)) as new from import_zone_counts, zones where zone_id = zones.id and zones.zone = $1 group by 1 order by 1 desc limit 300", zone)
 	if err != nil {
 		return nil, err
 	}
