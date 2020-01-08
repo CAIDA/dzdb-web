@@ -61,6 +61,7 @@ func Start(ds *datastore.DataStore, server *server.Server) {
 	server.Get("/nameservers/:nameserver", app.nameserverHandler)
 	server.Get("/zones/:zone", app.zoneHandler)
 	server.Get("/zones", app.zoneIndexHandler)
+	server.Get("/tlds", app.tldIndexHandler)
 	server.Get("/stats", app.statsHandler)
 	server.Get("/prefix/:prefix", app.prefixHandler)
 
@@ -133,6 +134,19 @@ func (app *appContext) zoneIndexHandler(w http.ResponseWriter, r *http.Request) 
 
 	p := Page{"Zones", "Zones", data}
 	err = app.templates.ExecuteTemplate(w, "zones.tmpl", p)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (app *appContext) tldIndexHandler(w http.ResponseWriter, r *http.Request) {
+	data, err := app.ds.GetZoneImportResults(r.Context())
+	if err != nil {
+		panic(err)
+	}
+
+	p := Page{"TLDs", "TLDs", data}
+	err = app.templates.ExecuteTemplate(w, "tlds.tmpl", p)
 	if err != nil {
 		panic(err)
 	}

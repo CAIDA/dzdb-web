@@ -90,7 +90,7 @@
       <div id='historyDiv'></div>
     </div>
     <script>
-      fetch("/api/counts/{{$.Data.Name}}")
+      fetch("/api/counts/zone/{{$.Data.Name}}")
         .then(response => response.json())
         .then(api_response => {
           dates = [];
@@ -99,7 +99,7 @@
           movedC = [];
           newC = [];
           api_response.data.history.forEach(function (e) {
-            dates.push(e.week);
+            dates.push(e.date);
             domains.push(e.domains);
             oldC.push(e.old);
             movedC.push(e.moved);
@@ -141,7 +141,7 @@
             automargin: true,
           };
 
-          Plotly.newPlot('historyDiv', data, layout, { displayModeBar: false });
+          Plotly.newPlot('historyDiv', data, layout, { displaylogo: false });
         });
     </script>
   </div>

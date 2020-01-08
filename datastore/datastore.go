@@ -542,7 +542,7 @@ func (ds *DataStore) GetInternetHistoryCounts(ctx context.Context) (*model.ZoneC
 
 	for rows.Next() {
 		var c model.ZoneCounts
-		err = rows.Scan(&c.Week, &c.Domains, &c.Old, &c.Moved, &c.New)
+		err = rows.Scan(&c.Date, &c.Domains, &c.Old, &c.Moved, &c.New)
 		if err != nil {
 			return nil, err
 		}
@@ -565,7 +565,7 @@ func (ds *DataStore) GetZoneHistoryCounts(ctx context.Context, zone string) (*mo
 
 	for rows.Next() {
 		var c model.ZoneCounts
-		err = rows.Scan(&c.Week, &c.Domains, &c.Old, &c.Moved, &c.New)
+		err = rows.Scan(&c.Date, &c.Domains, &c.Old, &c.Moved, &c.New)
 		if err != nil {
 			return nil, err
 		}
@@ -573,6 +573,35 @@ func (ds *DataStore) GetZoneHistoryCounts(ctx context.Context, zone string) (*mo
 	}
 
 	return &zc, nil
+}
+
+// GetAllZoneHistoryCounts returns the counts averages weekly for the past imports for all zones
+func (ds *DataStore) GetAllZoneHistoryCounts(ctx context.Context) (*model.AllZoneCounts, error) {
+	var all model.AllZoneCounts
+	all.Counts = make(map[string]*model.ZoneCount)
+
+	rows, err := ds.db.QueryContext(ctx, "select date_trunc('month', date) AS month, zone, floor(AVG(domains)) as domains, floor(AVG(old)) as old, floor(AVG(moved)) as moved, floor(AVG(new)) as new from weighted_counts, zones where zones.id = zone_id group by 1, 2 order by 1 desc, 2 limit 300 * 1200")
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		var c model.ZoneCounts
+		var zone string
+		err = rows.Scan(&c.Date, &zone, &c.Domains, &c.Old, &c.Moved, &c.New)
+		if err != nil {
+			return nil, err
+		}
+		if _, ok := all.Counts[zone]; !ok {
+			all.Counts[zone] = new(model.ZoneCount)
+			all.Counts[zone].Zone = zone
+			all.Counts[zone].History = make([]*model.ZoneCounts, 0, 100)
+		}
+
+		all.Counts[zone].History = append(all.Counts[zone].History, &c)
+	}
+
+	return &all, nil
 }
 
 // GetImportProgress gets information on the progress of unimported zones

@@ -27,13 +27,13 @@
       <div id='historyDiv'></div>
     </div>
     <script>
-      fetch("/api/counts/ROOT")
+      fetch("/api/counts/zone/ROOT")
         .then(response => response.json())
         .then(api_response => {
           dates = [];
           domains = [];
           api_response.data.history.forEach(function (e) {
-            dates.push(e.week);
+            dates.push(e.date);
             domains.push(e.domains);
           });
 
@@ -51,7 +51,7 @@
             automargin: true,
           };
 
-          Plotly.newPlot('historyDiv', data, layout, { displayModeBar: false });
+          Plotly.newPlot('historyDiv', data, layout, { displaylogo: false });
         });
     </script>
   </div>
@@ -88,7 +88,7 @@
             automargin: true,
           };
 
-          Plotly.newPlot('pieDiv', data, layout, { displayModeBar: false });
+          Plotly.newPlot('pieDiv', data, layout, { displaylogo: false });
         });
     </script>
   </div>
@@ -109,7 +109,7 @@
           dates = [];
           domains = [];
           api_response.data.history.forEach(function (e) {
-            dates.push(e.week);
+            dates.push(e.date);
             domains.push(e.domains);
           });
 
@@ -127,7 +127,7 @@
             automargin: true,
           };
 
-          Plotly.newPlot('domainHistoryDiv', data, layout, { displayModeBar: false });
+          Plotly.newPlot('domainHistoryDiv', data, layout, { displaylogo: false });
         });
     </script>
   </div>

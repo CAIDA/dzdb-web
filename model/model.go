@@ -15,6 +15,7 @@ var (
 	zoneImportResultType  = "zone_import_result"
 	zoneImportResultsType = "zone_import_results"
 	zoneCountsType        = "zone_counts"
+	zoneAllCountsType     = "zone_all_counts"
 )
 
 // JSONResponse JSON-API root data object
@@ -121,15 +122,27 @@ type ZoneCount struct {
 // GenerateMetaData generates metadata recursively of member models
 func (zc *ZoneCount) GenerateMetaData() {
 	zc.Type = &zoneCountsType
-	zc.Link = fmt.Sprintf("/zones/counts/%s", zc.Zone)
+	zc.Link = fmt.Sprintf("/counts/zones/%s", zc.Zone)
 }
 
 type ZoneCounts struct {
-	Week    time.Time `json:"week"`
+	Date    time.Time `json:"date"`
 	Domains int64     `json:"domains"`
 	Old     int64     `json:"old"`
 	Moved   int64     `json:"moved"`
 	New     int64     `json:"new"`
+}
+
+type AllZoneCounts struct {
+	Type   *string               `json:"type"`
+	Link   string                `json:"link"`
+	Counts map[string]*ZoneCount `json:"counts"`
+}
+
+// GenerateMetaData generates metadata recursively of member models
+func (zc *AllZoneCounts) GenerateMetaData() {
+	zc.Type = &zoneAllCountsType
+	zc.Link = fmt.Sprintf("/counts/all")
 }
 
 // Zone holds information about a zone

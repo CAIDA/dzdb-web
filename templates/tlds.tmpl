@@ -1,0 +1,45 @@
+{{template "top" $}}
+
+<div class="row">
+  <div class="col-md-12">
+    <div class="card">
+      <a href="#chart" id="chart" class="list-group-item d-flex justify-content-between align-items-center active">
+        TLD Growth
+      </a>
+      <div id='tldHistoryDiv'></div>
+    </div>
+    <script>
+      fetch("/api/counts/all")
+        .then(response => response.json())
+        .then(api_response => {
+          data = [];
+          Object.values(api_response.data.counts).forEach(function (z) {
+            dates = [];
+            domains = [];
+            z.history.forEach(function(e) {
+              dates.push(e.date);
+              domains.push(e.domains);
+            })
+            data.push({
+              type: 'scatter',
+              mode: "lines",
+              name: z.zone,
+              x: dates,
+              y: domains,
+            })
+
+          });
+
+          var layout = {
+            autosize: true,
+            showlegend: false,
+            automargin: true,
+          };
+
+          Plotly.newPlot('tldHistoryDiv', data, layout, {displaylogo: false });
+        });
+    </script>
+  </div>
+</div>
+
+{{template "bottom" $}}

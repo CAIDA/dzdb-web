@@ -37,7 +37,8 @@ func APIStart(app *appContext, vdzServer *server.Server) {
 
 	// counts
 	addAPI("/counts/", "zone_counts", app.apiInternetHistoryCountsHandler)
-	addAPI("/counts/:zone", "internet_counts", app.apiZoneHistoryCountsHandler)
+	addAPI("/counts/zone/:zone", "internet_counts", app.apiZoneHistoryCountsHandler)
+	addAPI("/counts/all/", "all_zone_counts", app.apiAllZoneHistoryCountsHandler)
 
 	// zones
 	addAPI("/zones", "zones", app.apiLatestZonesHandler)
@@ -320,6 +321,20 @@ func (app *appContext) apiZoneHistoryCountsHandler(w http.ResponseWriter, r *htt
 			return
 		}
 		panic(err1)
+	}
+
+	data.GenerateMetaData()
+	server.WriteJSON(w, data)
+}
+
+func (app *appContext) apiAllZoneHistoryCountsHandler(w http.ResponseWriter, r *http.Request) {
+	data, err := app.ds.GetAllZoneHistoryCounts(r.Context())
+	if err != nil {
+		if err == datastore.ErrNoResource {
+			server.WriteJSONError(w, server.ErrResourceNotFound)
+			return
+		}
+		panic(err)
 	}
 
 	data.GenerateMetaData()
