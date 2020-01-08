@@ -528,6 +528,29 @@ func (ds *DataStore) GetZoneImportResults(ctx context.Context) (*model.ZoneImpor
 	return &zoneImportResults, nil
 }
 
+// GetZoneHistoryCounts returns the counts averages weekly for the past imports for a given zone
+func (ds *DataStore) GetZoneHistoryCounts(ctx context.Context, zone string) (*model.ZoneCount, error) {
+	var zc model.ZoneCount
+	zc.History = make([]*model.ZoneCounts, 0, 100)
+	zc.Zone = zone
+
+	rows, err := ds.db.QueryContext(ctx, "select date_trunc('week', date) AS week, floor(AVG(domains)) as domains, floor(AVG(new)) as old, floor(AVG(new)) as moved, floor(AVG(new)) as new from import_zone_counts, zones where zone_id = zones.id and zones.zone = $1 group by 1 order by 1 desc limit 300", zone)
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		var c model.ZoneCounts
+		err = rows.Scan(&c.Week, &c.Domains, &c.Old, &c.Moved, &c.New)
+		if err != nil {
+			return nil, err
+		}
+		zc.History = append(zc.History, &c)
+	}
+
+	return &zc, nil
+}
+
 // GetImportProgress gets information on the progress of unimported zones
 func (ds *DataStore) GetImportProgress(ctx context.Context) (*model.ImportProgress, error) {
 	var ip model.ImportProgress

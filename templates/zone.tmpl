@@ -80,4 +80,70 @@
   </div>
 </div>
 
+<div class="row">
+  <div class="col-md-12">
+    <div class="card">
+      <a href="#chart" id="chart" class="list-group-item d-flex justify-content-between align-items-center active">
+        Zone Growth
+      </a>
+      <div id='historyDiv'></div>
+    </div>
+    <script>
+      fetch("/api/zones/{{$.Data.Name}}/counts")
+        .then(response => response.json())
+        .then(api_response => {
+          dates = [];
+          domains = [];
+          oldC = [];
+          movedC = [];
+          newC = [];
+          api_response.data.history.forEach(function (e) {
+            dates.push(e.week);
+            domains.push(e.domains);
+            oldC.push(e.old);
+            movedC.push(e.moved);
+            newC.push(e.new);
+          });
+
+          var data = [{
+            x: dates,
+            y: domains,
+            type: 'scatter',
+            mode: "lines",
+            name: "Domains",
+          },
+          {
+            x: dates,
+            y: oldC,
+            type: 'scatter',
+            mode: "lines",
+            name: "Removed",
+          },
+          {
+            x: dates,
+            y: movedC,
+            type: 'scatter',
+            mode: "lines",
+            name: "Transferred",
+          },
+          {
+            x: dates,
+            y: newC,
+            type: 'scatter',
+            mode: "lines",
+            name: "New",
+          }];
+
+          var layout = {
+            autosize: true,
+            showlegend: true,
+            automargin: true,
+          };
+
+          Plotly.newPlot('historyDiv', data, layout, { displayModeBar: false });
+        });
+    </script>
+  </div>
+</div>
+
 {{template "bottom" $}}

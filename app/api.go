@@ -39,6 +39,7 @@ func APIStart(app *appContext, vdzServer *server.Server) {
 	addAPI("/zones", "zones", app.apiLatestZonesHandler)
 	addAPI("/zones/:zone", "zone_view", app.apiZoneHandler)
 	addAPI("/zones/:zone/import", "zone_import", app.apiZoneImportHandler)
+	addAPI("/zones/:zone/counts", "zone_import_counts", app.apiZoneHistoryCountsHandler)
 	addAPI("/zones/:zone/nameservers", "zone_nameservers", nil)
 	addAPI("/zones/:zone/nameservers/current", "zone_nameservers_current", nil)
 	addAPI("/zones/:zone/nameservers/archive", "zone_nameservers_archive", nil)
@@ -294,6 +295,22 @@ func (app *appContext) apiZoneHandler(w http.ResponseWriter, r *http.Request) {
 	params := httprouter.ParamsFromContext(r.Context())
 	domain := cleanDomain(params.ByName("zone"))
 	data, err1 := app.ds.GetZone(r.Context(), domain)
+	if err1 != nil {
+		if err1 == datastore.ErrNoResource {
+			server.WriteJSONError(w, server.ErrResourceNotFound)
+			return
+		}
+		panic(err1)
+	}
+
+	data.GenerateMetaData()
+	server.WriteJSON(w, data)
+}
+
+func (app *appContext) apiZoneHistoryCountsHandler(w http.ResponseWriter, r *http.Request) {
+	params := httprouter.ParamsFromContext(r.Context())
+	zone := cleanDomain(params.ByName("zone"))
+	data, err1 := app.ds.GetZoneHistoryCounts(r.Context(), zone)
 	if err1 != nil {
 		if err1 == datastore.ErrNoResource {
 			server.WriteJSONError(w, server.ErrResourceNotFound)

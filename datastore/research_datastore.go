@@ -8,8 +8,8 @@ import (
 
 // GetIPNsZoneCount returns the count of nameservers pointing to an IP grouped
 // by the zone
-func (ds *DataStore) GetIPNsZoneCount(ctx context.Context, ip string) (*model.IpNsZoneCount, error) {
-	var ipzc model.IpNsZoneCount
+func (ds *DataStore) GetIPNsZoneCount(ctx context.Context, ip string) (*model.ResearchIpNsZoneCount, error) {
+	var ipzc model.ResearchIpNsZoneCount
 	var err error
 	ipzc.IP = ip
 
@@ -25,9 +25,9 @@ func (ds *DataStore) GetIPNsZoneCount(ctx context.Context, ip string) (*model.Ip
 	defer rows.Close()
 	total := float64(0)
 
-	ipzc.ZoneNSCounts = make([]model.ZoneCount, 0)
+	ipzc.ZoneNSCounts = make([]model.ResearchZoneCount, 0)
 	for rows.Next() {
-		var zc model.ZoneCount
+		var zc model.ResearchZoneCount
 		err = rows.Scan(&zc.Zone, &zc.Count)
 		if err != nil {
 			return nil, err
