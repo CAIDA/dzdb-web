@@ -87,6 +87,11 @@
       <a href="#chart" id="chart" class="list-group-item d-flex justify-content-between align-items-center active">
         Zone Growth
       </a>
+      <div id="spinner1" class="spinner">
+        <div class="bounce1"></div>
+        <div class="bounce2"></div>
+        <div class="bounce3"></div>
+      </div>
       <div id='historyDiv'></div>
     </div>
     <script>
@@ -141,7 +146,7 @@
             automargin: true,
           };
 
-          Plotly.newPlot('historyDiv', data, layout, { displaylogo: false });
+          Plotly.newPlot('historyDiv', data, layout, { displaylogo: false }).then(function(){$("#spinner1").hide()});
         });
     </script>
   </div>
