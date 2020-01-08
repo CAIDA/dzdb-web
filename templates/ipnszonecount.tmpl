@@ -1,8 +1,9 @@
 {{template "top" $}}
 
-
 <div class="page-header">
-  <a href="/ip/{{$.Data.IP}}"><h1>{{$.Data.IP}}</h1></a>
+  <a href="/ip/{{$.Data.IP}}">
+    <h1>{{$.Data.IP}}</h1>
+  </a>
 </div>
 
 <div class="row">
@@ -26,7 +27,7 @@
             <td class="perc">
               <span>{{$value.Count}}</span>
               <div style="width:{{$value.Percent}}%">&nbsp;</div>
-              </td>
+            </td>
           </tr>
           {{ end }}
         </tbody>
@@ -34,48 +35,43 @@
     </div>
   </div>
 
- <div class="col-md-6">
-  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <div class="col-md-6">
     <div class="card">
-      <a href="#" class="list-group-item d-flex justify-content-between align-items-center active">
-        Pie
-        <!-- <span class="badge badge-light badge-pill">{{len $.Data.ZoneNSCounts}}</span> -->
+      <a href="#chart" id="chart" class="list-group-item d-flex justify-content-between align-items-center active">
+        Zone NS Distribution
       </a>
-      <div id='pieDiv'><!-- pie chart here --></div>
+      <div id='pieDiv'></div>
     </div>
     <script>
-    // data is stored in a seperate file
-    fetch("/api/research/ipnszonecount/{{$.Data.IP}}")
-            .then(response => response.json())
-            .then(api_response => {
-                values = [];
-                labels = [];
-                api_response.data.zone_counts.forEach(function(e) {
-                    values.push(e.count);
-                    labels.push(e.zone);
-                });
+      fetch("/api/research/ipnszonecount/{{$.Data.IP}}")
+        .then(response => response.json())
+        .then(api_response => {
+          values = [];
+          labels = [];
+          api_response.data.zone_counts.forEach(function (e) {
+            values.push(e.count);
+            labels.push(e.zone);
+          });
 
-                var data = [{
-                values: values,
-                labels: labels,
-                textinfo: "label+percent",
-                hoverinfo: 'label+value+percent',
-                automargin: true,
-                textposition: "inside",
-                type: 'pie'
-                }];
+          var data = [{
+            values: values,
+            labels: labels,
+            textinfo: "label+percent",
+            hoverinfo: 'label+value+percent',
+            textposition: "inside",
+            type: 'pie'
+          }];
 
-                var layout = {
-                  height: 400,
-                  width: 400,
-                  showlegend: false,
-                };
+          var layout = {
+            autosize: true,
+            showlegend: false,
+            automargin: true,
+          };
 
-                Plotly.newPlot('pieDiv', data, layout,  {displayModeBar: false});
-            });
+          Plotly.newPlot('pieDiv', data, layout, { displayModeBar: false });
+        });
     </script>
   </div>
-
 </div>
 
 {{template "bottom" $}}

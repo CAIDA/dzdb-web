@@ -1,5 +1,5 @@
 body{
-    padding-top:120px
+    padding-top:100px
 }
 .card {
     margin-bottom: 1rem;
@@ -16,11 +16,12 @@ body{
 .table td.perc div {
     position:absolute;
     right:0;
-    top:5%;
+    top:10%;
     z-index:-1;
     background-color: #18BC9C;
-    height:85%;
+    height:75%;
     text-align: right;
+    border-radius: 0.25rem;
 }
 .table td.perc span {
     color:black;
