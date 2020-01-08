@@ -14,6 +14,7 @@ var fmt = message.NewPrinter(language.English)
 
 func init() {
 	Funcs["count"] = count
+	Funcs["nfmt"] = nfmt
 	Funcs["date"] = date
 }
 
@@ -22,6 +23,10 @@ func count(count int, totalCount *int64) string {
 		return fmt.Sprintf("%d", count)
 	}
 	return fmt.Sprintf("%d of %d", count, *totalCount)
+}
+
+func nfmt(count int64) string {
+	return fmt.Sprintf("%d", count)
 }
 
 func date(date *time.Time) string {

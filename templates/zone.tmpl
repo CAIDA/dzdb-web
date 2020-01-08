@@ -15,8 +15,8 @@
           {{if $.Data.ImportData}}
           First Import: {{date $.Data.ImportData.FirstImportDate}} <br/>
           Last Import: {{date $.Data.ImportData.LastImportDate}} <br/>
-          Number of Zone Imports: {{$.Data.ImportData.Count}} <br/>
-          Number of Domains: {{$.Data.ImportData.Domains}} <br/>
+          Number of Zone Imports: {{nfmt $.Data.ImportData.Count}} <br/>
+          Number of Domains: {{nfmt $.Data.ImportData.Domains}} <br/>
           {{end}}
         </p>
       </div>
