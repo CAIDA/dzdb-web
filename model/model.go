@@ -102,17 +102,6 @@ type ZoneImportResult struct {
 	Records         int64      `json:"records"`
 	Domains         int64      `json:"domains"`
 	Count           int64      `json:"count"`
-	// TODO make duration
-	//Duration *string `json:"duration"`
-	/*Old      *int64  `json:"domains_old"`
-	Moved    *int64  `json:"domains_moved"`
-	New      *int64  `json:"domains_new"`
-	NewNs    *int64  `json:"ns_new"`
-	OldNs    *int64  `json:"ns_old"`
-	NewA     *int64  `json:"a_new"`
-	OldA     *int64  `json:"a_old"`
-	NewAaaa  *int64  `json:"aaaa_new"`
-	OldAaaa  *int64  `json:"aaaa_old"`*/
 }
 
 // GenerateMetaData generates metadata recursively of member models
@@ -124,16 +113,17 @@ func (zir *ZoneImportResult) GenerateMetaData() {
 // Zone holds information about a zone
 // TODO change time.Time to nulltime?
 type Zone struct {
-	Type                   *string       `json:"type"`
-	Link                   string        `json:"link"`
-	ID                     int64         `json:"id"`
-	Name                   string        `json:"name"`
-	FirstSeen              *time.Time    `json:"firstseen,omitempty"`
-	LastSeen               *time.Time    `json:"lastseen,omitempty"`
-	NameServers            []*NameServer `json:"nameservers,omitempty"`
-	ArchiveNameServers     []*NameServer `json:"archive_nameservers,omitempty"`
-	NameServerCount        *int64        `json:"nameserver_count,omitempty"`
-	ArchiveNameServerCount *int64        `json:"archive_nameserver_count,omitempty"`
+	Type                   *string           `json:"type"`
+	Link                   string            `json:"link"`
+	ID                     int64             `json:"id"`
+	Name                   string            `json:"name"`
+	FirstSeen              *time.Time        `json:"firstseen,omitempty"`
+	LastSeen               *time.Time        `json:"lastseen,omitempty"`
+	NameServers            []*NameServer     `json:"nameservers,omitempty"`
+	ArchiveNameServers     []*NameServer     `json:"archive_nameservers,omitempty"`
+	NameServerCount        *int64            `json:"nameserver_count,omitempty"`
+	ArchiveNameServerCount *int64            `json:"archive_nameserver_count,omitempty"`
+	ImportData             *ZoneImportResult `json:"import_data,omitempty"`
 }
 
 // GenerateMetaData generates metadata recursively of member models

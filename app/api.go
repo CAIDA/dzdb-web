@@ -38,6 +38,7 @@ func APIStart(app *appContext, vdzServer *server.Server) {
 	// zones
 	addAPI("/zones", "zones", app.apiLatestZonesHandler)
 	addAPI("/zones/:zone", "zone_view", app.apiZoneHandler)
+	addAPI("/zones/:zone/import", "zone_import", app.apiZoneImportHandler)
 	addAPI("/zones/:zone/nameservers", "zone_nameservers", nil)
 	addAPI("/zones/:zone/nameservers/current", "zone_nameservers_current", nil)
 	addAPI("/zones/:zone/nameservers/archive", "zone_nameservers_archive", nil)
@@ -129,6 +130,21 @@ func (app *appContext) apiLatestZonesHandler(w http.ResponseWriter, r *http.Requ
 	zoneImportResults.GenerateMetaData()
 
 	server.WriteJSON(w, zoneImportResults)
+}
+
+//TODO expand
+func (app *appContext) apiZoneImportHandler(w http.ResponseWriter, r *http.Request) {
+	params := httprouter.ParamsFromContext(r.Context())
+	zone := cleanDomain(params.ByName("zone"))
+	zoneImportResult, err := app.ds.GetZoneImport(r.Context(), zone)
+	if err != nil {
+		// TODO handle error no rows found
+		panic(err)
+	}
+
+	zoneImportResult.GenerateMetaData()
+
+	server.WriteJSON(w, zoneImportResult)
 }
 
 func (app *appContext) apiFeedsNewHandler(w http.ResponseWriter, r *http.Request) {

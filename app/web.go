@@ -28,7 +28,7 @@ type appContext struct {
 type Page struct {
 	Title string
 	Tab   string
-	Data  interface{}
+	Data  interface{} // TODO set this to interface type with generate metadata
 }
 
 // Start entry point for starting application
@@ -149,6 +149,12 @@ func (app *appContext) zoneHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		panic(err)
+	}
+	importData, err := app.ds.GetZoneImport(r.Context(), name)
+	if err == nil {
+		// TODO check for datastore.ErrNoResource and sql.NoRows
+		// TODO in fact, make ErrNoResource include? sql.NowRows as well
+		data.ImportData = importData
 	}
 
 	p := Page{name, "Zones", data}

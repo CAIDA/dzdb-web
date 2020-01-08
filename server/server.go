@@ -134,6 +134,7 @@ func WriteJSONError(w http.ResponseWriter, err *model.JSONError) {
 
 // WriteJSON writes JSON from data to the response
 func WriteJSON(w http.ResponseWriter, data interface{}) {
+	// TODO change data type and call write metadata here...
 	w.Header().Set("Content-Type", "application/json")
 	err := json.NewEncoder(w).Encode(model.JSONResponse{Data: data})
 	if err != nil && err != http.ErrHandlerTimeout {

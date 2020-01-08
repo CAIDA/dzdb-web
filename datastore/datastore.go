@@ -155,6 +155,12 @@ func (ds *DataStore) GetZone(ctx context.Context, name string) (*model.Zone, err
 		return nil, err
 	}
 
+	// get num domains
+	err = ds.db.QueryRowContext(ctx, "SELECT count(*) FROM zones_nameservers WHERE zone_id = $1 AND last_seen IS NOT NULL", z.ID).Scan(&z.ArchiveNameServerCount)
+	if err != nil {
+		return nil, err
+	}
+
 	// get active NS
 	rows, err := ds.db.QueryContext(ctx, "SELECT ns.ID, ns.domain, zns.first_seen, zns.last_seen FROM zones_nameservers zns, nameservers ns WHERE zns.nameserver_id = ns.ID AND zns.last_seen IS NULL AND zns.zone_id = $1 limit 100", z.ID)
 	if err != nil {
@@ -488,7 +494,18 @@ func (ds *DataStore) GetRandomDomain(ctx context.Context) (*model.Domain, error)
 	return &domain, nil
 }
 
-// GetZoneImportResults gets the most-recent recent ZoneImportResults for every zone (slow?)
+// GetZoneImport gets the most-recent recent ZoneImportResult for the given zone
+func (ds *DataStore) GetZoneImport(ctx context.Context, zone string) (*model.ZoneImportResult, error) {
+	var r model.ZoneImportResult
+
+	err := ds.db.QueryRowContext(ctx, "select zones.zone, import_zone_counts.domains, import_zone_counts.records, zones_imports.first_import_date, zones_imports.first_import_id, zones_imports.last_import_date,zones_imports.last_import_id, zones_imports.count from zones, zones_imports, import_zone_counts where zones.id = zones_imports.zone_id and zones_imports.last_import_id = import_zone_counts.import_id and zones.zone = $1", zone).Scan(&r.Zone, &r.Domains, &r.Records, &r.FirstImportDate, &r.FirstImportID, &r.LastImportDate, &r.LastImportID, &r.Count)
+	if err != nil {
+		return nil, err
+	}
+	return &r, nil
+}
+
+// GetZoneImportResults gets the most-recent recent ZoneImportResults for every zone (TODO slow?)
 func (ds *DataStore) GetZoneImportResults(ctx context.Context) (*model.ZoneImportResults, error) {
 	var zoneImportResults model.ZoneImportResults
 	zoneImportResults.Zones = make([]*model.ZoneImportResult, 0, 100)

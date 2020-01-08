@@ -6,9 +6,18 @@
       <h3 class="card-header">{{$.Data.Name}}</h3>
       <div class="card-body">
         <p class="card-text">
-          {{date $.Data.FirstSeen}}
-          -
-          {{date $.Data.LastSeen}}
+          {{if $.Data.FirstSeen}}
+          First Seen: {{date $.Data.FirstSeen}} <br/>
+          {{end}}
+          {{if $.Data.LastSeen}}
+          Last Seen: {{date $.Data.LastSeen}} <br/>
+          {{end}}
+          {{if $.Data.ImportData}}
+          First Import: {{date $.Data.ImportData.FirstImportDate}} <br/>
+          Last Import: {{date $.Data.ImportData.LastImportDate}} <br/>
+          Number of Zone Imports: {{$.Data.ImportData.Count}} <br/>
+          Number of Domains: {{$.Data.ImportData.Domains}} <br/>
+          {{end}}
         </p>
       </div>
     </div>
