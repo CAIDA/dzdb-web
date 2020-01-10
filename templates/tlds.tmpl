@@ -14,6 +14,7 @@
       <div id='tldHistoryDiv'></div>
     </div>
     <script>
+    var a = [];
       fetch("/api/counts/all")
         .then(response => response.json())
         .then(api_response => {
@@ -21,23 +22,31 @@
           Object.values(api_response.data.counts).forEach(function (z) {
             dates = [];
             domains = [];
+           /* max_value = 0;*/
             z.history.forEach(function(e) {
               dates.push(e.date);
               domains.push(e.domains);
+              /*if (e.domains > max_value) {
+                max_value = f.number_ips;
+              }
+              max_value = e.domains;*/
             })
             data.push({
               type: 'scatter',
-              mode: "lines",
               name: z.zone,
               x: dates,
               y: domains,
+              fill: "tozeroy",
+              /*max_value: max_value,*/
             })
-
           });
 
+          data = data.sort((a, b) => (b.y[b.y.length-1] - a.y[a.y.lenght-1]));
+          a = data;
+        console.log(data);
           var layout = {
             autosize: true,
-            showlegend: false,
+            showlegend: true,
             automargin: true,
           };
 
