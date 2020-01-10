@@ -535,7 +535,7 @@ func (ds *DataStore) GetInternetHistoryCounts(ctx context.Context) (*model.ZoneC
 	zc.Zone = ""
 	limit := 300
 
-	rows, err := ds.db.QueryContext(ctx, "with s as (select date, sum(domains) as domains, sum(old) as old, sum(moved) as moved, sum(new) as new from weighted_counts where date not in (select distinct date from imports where imported = false) group by 1 order by 1 desc limit (52 * $1)) select date_trunc('week', date) AS week, floor(AVG(domains)) as domains, floor(avg(old)) as old, floor(avg(moved)) as moved, floor(avg(new)) as new from s group by 1 order by 1 desc limit $1", limit)
+	rows, err := ds.db.QueryContext(ctx, "with s as (select date, sum(domains) as domains, sum(old) as old, sum(moved) as moved, sum(new) as new from weighted_counts where date not in (select distinct date from imports where imported = false) group by 1 order by 1 desc limit (52 * $1)) select date_trunc('week', date) AS week, floor(AVG(domains)) as domains, old as old, moved as moved, new as new from s group by 1 order by 1 desc limit $1", limit)
 	if err != nil {
 		return nil, err
 	}
@@ -558,7 +558,7 @@ func (ds *DataStore) GetZoneHistoryCounts(ctx context.Context, zone string) (*mo
 	zc.History = make([]*model.ZoneCounts, 0, 100)
 	zc.Zone = zone
 
-	rows, err := ds.db.QueryContext(ctx, "select date_trunc('week', date) AS week, floor(AVG(domains)) as domains, floor(AVG(old)) as old, floor(AVG(moved)) as moved, floor(AVG(new)) as new from import_zone_counts, zones where zone_id = zones.id and zones.zone = $1 group by 1 order by 1 desc limit 300", zone)
+	rows, err := ds.db.QueryContext(ctx, "select date_trunc('week', date) AS week, floor(AVG(domains)) as domains, sum(old) as old, sum(moved) as moved, sum(new) as new from import_zone_counts, zones where zone_id = zones.id and zones.zone = $1 group by 1 order by 1 desc limit 300", zone)
 	if err != nil {
 		return nil, err
 	}
@@ -580,7 +580,7 @@ func (ds *DataStore) GetAllZoneHistoryCounts(ctx context.Context) (*model.AllZon
 	var all model.AllZoneCounts
 	all.Counts = make(map[string]*model.ZoneCount)
 
-	rows, err := ds.db.QueryContext(ctx, "select date_trunc('month', date) AS month, zone, floor(AVG(domains)) as domains, floor(AVG(old)) as old, floor(AVG(moved)) as moved, floor(AVG(new)) as new from weighted_counts, zones where zones.id = zone_id group by 1, 2 order by 1 desc, 2 limit 300 * 1200")
+	rows, err := ds.db.QueryContext(ctx, "select date_trunc('month', date) AS month, zone, floor(AVG(domains)) as domains, sum(old) as old, sum(moved) as moved, sum(new) as new from weighted_counts, zones where zones.id = zone_id group by 1, 2 order by 1 desc, 2 limit 300 * 1200")
 	if err != nil {
 		return nil, err
 	}
