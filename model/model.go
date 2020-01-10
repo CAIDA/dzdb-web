@@ -363,6 +363,7 @@ type TLDLife struct {
 	Zone    string     `json:"zone"`
 	Created *time.Time `json:"created"`
 	Removed *time.Time `json:"removed"`
+	Domains *int64     `json:"domains"`
 	Age     *int64     `json:"age"`
 }
 

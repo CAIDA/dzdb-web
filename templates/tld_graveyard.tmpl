@@ -6,7 +6,7 @@
       <h1>TLD Graveyard</h1>
       <!-- <p class="lead"></p> -->
 
-      <p>This page lists TLDs seen in the root zone file that are not longer active.</p>
+      <p>This page lists TLDs seen in the root zone file that are no longer active.</p>
     </div>
   </div>
 </div>
@@ -24,6 +24,7 @@
             <th>TLD</th>
             <th>Created</th>
             <th>Removed</th>
+            <th>Domains</th>
             <th>Age (days)</th>
           </tr>
         </thead>
@@ -33,6 +34,7 @@
             <td><a href="/zones/{{$value.Zone}}">{{$value.Zone}}</a></td>
             <td>{{date $value.Created}}</td>
             <td>{{date $value.Removed}}</td>
+            <td>{{if $value.Domains}}{{nfmt (drefInt $value.Domains)}}{{end}}</td>
             <td>{{if $value.Age}}{{nfmt (drefInt $value.Age)}}{{end}}</td>
           </tr>
           {{ end }}

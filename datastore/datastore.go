@@ -972,8 +972,11 @@ func (ds *DataStore) GetDeadTLDs(ctx context.Context) ([]*model.TLDLife, error) 
 	select zone,
 		min(first_seen) as created,
 		max(last_Seen) as removed,
+		max(domains) as domains,
 		(max(last_seen) - min(first_seen)) as age
 	from dead_zones, zones_nameservers
+	left join import_zone_counts
+		on import_zone_counts.zone_id = zones_nameservers.zone_id
 	where
 		dead_zones.id = zones_nameservers.zone_id
 	group by zone
@@ -984,7 +987,7 @@ func (ds *DataStore) GetDeadTLDs(ctx context.Context) ([]*model.TLDLife, error) 
 
 	for rows.Next() {
 		var t model.TLDLife
-		err = rows.Scan(&t.Zone, &t.Created, &t.Removed, &t.Age)
+		err = rows.Scan(&t.Zone, &t.Created, &t.Removed, &t.Domains, &t.Age)
 		if err != nil {
 			return nil, err
 		}
