@@ -355,3 +355,15 @@ type PrefixList struct {
 }
 
 // TODO PrefixList GenerateMetaData and API
+
+// TLDLife holds TLD age information for the TLD graveyard page
+type TLDLife struct {
+	Type *string `json:"type"`
+	//Link    string   `json:"link"`
+	Zone    string     `json:"zone"`
+	Created *time.Time `json:"created"`
+	Removed *time.Time `json:"removed"`
+	Age     *int64     `json:"age"`
+}
+
+// TODO TLDLife GenerateMetaData and API

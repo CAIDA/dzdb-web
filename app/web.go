@@ -62,6 +62,7 @@ func Start(ds *datastore.DataStore, server *server.Server) {
 	server.Get("/zones/:zone", app.zoneHandler)
 	server.Get("/zones", app.zoneIndexHandler)
 	server.Get("/tlds", app.tldIndexHandler)
+	server.Get("/tlds/graveyard", app.tldGraveyardIndexHandler)
 	server.Get("/stats", app.statsHandler)
 	server.Get("/prefix/:prefix", app.prefixHandler)
 
@@ -337,4 +338,16 @@ func cleanDomain(domain string) string {
 		panic(err)
 	}
 	return domain
+}
+
+func (app *appContext) tldGraveyardIndexHandler(w http.ResponseWriter, r *http.Request) {
+	data, err := app.ds.GetDeadTLDs(r.Context())
+	if err != nil {
+		panic(err)
+	}
+	p := Page{"TLD Graveyard", "Zones", data}
+	err = app.templates.ExecuteTemplate(w, "tld_graveyard.tmpl", p)
+	if err != nil {
+		panic(err)
+	}
 }

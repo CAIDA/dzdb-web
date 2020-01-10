@@ -16,6 +16,7 @@ func init() {
 	Funcs["count"] = count
 	Funcs["nfmt"] = nfmt
 	Funcs["date"] = date
+	Funcs["drefInt"] = defrefInt
 }
 
 func count(count int, totalCount *int64) string {
@@ -34,4 +35,8 @@ func date(date *time.Time) string {
 		return ""
 	}
 	return date.Format("Jan 02, 2006")
+}
+
+func defrefInt(i *int64) int64 {
+	return *i
 }

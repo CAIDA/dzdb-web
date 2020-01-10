@@ -70,8 +70,8 @@
             <td>{{$value.Domains}}</td>
             <td>{{$value.Records}}</td>
             <td>{{$value.Count}}</td>
-            <td>{{$value.FirstImportDate.Format "Jan 02, 2006"}}</td>
-            <td>{{$value.LastImportDate.Format "Jan 02, 2006"}}</td>
+            <td>{{date $value.FirstImportDate}}</td>
+            <td>{{date $value.LastImportDate}}</td>
           </tr>
           {{ end }}
         </tbody>

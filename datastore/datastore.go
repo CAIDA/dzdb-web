@@ -963,3 +963,33 @@ func (ds *DataStore) GetAvaiblePrefixes(ctx context.Context, name string) (*mode
 
 	return &prefixes, nil
 }
+
+// GetDeadTLDs returns zones that have been removed from the root and their ages
+func (ds *DataStore) GetDeadTLDs(ctx context.Context) ([]*model.TLDLife, error) {
+	out := make([]*model.TLDLife, 0, 20)
+
+	rows, err := ds.db.QueryContext(ctx, `with dead_zones as (SELECT zones.zone, zones.id FROM zones WHERE NOT (EXISTS ( SELECT zones_nameservers.zone_id FROM zones_nameservers WHERE zones.id = zones_nameservers.zone_id AND zones_nameservers.last_seen IS NULL)))
+	select zone,
+		min(first_seen) as created,
+		max(last_Seen) as removed,
+		(max(last_seen) - min(first_seen)) as age
+	from dead_zones, zones_nameservers
+	where
+		dead_zones.id = zones_nameservers.zone_id
+	group by zone
+	order by 3 desc, 2 asc, 1`)
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		var t model.TLDLife
+		err = rows.Scan(&t.Zone, &t.Created, &t.Removed, &t.Age)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, &t)
+	}
+
+	return out, nil
+}
