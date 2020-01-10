@@ -40,10 +40,8 @@
               /*max_value: max_value,*/
             })
           });
-
-          data = data.sort((a, b) => (b.y[b.y.length-1] - a.y[a.y.lenght-1]));
-          a = data;
-        console.log(data);
+          /* sort largest zones first */
+          data.sort((a, b) => (a.y[a.y.length-1] < b.y[b.y.length-1]) ? 1 : -1);
           var layout = {
             autosize: true,
             showlegend: true,
