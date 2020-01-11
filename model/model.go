@@ -364,7 +364,7 @@ type TLDLife struct {
 	Created *time.Time `json:"created"`
 	Removed *time.Time `json:"removed"`
 	Domains *int64     `json:"domains"`
-	Age     *int64     `json:"age"`
+	Age     *string    `json:"age"`
 }
 
 // TODO TLDLife GenerateMetaData and API

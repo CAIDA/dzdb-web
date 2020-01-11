@@ -24,8 +24,8 @@
             <th>TLD</th>
             <th>Created</th>
             <th>Removed</th>
+            <th>Age</th>
             <th>Domains</th>
-            <th>Age (days)</th>
           </tr>
         </thead>
         <tbody>
@@ -34,8 +34,8 @@
             <td><a href="/zones/{{$value.Zone}}">{{$value.Zone}}</a></td>
             <td>{{date $value.Created}}</td>
             <td>{{date $value.Removed}}</td>
+            <td>{{if $value.Age}}{{$value.Age}}{{end}}</td>
             <td>{{if $value.Domains}}{{nfmt (drefInt $value.Domains)}}{{end}}</td>
-            <td>{{if $value.Age}}{{nfmt (drefInt $value.Age)}}{{end}}</td>
           </tr>
           {{ end }}
         </tbody>
