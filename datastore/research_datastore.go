@@ -3,8 +3,52 @@ package datastore
 import (
 	"context"
 	"strings"
+	"time"
 	"vdz-web/model"
 )
+
+// GetActiveIPs returns the active IP addresses (IPv4 and IPv6) for a given date
+func (ds *DataStore) GetActiveIPs(ctx context.Context, date time.Time) (*model.ActiveIPs, error) {
+	var err error
+	var aip model.ActiveIPs
+	aip.Date = date
+
+	query := "select distinct a.ip from a_nameservers an join a on an.a_id = a.id where first_seen <= $1 and (last_seen >= $1 or last_seen is NULL);"
+	rows, err := ds.db.QueryContext(ctx, query, date)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	aip.IPv4IPs = make([]string, 0)
+	for rows.Next() {
+		var ipv4 string
+		err = rows.Scan(&ipv4)
+		if err != nil {
+			return nil, err
+		}
+		aip.IPv4IPs = append(aip.IPv4IPs, ipv4)
+	}
+
+	query = "select distinct aaaa.ip from aaaa_nameservers aaaan join aaaa on aaaan.aaaa_id = aaaa.id where first_seen <= $1 and (last_seen >= $1 or last_seen is NULL);"
+	rows, err = ds.db.QueryContext(ctx, query, date)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	aip.IPv6IPs = make([]string, 0)
+	for rows.Next() {
+		var ipv6 string
+		err = rows.Scan(&ipv6)
+		if err != nil {
+			return nil, err
+		}
+		aip.IPv6IPs = append(aip.IPv6IPs, ipv6)
+	}
+
+	return &aip, nil
+}
 
 // GetIPNsZoneCount returns the count of nameservers pointing to an IP grouped
 // by the zone
