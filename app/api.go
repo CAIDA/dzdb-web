@@ -109,6 +109,7 @@ func APIStart(app *appContext, vdzServer *server.Server) {
 
 	// research
 	addAPI("/research/ipnszonecount/:ip", "ip_ns_zone_count", app.apiIPNsZoneCount)
+	addAPI("/research/active_ips/:date", "active_ips", app.apiActiveIPs)
 
 	// API index
 	vdzServer.Get("/api/", app.apiIndex)
