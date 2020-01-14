@@ -13,7 +13,7 @@ func (ds *DataStore) GetActiveIPs(ctx context.Context, date time.Time) (*model.A
 	var aip model.ActiveIPs
 	aip.Date = date
 
-	query := "select distinct aaaa.ip from aaaa_nameservers, aaaa where aaaa_nameservers.aaaa_id = aaaa.id and first_seen <= $1 and (last_seen >= $1 or last_seen is NULL)"
+	query := "select distinct a.ip from a_nameservers, a where a_nameservers.a_id = a.id and first_seen <= $1 and (last_seen >= $1 or last_seen is NULL)"
 	rows, err := ds.db.QueryContext(ctx, query, date)
 	if err != nil {
 		return nil, err
@@ -30,7 +30,7 @@ func (ds *DataStore) GetActiveIPs(ctx context.Context, date time.Time) (*model.A
 		aip.IPv4IPs = append(aip.IPv4IPs, ipv4)
 	}
 
-	query = "select distinct a.ip from a_nameservers, a where a_nameservers.a_id = a.id and first_seen <= $1 and (last_seen >= $1 or last_seen is NULL)"
+	query = "select distinct aaaa.ip from aaaa_nameservers, aaaa where aaaa_nameservers.aaaa_id = aaaa.id and first_seen <= $1 and (last_seen >= $1 or last_seen is NULL)"
 	rows, err = ds.db.QueryContext(ctx, query, date)
 	if err != nil {
 		return nil, err
