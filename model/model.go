@@ -159,6 +159,7 @@ type Zone struct {
 	NameServerCount        *int64            `json:"nameserver_count,omitempty"`
 	ArchiveNameServerCount *int64            `json:"archive_nameserver_count,omitempty"`
 	ImportData             *ZoneImportResult `json:"import_data,omitempty"`
+	Domains                *[]Domain         `json:"domains,omitempty"`
 }
 
 // GenerateMetaData generates metadata recursively of member models

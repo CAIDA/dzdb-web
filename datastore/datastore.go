@@ -996,3 +996,23 @@ func (ds *DataStore) GetDeadTLDs(ctx context.Context) ([]*model.TLDLife, error) 
 
 	return out, nil
 }
+
+// GetDomainsInZoneID retutrns a smaple of 50 domains in a given zoneID
+// note: wen joining with zones to turn the zone into a zone it siis extreamly slow
+// useing a zoneId is fast
+func (ds *DataStore) GetDomainsInZoneID(ctx context.Context, zoneID int64) ([]model.Domain, error) {
+	out := make([]model.Domain, 0, 50)
+	rows, err := ds.db.QueryContext(ctx, "with dupes as (select domain, last_seen from domains, domains_nameservers, zones where domains.id = domains_nameservers.domain_id and domains_nameservers.zone_id = zones.id and zones.id = $1 order by last_Seen desc limit 150) select domain, max(last_seen) last_seen from dupes group by domain limit 50", zoneID)
+	if err != nil {
+		return out, err
+	}
+	for rows.Next() {
+		var d model.Domain
+		err = rows.Scan(&d.Name, &d.LastSeen)
+		if err != nil {
+			return out, err
+		}
+		out = append(out, d)
+	}
+	return out, nil
+}
