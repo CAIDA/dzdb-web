@@ -1,41 +1,94 @@
 {{template "top" $}}
 
 <div class="row">
-  <div class="col-lg-8">
-    <div class="card border-primary mb-3" style="max-width: 20rem;">
+  <div class="col-md-4">
+    <div class="card mb-3">
       <h3 class="card-header">Prefix Search</h3>
+      <form onsubmit="prefixSearch(); return false">
+        <div class="card-body">
+          <div class="form-group">
+            <input class="form-control form-control-lg" type="text" name="query" placeholder="example.com" id="search"
+              value="{{$.Data.Prefix}}">
+          </div>
+          <div class="form-group">
+            <div class="custom-control custom-radio">
+              <input type="radio" id="activeRadio" name="prefixType" class="custom-control-input"
+                {{if $.Data.Active}}checked="" {{end}}>
+              <label class="custom-control-label" for="activeRadio">Active</label>
+            </div>
+            <div class="custom-control custom-radio">
+              <input type="radio" id="availableRadio" name="prefixType" class="custom-control-input"
+                {{if not $.Data.Active}}checked="" {{end}}>
+              <label class="custom-control-label" for="availableRadio">Available</label>
+            </div>
+          </div>
+          <div class="form-group">
+            <button type="submit" class="btn btn-primary">Search</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card text-white bg-secondary mb-3" style="max-width: 20rem;">
+      <div class="card-header">Info</div>
       <div class="card-body">
-        <p class="card-text">
-          {{ $.Data.Prefix }}
-        </p>
+        <h4 class="card-title">Active Prefixs</h4>
+        <p class="card-text">These prefixes are listed in the most recent zone file</p>
+        <h4 class="card-title">Available Prefixes</h4>
+        <p class="card-text">Available prefixes are not listed in the most recent zone files; however they may be listed
+          in a more recent zone file, or be registered without any NS records.</p>
       </div>
     </div>
   </div>
 </div>
 
+{{if $.Data.Prefix}}
 <div class="row">
   <div class="col-md-6">
+    <ul class="nav nav-tabs">
+      <li class="nav-item">
+        <a class="nav-link {{if $.Data.Active}}active{{end}}" href="/prefix/active/{{$.Data.Prefix}}">Active</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link {{if not $.Data.Active}}active{{end}}"
+          href="/prefix/available/{{$.Data.Prefix}}">Available</a>
+      </li>
+    </ul>
     <div class="card">
       <a href="#" class="list-group-item d-flex justify-content-between align-items-center active">
+        {{if $.Data.Active}}
+        Active Prefixes
+        {{else}}
         Available Prefixes
+        {{end}}
         <span class="badge badge-light badge-pill">{{len $.Data.Domains}}</span>
       </a>
       <table class="table table-striped table-hover">
         <thead>
           <tr>
             <th>Domain</th>
+            {{if $.Data.Active}}
+            <th>First Seen</th>
+            {{else}}
             <th>Previously Last Seen</th>
+            {{end}}
           </tr>
         </thead>
         <tbody>
           {{ range $key, $value := $.Data.Domains }}
           <tr>
+            {{if $.Data.Active}}
+            <td><a href="/domains/{{ $value.Domain }}">{{ $value.Domain }}</a></td>
+            <td>{{ date $value.FirstSeen }}</td>
+            {{else}}
             {{ if $value.LastSeen }}
             <td><a href="/domains/{{ $value.Domain }}">{{ $value.Domain }}</a></td>
             {{ else }}
             <td>{{ $value.Domain }}</td>
             {{ end }}
             <td>{{ date $value.LastSeen }}</td>
+            {{end}}
           </tr>
           {{ end }}
         </tbody>
@@ -43,5 +96,19 @@
     </div>
   </div>
 </div>
+{{end}}
+
+<script type="text/javascript">
+  function prefixSearch() {
+    var type = "active";
+    if (document.getElementById("availableRadio").checked) {
+      type = "available";
+    }
+    var prefix = document.getElementById("search").value;
+    if (prefix.length > 0) {
+      window.location.replace("/prefix/" + type + "/" + prefix);
+    }
+  }
+</script>
 
 {{template "bottom" $}}

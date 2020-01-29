@@ -884,10 +884,11 @@ func (ds *DataStore) GetIP(ctx context.Context, name string) (*model.IP, error) 
 	return &ip, nil
 }
 
-// GetAvaiblePrefixes returns avaible prefixes for the queried prefix
-func (ds *DataStore) GetAvaiblePrefixes(ctx context.Context, name string) (*model.PrefixList, error) {
+// GetAvailablePrefixes returns available prefixes for the queried prefix
+func (ds *DataStore) GetAvailablePrefixes(ctx context.Context, name string) (*model.PrefixList, error) {
 	var prefixes model.PrefixList
 	var err error
+	prefixes.Active = false
 	prefixes.Prefix = name
 	prefixes.Domains = make([]model.PrefixResult, 0, 10)
 
@@ -931,7 +932,7 @@ func (ds *DataStore) GetAvaiblePrefixes(ctx context.Context, name string) (*mode
 	)
 	Select
 	   available_domains.domain,
-	   max(Domains_nameservers.last_seen) last_Seen 
+	   max(Domains_nameservers.last_seen) last_seen 
 	from
 	   available_domains 
 	   Left join
@@ -961,6 +962,32 @@ func (ds *DataStore) GetAvaiblePrefixes(ctx context.Context, name string) (*mode
 		prefixes.Domains = append(prefixes.Domains, domain)
 	}
 
+	return &prefixes, nil
+}
+
+// GetTakenPrefixes searched for domain prefixes that match the fivn patern that are active
+func (ds *DataStore) GetTakenPrefixes(ctx context.Context, name string) (*model.PrefixList, error) {
+	var prefixes model.PrefixList
+	var err error
+	prefixes.Prefix = name
+	prefixes.Active = true
+	prefixes.Domains = make([]model.PrefixResult, 0, 10)
+	rows, err := ds.db.QueryContext(ctx, "select domains.domain, min(domains_nameservers.first_seen) first_seen from domains, domains_nameservers where domains.id = domains_nameservers.domain_id and domain LIKE $1 || '.%' and last_seen is null group by domains.domain order by domains.domain", prefixes.Prefix)
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		var domain model.PrefixResult
+		var firstSeen sql.NullTime
+		err = rows.Scan(&domain.Domain, &firstSeen)
+		if err != nil {
+			return nil, err
+		}
+		if firstSeen.Valid {
+			domain.FirstSeen = &firstSeen.Time
+		}
+		prefixes.Domains = append(prefixes.Domains, domain)
+	}
 	return &prefixes, nil
 }
 

@@ -342,14 +342,17 @@ func (ip *IP) GenerateMetaData() {
 	}
 }
 
+// PrefixResult stores the result of an individual prefix search result
 type PrefixResult struct {
-	Domain   string     `json:"domain"`
-	LastSeen *time.Time `json:"lastseen,omitempty"`
+	Domain    string     `json:"domain"`
+	FirstSeen *time.Time `json:"firstseen,omitempty"`
+	LastSeen  *time.Time `json:"lastseen,omitempty"`
 }
 
 // PrefixList holds information about an IP address
 type PrefixList struct {
 	Type   *string `json:"type"`
+	Active bool    `json:"active"`
 	Prefix string  `json:"prefix"`
 	//Link    string   `json:"link"`
 	Domains []PrefixResult `json:"domains"`

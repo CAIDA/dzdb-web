@@ -7,6 +7,7 @@ import (
 
 	"vdz-web/app/temfun"
 	"vdz-web/datastore"
+	"vdz-web/model"
 	"vdz-web/server"
 
 	"github.com/julienschmidt/httprouter"
@@ -64,7 +65,8 @@ func Start(ds *datastore.DataStore, server *server.Server) {
 	server.Get("/tlds", app.tldIndexHandler)
 	server.Get("/tlds/graveyard", app.tldGraveyardIndexHandler)
 	server.Get("/stats", app.statsHandler)
-	server.Get("/prefix/:prefix", app.prefixHandler)
+	server.Get("/prefix", app.prefixIndexHandler)
+	server.Get("/prefix/:type/:prefix", app.prefixHandler)
 
 	// research
 	server.Get("/research/ipnszonecount/:ip", app.ipNsZoneCountHandler)
@@ -247,11 +249,32 @@ func (app *appContext) ipHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// prefixHandler returns avaible prefixes for the queried prefix
+// prefixIndexHandler shows the prefix search page
+func (app *appContext) prefixIndexHandler(w http.ResponseWriter, r *http.Request) {
+	var data model.PrefixList
+	p := Page{"Prefix", "Search", data}
+	err := app.templates.ExecuteTemplate(w, "prefix.tmpl", p)
+	if err != nil {
+		panic(err)
+	}
+}
+
+// prefixHandler returns prefixes for the queried prefix
 func (app *appContext) prefixHandler(w http.ResponseWriter, r *http.Request) {
+	var err error
+	var data *model.PrefixList
 	params := httprouter.ParamsFromContext(r.Context())
+	prefixType := strings.ToLower(params.ByName("type"))
 	name := cleanDomain(params.ByName("prefix"))
-	data, err := app.ds.GetAvaiblePrefixes(r.Context(), name)
+	if prefixType == "active" {
+		data, err = app.ds.GetTakenPrefixes(r.Context(), name)
+
+	} else if prefixType == "available" {
+		data, err = app.ds.GetAvailablePrefixes(r.Context(), name)
+	} else {
+		server.WriteJSONError(w, server.ErrResourceNotFound)
+		return
+	}
 	if err != nil {
 		if err == datastore.ErrNoResource {
 			// TODO make http err (not json)
@@ -261,7 +284,7 @@ func (app *appContext) prefixHandler(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	p := Page{name, "", data}
+	p := Page{name + " Prefix", "Search", data}
 	err = app.templates.ExecuteTemplate(w, "prefix.tmpl", p)
 	if err != nil {
 		panic(err)
