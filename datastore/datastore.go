@@ -16,8 +16,6 @@ import (
 	"github.com/teepark/pqinterval"
 )
 
-//TODO prepaired statements
-
 // ErrNoResource a 404 for a vdz resource
 var ErrNoResource = errors.New("the requested object does not exist")
 
@@ -212,7 +210,6 @@ func (ds *DataStore) GetFeedNew(ctx context.Context, date time.Time) (*model.Fee
 	var err error
 	f.Date = date
 
-	// TODO limit?
 	rows, err := ds.db.QueryContext(ctx, "SELECT domain_id, domain from recent_new_domains where date = $1", date)
 	if err != nil {
 		return nil, err
@@ -237,7 +234,6 @@ func (ds *DataStore) GetFeedOld(ctx context.Context, date time.Time) (*model.Fee
 	var err error
 	f.Date = date
 
-	// TODO limit?
 	rows, err := ds.db.QueryContext(ctx, "SELECT domain_id, domain from recent_old_domains where date = $1", date)
 	if err != nil {
 		return nil, err
@@ -262,7 +258,6 @@ func (ds *DataStore) GetFeedMoved(ctx context.Context, date time.Time) (*model.F
 	var err error
 	f.Date = date
 
-	// TODO limit?
 	rows, err := ds.db.QueryContext(ctx, "SELECT domain_id, domain from recent_moved_domains where date = $1", date)
 	if err != nil {
 		return nil, err
@@ -287,7 +282,6 @@ func (ds *DataStore) GetFeedNsMoved(ctx context.Context, date time.Time) (*model
 	var err error
 	f.Date = date
 
-	// TODO limit?
 	rows, err := ds.db.QueryContext(ctx, "SELECT nameserver_id, nameserver, version from recent_moved_ns where date = $1", date)
 	if err != nil {
 		return nil, err
@@ -323,7 +317,6 @@ func (ds *DataStore) GetFeedNsNew(ctx context.Context, date time.Time) (*model.N
 	var err error
 	f.Date = date
 
-	// TODO limit?
 	rows, err := ds.db.QueryContext(ctx, "SELECT nameserver_id, nameserver, version from recent_new_ns where date = $1", date)
 	if err != nil {
 		return nil, err
@@ -359,7 +352,6 @@ func (ds *DataStore) GetFeedNsOld(ctx context.Context, date time.Time) (*model.N
 	var err error
 	f.Date = date
 
-	// TODO limit?
 	rows, err := ds.db.QueryContext(ctx, "SELECT nameserver_id, nameserver, version from recent_old_ns where date = $1", date)
 	if err != nil {
 		return nil, err
@@ -505,7 +497,7 @@ func (ds *DataStore) GetZoneImport(ctx context.Context, zone string) (*model.Zon
 	return &r, nil
 }
 
-// GetZoneImportResults gets the most-recent recent ZoneImportResults for every zone (TODO slow?)
+// GetZoneImportResults gets the most-recent recent ZoneImportResults for every zone
 func (ds *DataStore) GetZoneImportResults(ctx context.Context) (*model.ZoneImportResults, error) {
 	var zoneImportResults model.ZoneImportResults
 	zoneImportResults.Zones = make([]*model.ZoneImportResult, 0, 100)
