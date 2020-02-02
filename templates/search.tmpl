@@ -1,24 +1,69 @@
 {{template "top" $}}
 
-
-<div class="col-lg-4">
-  <div class="card mb-3">
-    <h3 class="card-header">DNS Search</h3>
-    <form method="POST" action="/search">
-      <div class="card-body">
-        <div class="form-group">
-          <input class="form-control form-control-lg" type="text" name="query" placeholder="example.com"
-            id="search">
+<div class="row">
+  <div class="col-md-4">
+    <div class="card mb-3">
+      <h3 class="card-header">DNS Search</h3>
+      <form method="POST" action="/search">
+        <div class="card-body">
+          <div class="form-group">
+            <input class="form-control form-control-lg" type="text" name="query" placeholder="example.com" id="search"
+              value="{{$.Data.Query}}">
+          </div>
+          <div class="form-group">
+            <label class="control-label">Record Type</label>
+            <div class="form-group">
+              <select name="type" class="custom-select">
+                <option value="">Any</option>
+                <option value="domain" {{if eq $.Data.Type "domain"}}selected="" {{end}}>Domain</option>
+                <option value="nameserver" {{if eq $.Data.Type "nameserver"}}selected="" {{end}}>Nameserver</option>
+                <option value="ip" {{if eq $.Data.Type "ip"}}selected="" {{end}}>IP</option>
+                <option value="zone" {{if eq $.Data.Type "zone"}}selected="" {{end}}>Zone</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <button type="submit" class="btn btn-primary">Submit</button>
+          </div>
         </div>
-        <div class="form-group">
-          <button type="submit" class="btn btn-primary">Submit</button>
-        </div>
-        <div class="form-group">
-          <label class="col-form-label col-form-label-lg" for="inputLarge">No Results Found</label>
-        </div>
-      </div>
-    </form>
+      </form>
+    </div>
   </div>
 </div>
+
+{{if $.Data.Query}}
+<div class="row">
+  <div class="col-md-12">
+    <div class="card">
+      <a href="#" class="list-group-item d-flex justify-content-between align-items-center active">
+        Search Results
+        <span class="badge badge-light badge-pill">{{len $.Data.Results}}</span>
+      </a>
+      {{if len $.Data.Results}}
+      <table class="table table-striped table-hover">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Type</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{ range $key, $value := $.Data.Results }}
+          <tr>
+            <td><a href="{{$value.Link}}">{{$value.Name}}</a></td>
+            <td>{{$value.Type}}</td>
+          </tr>
+          {{ end }}
+        </tbody>
+      </table>
+      {{else}}
+      <div class="card-body">
+        <h4 class="card-title">No Result Found</h4>
+      </div>
+      {{end}}
+    </div>
+  </div>
+</div>
+{{end}}
 
 {{template "bottom" $}}

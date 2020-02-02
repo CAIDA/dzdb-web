@@ -54,6 +54,9 @@ func Start(ds *datastore.DataStore, server *server.Server) {
 	server.Get("/ip", app.ipIndexHandler)
 
 	server.Post("/search", app.searchHandler)
+	server.Get("/search", app.searchIndexHandler)
+	server.Get("/search/prefix", app.prefixIndexHandler)
+	server.Get("/search/prefix/:type/:prefix", app.prefixHandler)
 
 	server.Get("/domains", app.domainIndexHandler)
 	server.Get("/domains/:domain", app.domainHandler)
@@ -64,51 +67,78 @@ func Start(ds *datastore.DataStore, server *server.Server) {
 	server.Get("/tlds", app.tldIndexHandler)
 	server.Get("/tlds/graveyard", app.tldGraveyardIndexHandler)
 	server.Get("/stats", app.statsHandler)
-	server.Get("/prefix", app.prefixIndexHandler)
-	server.Get("/prefix/:type/:prefix", app.prefixHandler)
 
 	// research
 	server.Get("/research/ipnszonecount/:ip", app.ipNsZoneCountHandler)
+}
 
+func (app *appContext) searchIndexHandler(w http.ResponseWriter, r *http.Request) {
+	var s model.Search
+	p := Page{"Search", "", s}
+	err := app.templates.ExecuteTemplate(w, "search.tmpl", p)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (app *appContext) searchHandler(w http.ResponseWriter, r *http.Request) {
-	query := cleanDomain(r.FormValue("query"))
-	//t := r.FormValue("type")
-	// TODO re-enable this
+	var s model.Search
+	s.Query = cleanDomain(r.FormValue("query"))
+	s.Type = r.FormValue("type")
 	var err error
-	//log.Print("Type: ", t)
 
-	_, err = app.ds.GetZoneID(r.Context(), query)
-	if err == nil {
-		// redirect
-		http.Redirect(w, r, "/zones/"+query, http.StatusFound)
-		return
+	// first handle when there is only a single result and single result type
+	switch s.Type {
+	case "zone":
+		_, err = app.ds.GetZoneID(r.Context(), s.Query)
+		if err == nil {
+			http.Redirect(w, r, "/zones/"+s.Query, http.StatusFound)
+			return
+		}
+	case "domain":
+		_, _, err = app.ds.GetDomainID(r.Context(), s.Query)
+		if err == nil {
+			http.Redirect(w, r, "/domains/"+s.Query, http.StatusFound)
+			return
+		}
+	case "nameserver":
+		_, err = app.ds.GetNameServerID(r.Context(), s.Query)
+		if err == nil {
+			http.Redirect(w, r, "/nameservers/"+s.Query, http.StatusFound)
+			return
+		}
+	case "ip":
+		_, _, err = app.ds.GetIPID(r.Context(), s.Query)
+		if err == nil {
+			http.Redirect(w, r, "/ip/"+s.Query, http.StatusFound)
+			return
+		}
+	default:
+		s.Results = make([]model.SearchResult, 0)
+		// now handle multiple results types
+		// this is a very poor exact match search... add prefix too?
+		if _, err = app.ds.GetZoneID(r.Context(), s.Query); err == nil {
+			s.Results = append(s.Results, model.SearchResult{Name: s.Query, Link: "/zones/" + s.Query, Type: "zone"})
+		}
+		if _, _, err = app.ds.GetDomainID(r.Context(), s.Query); err == nil {
+			s.Results = append(s.Results, model.SearchResult{Name: s.Query, Link: "/domains/" + s.Query, Type: "domain"})
+		}
+		if _, err = app.ds.GetNameServerID(r.Context(), s.Query); err == nil {
+			s.Results = append(s.Results, model.SearchResult{Name: s.Query, Link: "/nameservers/" + s.Query, Type: "nameserver"})
+		}
+		if _, _, err = app.ds.GetIPID(r.Context(), s.Query); err == nil {
+			s.Results = append(s.Results, model.SearchResult{Name: s.Query, Link: "/ip/" + s.Query, Type: "IP"})
+		}
+
+		// still want to redirect if only one type is found
+		if len(s.Results) == 1 {
+			http.Redirect(w, r, s.Results[0].Link, http.StatusFound)
+			return
+		}
 	}
 
-	_, _, err = app.ds.GetDomainID(r.Context(), query)
-	if err == nil {
-		// redirect
-		http.Redirect(w, r, "/domains/"+query, http.StatusFound)
-		return
-	}
-
-	_, err = app.ds.GetNameServerID(r.Context(), query)
-	if err == nil {
-		// redirect
-		http.Redirect(w, r, "/nameservers/"+query, http.StatusFound)
-		return
-	}
-
-	_, _, err = app.ds.GetIPID(r.Context(), query)
-	if err == nil {
-		// redirect
-		http.Redirect(w, r, "/ip/"+query, http.StatusFound)
-		return
-	}
-
-	// no results found
-	p := Page{"Search", "", query}
+	// render search page
+	p := Page{"Search", "", s}
 	err = app.templates.ExecuteTemplate(w, "search.tmpl", p)
 	if err != nil {
 		panic(err)

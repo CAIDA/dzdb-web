@@ -342,6 +342,17 @@ func (ip *IP) GenerateMetaData() {
 	}
 }
 
+type Search struct {
+	Query   string
+	Type    string
+	Results []SearchResult
+}
+type SearchResult struct {
+	Name string
+	Link string
+	Type string
+}
+
 // PrefixResult stores the result of an individual prefix search result
 type PrefixResult struct {
 	Domain    string     `json:"domain"`
