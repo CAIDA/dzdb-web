@@ -31,7 +31,7 @@ func APIStart(app *appContext, vdzServer *server.Server) {
 	}
 
 	// imports
-	addAPI("/imports", "imports", app.apiImportStatusHandler) //might want to expand this
+	addAPI("/stats/imports", "imports", app.apiImportStatusHandler) //might want to expand this
 	addAPI("/imports/:year/:month/:day", "import_day_view", nil)
 	addAPI("/imports/:year/:month/:day/:zone", "import_day_view_zone", nil)
 

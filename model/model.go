@@ -54,14 +54,15 @@ func (err JSONError) Error() string {
 
 // ImportProgress Import Progress
 type ImportProgress struct {
-	Type    *string        `json:"type"`
-	Link    string         `json:"link"`
-	Imports int64          `json:"imports_left"`
-	Days    int            `json:"days_left"`
-	Dates   [45]ImportDate `json:"dates"` // gets last 15 days
+	Type    *string      `json:"type"`
+	Link    string       `json:"link"`
+	Imports int64        `json:"imports_left"`
+	Days    int          `json:"days_left"`
+	Dates   []ImportDate `json:"dates"` // gets last n days
 }
 
 // ImportDate import date data
+// TODO go2: time.Duration does not marshal into JSON correctly https://github.com/golang/go/issues/10275
 type ImportDate struct {
 	Date           *time.Time    `json:"date"`
 	DiffDuration   time.Duration `json:"diff_duration"`

@@ -606,22 +606,23 @@ func (ds *DataStore) GetAllZoneHistoryCounts(ctx context.Context) (*model.AllZon
 
 // GetImportProgress gets information on the progress of unimported zones
 func (ds *DataStore) GetImportProgress(ctx context.Context) (*model.ImportProgress, error) {
+	history := 60
 	var ip model.ImportProgress
 	err := ds.db.QueryRowContext(ctx, "select count(*), count(distinct date) from imports where imported = false").Scan(&ip.Imports, &ip.Days)
 	if err != nil {
 		return nil, err
 	}
 
-	rows, err := ds.db.QueryContext(ctx, "select date, sum(diff_duration) took_diff, sum(import_duration) took_import, count(CASE WHEN imports.imported THEN 1 END) from imports, import_progress where imports.id = import_progress.import_id group by date order by date desc limit $1", len(ip.Dates))
+	rows, err := ds.db.QueryContext(ctx, "select date, sum(diff_duration) took_diff, sum(import_duration) took_import, count(CASE WHEN imports.imported THEN 1 END) from imports, import_progress where imports.id = import_progress.import_id group by date order by date desc limit $1", history)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var i int
 	var diffDuration, importDuration pqinterval.Interval
+	ip.Dates = make([]model.ImportDate, 0, history)
 
 	for rows.Next() {
-		ipd := &ip.Dates[i]
+		var ipd model.ImportDate
 		err = rows.Scan(&ipd.Date, &diffDuration, &importDuration, &ipd.Count)
 		if err != nil {
 			return nil, err
@@ -636,7 +637,7 @@ func (ds *DataStore) GetImportProgress(ctx context.Context) (*model.ImportProgre
 		}
 		ipd.DiffDuration = ipd.DiffDuration.Round(time.Second)
 		ipd.ImportDuration = ipd.ImportDuration.Round(time.Second)
-		i++
+		ip.Dates = append(ip.Dates, ipd)
 	}
 
 	return &ip, nil
