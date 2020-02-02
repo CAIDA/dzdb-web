@@ -31,7 +31,7 @@ func APIStart(app *appContext, vdzServer *server.Server) {
 	}
 
 	// imports
-	addAPI("/stats/imports", "imports", app.apiImportStatusHandler) //might want to expand this
+	addAPI("/stats/imports", "imports", app.apiImportStatusHandler)
 	addAPI("/imports/:year/:month/:day", "import_day_view", nil)
 	addAPI("/imports/:year/:month/:day/:zone", "import_day_view_zone", nil)
 
@@ -115,7 +115,6 @@ func APIStart(app *appContext, vdzServer *server.Server) {
 	vdzServer.Get("/api/", app.apiIndex)
 }
 
-//TODO expand
 func (app *appContext) apiImportStatusHandler(w http.ResponseWriter, r *http.Request) {
 	ip, err := app.ds.GetImportProgress(r.Context())
 	if err != nil {
@@ -126,7 +125,6 @@ func (app *appContext) apiImportStatusHandler(w http.ResponseWriter, r *http.Req
 	server.WriteJSON(w, ip)
 }
 
-//TODO expand
 func (app *appContext) apiLatestZonesHandler(w http.ResponseWriter, r *http.Request) {
 	zoneImportResults, err := app.ds.GetZoneImportResults(r.Context())
 	if err != nil {
@@ -138,7 +136,6 @@ func (app *appContext) apiLatestZonesHandler(w http.ResponseWriter, r *http.Requ
 	server.WriteJSON(w, zoneImportResults)
 }
 
-//TODO expand
 func (app *appContext) apiZoneImportHandler(w http.ResponseWriter, r *http.Request) {
 	params := httprouter.ParamsFromContext(r.Context())
 	zone := cleanDomain(params.ByName("zone"))
