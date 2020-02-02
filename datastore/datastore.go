@@ -575,7 +575,7 @@ func (ds *DataStore) GetZoneHistoryCounts(ctx context.Context, zone string) (*mo
 	return &zc, nil
 }
 
-// GetAllZoneHistoryCounts returns the counts averages weekly for the past imports for all zones
+// GetAllZoneHistoryCounts returns the counts averages monthly for the past imports for all zones
 func (ds *DataStore) GetAllZoneHistoryCounts(ctx context.Context) (*model.AllZoneCounts, error) {
 	var all model.AllZoneCounts
 	all.Counts = make(map[string]*model.ZoneCount)

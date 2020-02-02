@@ -14,7 +14,7 @@
       <div id='tldHistoryDiv'></div>
     </div>
     <script>
-    var a = [];
+      var a = [];
       fetch("/api/counts/all")
         .then(response => response.json())
         .then(api_response => {
@@ -23,7 +23,7 @@
             dates = [];
             domains = [];
             max_value = 0;
-            z.history.forEach(function(e) {
+            z.history.forEach(function (e) {
               dates.push(e.date);
               domains.push(e.domains);
               if (e.domains > max_value) {
@@ -36,8 +36,9 @@
               name: z.zone,
               x: dates,
               y: domains,
-              fill: "tozeroy",
+              // fill: "tozeroy",
               max_value: max_value,
+              stackgroup:"one",
             })
           });
           /* sort largest zones first */
@@ -48,9 +49,23 @@
             autosize: true,
             showlegend: true,
             automargin: true,
+            // the control button
+            updatemenus: [{
+              y: 0.8,
+              yanchor: 'top',
+              buttons: [{
+                method: 'restyle',
+                args: ['groupnorm', ''],
+                label: 'normal'
+              }, {
+                method: 'restyle',
+                args: ['groupnorm', 'percent'],
+                label: 'percent'
+              }]
+            }]
           };
 
-          Plotly.newPlot('tldHistoryDiv', data, layout, {displaylogo: false }).then(function(){$("#spinner1").hide()});
+          Plotly.newPlot('tldHistoryDiv', data, layout, { displaylogo: false }).then(function () { $("#spinner1").hide() });
         });
     </script>
   </div>
