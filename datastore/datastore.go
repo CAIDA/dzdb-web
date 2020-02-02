@@ -965,7 +965,7 @@ func (ds *DataStore) GetAvailablePrefixes(ctx context.Context, name string) (*mo
 	return &prefixes, nil
 }
 
-// GetTakenPrefixes searched for domain prefixes that match the fivn patern that are active
+// GetTakenPrefixes searched for domain prefixes that match the given pattern that are active
 func (ds *DataStore) GetTakenPrefixes(ctx context.Context, name string) (*model.PrefixList, error) {
 	var prefixes model.PrefixList
 	var err error
@@ -1024,8 +1024,8 @@ func (ds *DataStore) GetDeadTLDs(ctx context.Context) ([]*model.TLDLife, error) 
 	return out, nil
 }
 
-// GetDomainsInZoneID retutrns a smaple of 50 domains in a given zoneID
-// note: wen joining with zones to turn the zone into a zone it siis extreamly slow
+// GetDomainsInZoneID returns a sample of 50 domains in a given zoneID
+// note: when joining with zones to turn the zone into a zone ID it is extremely slow
 // useing a zoneId is fast
 func (ds *DataStore) GetDomainsInZoneID(ctx context.Context, zoneID int64) ([]model.Domain, error) {
 	out := make([]model.Domain, 0, 50)

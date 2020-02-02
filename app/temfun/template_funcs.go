@@ -8,7 +8,7 @@ import (
 	"golang.org/x/text/message"
 )
 
-// Funcs is a global FuncMap for all tempaltes to include
+// Funcs is a global FuncMap for all templates to include
 var Funcs = make(template.FuncMap)
 var fmt = message.NewPrinter(language.English)
 

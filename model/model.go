@@ -64,7 +64,7 @@ type ImportProgress struct {
 // ImportDate import date data
 type ImportDate struct {
 	Date           *time.Time    `json:"date"`
-	DiffDuration   time.Duration `json:"diff_diration"`
+	DiffDuration   time.Duration `json:"diff_duration"`
 	ImportDuration time.Duration `json:"import_duration"`
 	Count          uint64        `json:"count"`
 }

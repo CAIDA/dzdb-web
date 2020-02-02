@@ -26,7 +26,7 @@ type ServerApiConfig struct {
 	ApiRequestsBurst     int
 }
 
-var DefailtServerApiConfig = ServerApiConfig{
+var DefaultServerApiConfig = ServerApiConfig{
 	ApiTimeout:           60,
 	ApiRequestsPerMinute: 30,
 	ApiMaxRequestHistory: 16384,
