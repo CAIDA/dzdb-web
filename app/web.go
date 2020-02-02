@@ -44,12 +44,11 @@ func Start(ds *datastore.DataStore, server *server.Server) {
 	// load the api
 	APIStart(&app, server)
 
-	//TODO
+	//TODO add feeds page
 	//server.Get("/feeds", app.TodoHandler)
 	server.Get("/about", app.AboutHandler)
 
 	server.Get("/", app.IndexHandler)
-	server.Get("/robots.txt", app.robotsTxtHandler) // TODO move to server static handling
 
 	server.Get("/nameservers", app.nameserverIndexHandler)
 	server.Get("/ip", app.ipIndexHandler)
@@ -302,13 +301,6 @@ func (app *appContext) AboutHandler(w http.ResponseWriter, r *http.Request) {
 func (app *appContext) IndexHandler(w http.ResponseWriter, r *http.Request) {
 	p := Page{"Home", "Home", nil}
 	err := app.templates.ExecuteTemplate(w, "home.tmpl", p)
-	if err != nil {
-		panic(err)
-	}
-}
-
-func (app *appContext) robotsTxtHandler(w http.ResponseWriter, r *http.Request) {
-	err := app.templates.ExecuteTemplate(w, "robots.tmpl", nil)
 	if err != nil {
 		panic(err)
 	}

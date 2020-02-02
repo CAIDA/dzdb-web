@@ -80,9 +80,8 @@ func (ds *DataStore) GetIPID(ctx context.Context, ipStr string) (int64, int, err
 	ip := net.ParseIP(ipStr)
 	if ip.To4() != nil {
 		version = 4
-		// TODO use native golang IP types
+		// to use native golang IP types use pgx
 		// https://github.com/lib/pq/pull/390
-		// looks like solution is to use pgx
 		err = ds.db.QueryRowContext(ctx, "SELECT id FROM a WHERE ip = $1", ip.String()).Scan(&id)
 		if err == sql.ErrNoRows {
 			err = ErrNoResource
@@ -110,9 +109,8 @@ func (ds *DataStore) GetZoneID(ctx context.Context, name string) (int64, error) 
 	return id, err
 }
 
-// GetZone gets the Zone with the given name
+// GetZone gets the Zone with the given name from zones_nameservers
 func (ds *DataStore) GetZone(ctx context.Context, name string) (*model.Zone, error) {
-	// TODO support getting NS from root zone?
 	var z model.Zone
 	var err error
 

@@ -86,9 +86,6 @@ func makeTimeoutHandler(sec int) func(http.Handler) http.Handler {
 		log.Fatal(err)
 	}
 	return func(h http.Handler) http.Handler {
-		// TODO verify this works and plays nicely with contexts
-		// potential example: https://www.sohamkamani.com/blog/golang/2018-06-17-golang-using-context-cancellation/
-		// another https://blog.cloudflare.com/the-complete-guide-to-golang-net-http-timeouts/
 		return http.TimeoutHandler(h, time.Duration(sec)*time.Second, string(timeoutErrorJSON))
 	}
 }
@@ -176,6 +173,11 @@ func New(listenAddr string, apiConfig ServerApiConfig) (*Server, error) {
 	// serve static content
 	static := http.StripPrefix("/static/", http.FileServer(http.Dir("static")))
 	server.router.Handler(http.MethodGet, "/static/*path", handlers.Then(neuterDirectoryListing(static)))
+
+	// setup robots.txt
+	server.router.Handler(http.MethodGet, "/robots.txt", handlers.ThenFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "static/robots.txt")
+	}))
 
 	// add rate limiting after static handler
 	server.handlers = handlers.Append(makeThrottleHandler(
