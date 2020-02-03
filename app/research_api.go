@@ -22,7 +22,6 @@ func (app *appContext) apiIPNsZoneCount(w http.ResponseWriter, r *http.Request) 
 		panic(err)
 	}
 
-	data.GenerateMetaData()
 	server.WriteJSON(w, data)
 }
 
@@ -43,6 +42,5 @@ func (app *appContext) apiActiveIPs(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	data.GenerateMetaData()
 	server.WriteJSON(w, data)
 }

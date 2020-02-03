@@ -18,6 +18,17 @@ var (
 	zoneAllCountsType     = "zone_all_counts"
 )
 
+// APIData interface forces the use of GenerateMetaData on response data
+type APIData interface {
+	GenerateMetaData()
+}
+
+// Metadata defines the object's type and Link to self for API responses
+type Metadata struct {
+	Type *string `json:"type,omitempty"`
+	Link string  `json:"link,omitempty"`
+}
+
 // JSONResponse JSON-API root data object
 type JSONResponse struct {
 	Data interface{} `json:"data,omitempty"`
@@ -54,8 +65,7 @@ func (err JSONError) Error() string {
 
 // ImportProgress Import Progress
 type ImportProgress struct {
-	Type    *string      `json:"type"`
-	Link    string       `json:"link"`
+	Metadata
 	Imports int64        `json:"imports_left"`
 	Days    int          `json:"days_left"`
 	Dates   []ImportDate `json:"dates"` // gets last n days
@@ -79,7 +89,7 @@ func (ip *ImportProgress) GenerateMetaData() {
 
 // ZoneImportResults results for imports
 type ZoneImportResults struct {
-	Type  *string             `json:"type"`
+	Metadata
 	Count int                 `json:"count"`
 	Zones []*ZoneImportResult `json:"zones"`
 }
@@ -95,10 +105,9 @@ func (zirs *ZoneImportResults) GenerateMetaData() {
 
 // ZoneImportResult holds data about the results of a single import
 type ZoneImportResult struct {
-	Type            *string    `json:"type"`
+	Metadata
 	FirstImportID   int64      `json:"first_import_id"`
 	LastImportID    int64      `json:"last_import_id"`
-	Link            string     `json:"link"`
 	FirstImportDate *time.Time `json:"first_date"`
 	LastImportDate  *time.Time `json:"last_date"`
 	Zone            string     `json:"zone"`
@@ -113,9 +122,9 @@ func (zir *ZoneImportResult) GenerateMetaData() {
 	zir.Link = fmt.Sprintf("/zones/%s", zir.Zone)
 }
 
+// ZoneCount struct that contains a history of a single zone's sizes over time
 type ZoneCount struct {
-	Type    *string       `json:"type"`
-	Link    string        `json:"link"`
+	Metadata
 	Zone    string        `json:"zone"`
 	History []*ZoneCounts `json:"history"`
 }
@@ -126,6 +135,7 @@ func (zc *ZoneCount) GenerateMetaData() {
 	zc.Link = fmt.Sprintf("/counts/zones/%s", zc.Zone)
 }
 
+// ZoneCounts contatns stats and counts for a single zone on a single day
 type ZoneCounts struct {
 	Date    time.Time `json:"date"`
 	Domains int64     `json:"domains"`
@@ -134,9 +144,9 @@ type ZoneCounts struct {
 	New     int64     `json:"new"`
 }
 
+// AllZoneCounts contains zone counts for all zones in a Map
 type AllZoneCounts struct {
-	Type   *string               `json:"type"`
-	Link   string                `json:"link"`
+	Metadata
 	Counts map[string]*ZoneCount `json:"counts"`
 }
 
@@ -148,8 +158,7 @@ func (zc *AllZoneCounts) GenerateMetaData() {
 
 // Zone holds information about a zone
 type Zone struct {
-	Type                   *string           `json:"type"`
-	Link                   string            `json:"link"`
+	Metadata
 	ID                     int64             `json:"id"`
 	Name                   string            `json:"name"`
 	FirstSeen              *time.Time        `json:"firstseen,omitempty"`
@@ -170,10 +179,9 @@ func (z *Zone) GenerateMetaData() {
 
 // Domain domain object
 type Domain struct {
-	Type                   *string       `json:"type"`
+	Metadata
 	ID                     int64         `json:"id"`
 	Name                   string        `json:"name"`
-	Link                   string        `json:"link"`
 	FirstSeen              *time.Time    `json:"firstseen,omitempty"`
 	LastSeen               *time.Time    `json:"lastseen,omitempty"`
 	NameServers            []*NameServer `json:"nameservers,omitempty"`
@@ -200,8 +208,7 @@ func (d *Domain) GenerateMetaData() {
 }
 
 type Feed struct {
-	Type    *string   `json:"type"`
-	Link    string    `json:"link"`
+	Metadata
 	Change  string    `json:"change,omitempty"`
 	Date    time.Time `json:"date"`
 	Domains []*Domain `json:"domains"`
@@ -219,8 +226,7 @@ func (f *Feed) GenerateMetaData() {
 }
 
 type NSFeed struct {
-	Type         *string       `json:"type"`
-	Link         string        `json:"link"`
+	Metadata
 	Change       string        `json:"change,omitempty"`
 	Date         time.Time     `json:"date"`
 	Nameservers4 []*NameServer `json:"nameservers_4"`
@@ -245,10 +251,9 @@ func (f *NSFeed) GenerateMetaData() {
 
 // NameServer nameserver object
 type NameServer struct {
-	Type               *string    `json:"type"`
+	Metadata
 	ID                 int64      `json:"id"`
 	Name               string     `json:"name"`
-	Link               string     `json:"link"`
 	FirstSeen          *time.Time `json:"firstseen,omitempty"`
 	LastSeen           *time.Time `json:"lastseen,omitempty"`
 	Domains            []*Domain  `json:"domains,omitempty"`
@@ -303,11 +308,10 @@ func (ns *NameServer) GenerateMetaData() {
 
 // IP holds information about an IP address
 type IP struct {
-	Type                   *string       `json:"type"`
+	Metadata
 	ID                     int64         `json:"id"`
 	Name                   string        `json:"name"`
 	Version                int           `json:"version"`
-	Link                   string        `json:"link"`
 	FirstSeen              *time.Time    `json:"firstseen,omitempty"`
 	LastSeen               *time.Time    `json:"lastseen,omitempty"`
 	NameServers            []*NameServer `json:"nameservers,omitempty"`
@@ -342,11 +346,14 @@ func (ip *IP) GenerateMetaData() {
 	}
 }
 
+// Search has the metadata and results for a search operation
 type Search struct {
 	Query   string
 	Type    string
 	Results []SearchResult
 }
+
+// SearchResult has the name and type of search results
 type SearchResult struct {
 	Name string
 	Link string
@@ -362,24 +369,18 @@ type PrefixResult struct {
 
 // PrefixList holds information about an IP address
 type PrefixList struct {
-	Type   *string `json:"type"`
-	Active bool    `json:"active"`
-	Prefix string  `json:"prefix"`
-	//Link    string   `json:"link"`
+	Metadata
+	Active  bool           `json:"active"`
+	Prefix  string         `json:"prefix"`
 	Domains []PrefixResult `json:"domains"`
 }
 
-// TODO PrefixList GenerateMetaData and API
-
 // TLDLife holds TLD age information for the TLD graveyard page
 type TLDLife struct {
-	Type *string `json:"type"`
-	//Link    string   `json:"link"`
+	Metadata
 	Zone    string     `json:"zone"`
 	Created *time.Time `json:"created"`
 	Removed *time.Time `json:"removed"`
 	Domains *int64     `json:"domains"`
 	Age     *string    `json:"age"`
 }
-
-// TODO TLDLife GenerateMetaData and API

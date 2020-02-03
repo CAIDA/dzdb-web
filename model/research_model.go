@@ -12,8 +12,7 @@ var (
 )
 
 type ResearchIpNsZoneCount struct {
-	Type         *string             `json:"type"`
-	Link         string              `json:"link"`
+	Metadata
 	IP           string              `json:"ip"`
 	ZoneNSCounts []ResearchZoneCount `json:"zone_counts"`
 }
@@ -26,8 +25,7 @@ type ResearchZoneCount struct {
 
 // ActiveIPs  Struct that lists addresses for a given date
 type ActiveIPs struct {
-	Type    *string   `json:"type"`
-	Link    string    `json:"link"`
+	Metadata
 	Date    time.Time `json:"date"`
 	IPv4IPs []string  `json:"ipv4_ips"`
 	IPv6IPs []string  `json:"ipv6_ips"`

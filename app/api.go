@@ -121,7 +121,6 @@ func (app *appContext) apiImportStatusHandler(w http.ResponseWriter, r *http.Req
 		panic(err)
 	}
 
-	ip.GenerateMetaData()
 	server.WriteJSON(w, ip)
 }
 
@@ -130,8 +129,6 @@ func (app *appContext) apiLatestZonesHandler(w http.ResponseWriter, r *http.Requ
 	if err != nil {
 		panic(err)
 	}
-
-	zoneImportResults.GenerateMetaData()
 
 	server.WriteJSON(w, zoneImportResults)
 }
@@ -144,8 +141,6 @@ func (app *appContext) apiZoneImportHandler(w http.ResponseWriter, r *http.Reque
 		// TODO handle error no rows found
 		panic(err)
 	}
-
-	zoneImportResult.GenerateMetaData()
 
 	server.WriteJSON(w, zoneImportResult)
 }
@@ -165,7 +160,6 @@ func (app *appContext) apiFeedsNewHandler(w http.ResponseWriter, r *http.Request
 		panic(err)
 	}
 
-	data.GenerateMetaData()
 	server.WriteJSON(w, data)
 }
 func (app *appContext) apiFeedsMovedHandler(w http.ResponseWriter, r *http.Request) {
@@ -183,7 +177,6 @@ func (app *appContext) apiFeedsMovedHandler(w http.ResponseWriter, r *http.Reque
 		panic(err)
 	}
 
-	data.GenerateMetaData()
 	server.WriteJSON(w, data)
 }
 func (app *appContext) apiFeedsOldHandler(w http.ResponseWriter, r *http.Request) {
@@ -201,7 +194,6 @@ func (app *appContext) apiFeedsOldHandler(w http.ResponseWriter, r *http.Request
 		panic(err)
 	}
 
-	data.GenerateMetaData()
 	server.WriteJSON(w, data)
 }
 
@@ -220,7 +212,6 @@ func (app *appContext) apiFeedsNsNewHandler(w http.ResponseWriter, r *http.Reque
 		panic(err)
 	}
 
-	data.GenerateMetaData()
 	server.WriteJSON(w, data)
 }
 func (app *appContext) apiFeedsNsMovedHandler(w http.ResponseWriter, r *http.Request) {
@@ -238,7 +229,6 @@ func (app *appContext) apiFeedsNsMovedHandler(w http.ResponseWriter, r *http.Req
 		panic(err)
 	}
 
-	data.GenerateMetaData()
 	server.WriteJSON(w, data)
 }
 func (app *appContext) apiFeedsNsOldHandler(w http.ResponseWriter, r *http.Request) {
@@ -256,7 +246,6 @@ func (app *appContext) apiFeedsNsOldHandler(w http.ResponseWriter, r *http.Reque
 		panic(err)
 	}
 
-	data.GenerateMetaData()
 	server.WriteJSON(w, data)
 }
 
@@ -264,16 +253,15 @@ func (app *appContext) apiFeedsNsOldHandler(w http.ResponseWriter, r *http.Reque
 func (app *appContext) apiDomainHandler(w http.ResponseWriter, r *http.Request) {
 	params := httprouter.ParamsFromContext(r.Context())
 	domain := cleanDomain(params.ByName("domain"))
-	data, err1 := app.ds.GetDomain(r.Context(), domain)
-	if err1 != nil {
-		if err1 == datastore.ErrNoResource {
+	data, err := app.ds.GetDomain(r.Context(), domain)
+	if err != nil {
+		if err == datastore.ErrNoResource {
 			server.WriteJSONError(w, server.ErrResourceNotFound)
 			return
 		}
-		panic(err1)
+		panic(err)
 	}
 
-	data.GenerateMetaData()
 	server.WriteJSON(w, data)
 }
 
@@ -289,7 +277,6 @@ func (app *appContext) apiIPHandler(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	data.GenerateMetaData()
 	server.WriteJSON(w, data)
 }
 
@@ -305,7 +292,6 @@ func (app *appContext) apiZoneHandler(w http.ResponseWriter, r *http.Request) {
 		panic(err1)
 	}
 
-	data.GenerateMetaData()
 	server.WriteJSON(w, data)
 }
 
@@ -321,7 +307,6 @@ func (app *appContext) apiZoneHistoryCountsHandler(w http.ResponseWriter, r *htt
 		panic(err1)
 	}
 
-	data.GenerateMetaData()
 	server.WriteJSON(w, data)
 }
 
@@ -335,7 +320,6 @@ func (app *appContext) apiAllZoneHistoryCountsHandler(w http.ResponseWriter, r *
 		panic(err)
 	}
 
-	data.GenerateMetaData()
 	server.WriteJSON(w, data)
 }
 
@@ -349,7 +333,6 @@ func (app *appContext) apiInternetHistoryCountsHandler(w http.ResponseWriter, r 
 		panic(err)
 	}
 
-	data.GenerateMetaData()
 	server.WriteJSON(w, data)
 }
 
@@ -359,7 +342,6 @@ func (app *appContext) apiRandomDomainHandler(w http.ResponseWriter, r *http.Req
 	if err != nil {
 		panic(err)
 	}
-	domain.GenerateMetaData()
 	server.WriteJSON(w, domain)
 }
 
@@ -379,7 +361,6 @@ func (app *appContext) apiNameserverHandler(w http.ResponseWriter, r *http.Reque
 		panic(err1)
 	}
 
-	data.GenerateMetaData()
 	server.WriteJSON(w, data)
 }
 

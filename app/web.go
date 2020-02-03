@@ -29,7 +29,7 @@ type appContext struct {
 type Page struct {
 	Title string
 	Tab   string
-	Data  interface{} // TODO set this to interface type with generate metadata
+	Data  interface{}
 }
 
 // Start entry point for starting application
