@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="/static/custom.css">
     <script src="https://code.jquery.com/jquery-3.4.1.min.js"
     integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" crossorigin="anonymous"></script>
     <script src="https://cdn.plot.ly/plotly-latest.min.js" crossorigin="anonymous"></script>
 </head>
 
@@ -33,8 +34,6 @@
         </div>
     </footer>
 </div><!-- /container -->
-<!-- Latest compiled and minified JavaScript -->
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" crossorigin="anonymous"></script>
 <!-- set the correct tab to active on the navbar -->
 <script>if ({{ $.Tab }}.length) { $('#navbarResponsive a:contains({{$.Tab}})').parent().addClass('active'); }</script>
 <script>

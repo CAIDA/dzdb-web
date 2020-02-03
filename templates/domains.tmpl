@@ -14,6 +14,7 @@
                     <button type="button" class="btn btn-warning" onclick="doRandom();">Random Domain</button>
                 </div>
             </div>
+		 <input type="hidden" name="type" value="domain">
         </form>
     </div>
 </div>
@@ -23,7 +24,6 @@
     function doRandom() {
         var url = "/api/random";
         var xmlhttp = new XMLHttpRequest();
-
         xmlhttp.onreadystatechange = function () {
             if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
                 var data = JSON.parse(xmlhttp.responseText);
