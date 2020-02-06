@@ -39,6 +39,8 @@ func APIStart(app *appContext, vdzServer *server.Server) {
 	addAPI("/counts/", "zone_counts", app.apiInternetHistoryCountsHandler)
 	addAPI("/counts/zone/:zone", "internet_counts", app.apiZoneHistoryCountsHandler)
 	addAPI("/counts/all/", "all_zone_counts", app.apiAllZoneHistoryCountsHandler)
+	//addAPI("/counts/top/", "top_zone_counts", app.apiTopZonesHandler)
+
 
 	// zones
 	addAPI("/zones", "zones", app.apiLatestZonesHandler)
@@ -132,6 +134,17 @@ func (app *appContext) apiLatestZonesHandler(w http.ResponseWriter, r *http.Requ
 
 	server.WriteJSON(w, zoneImportResults)
 }
+
+/*
+TODO
+func (app *appContext) apiTopZonesHandler(w http.ResponseWriter, r *http.Request) {
+	zoneImportResults, err := app.ds.GetZoneImportResults(r.Context())
+	if err != nil {
+		panic(err)
+	}
+
+	server.WriteJSON(w, zoneImportResults)
+}*/
 
 func (app *appContext) apiZoneImportHandler(w http.ResponseWriter, r *http.Request) {
 	params := httprouter.ParamsFromContext(r.Context())

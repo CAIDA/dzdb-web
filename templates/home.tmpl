@@ -82,34 +82,59 @@
       <div id='pieDiv'></div>
     </div>
     <script>
-      fetch("/api/zones")
-        .then(response => response.json())
-        .then(api_response => {
-          values = [];
-          labels = [];
-          api_response.data.zones.forEach(function (e) {
-            values.push(e.domains);
-            labels.push(e.zone);
-          });
+fetch("/api/zones")
+  .then(response => response.json())
+  .then(api_response => {
+    function compareRev(a, b) {
+      if (a.domaigns < b.domains) {
+        return 1;
+      }
+      if (a.domains > b.domains) {
+        return -1;
+      }
+      return 0;
+    }
+    api_response.data.zones.sort(compareRev);
 
-          var data = [{
-            values: values,
-            labels: labels,
-            textinfo: "label+percent",
-            hoverinfo: 'label+value+percent',
-            textposition: "inside",
-            type: 'pie'
-          }];
+    num_other_limit = 100;
 
-          var layout = {
-            autosize: true,
-            showlegend: false,
-            automargin: true,
-          };
 
-          Plotly.newPlot('pieDiv', data, layout, { displaylogo: false }).then(function(){$("#spinner2").hide()});
-        });
-    </script>
+    otherData = [];
+    for (i=0; i<num_other_limit; i++) {
+      otherData.push(api_response.data.zones[i]);
+    }
+    otherCount = 0;
+    for (i=num_other_limit; i<api_response.data.zones.length; i++) {
+      otherCount = otherCount + api_response.data.zones[i].domains;
+    }
+    
+    values = [];
+    labels = [];
+    otherData.forEach(function (e) {
+      values.push(e.domains);
+      labels.push(e.zone);
+    });
+    values.push(otherCount);
+    labels.push("*other*");
+
+    var data = [{
+      values: values,
+      labels: labels,
+      textinfo: "label+percent",
+      hoverinfo: 'label+value+percent',
+      textposition: "inside",
+      type: 'pie'
+    }];
+
+    var layout = {
+      autosize: true,
+      showlegend: false,
+      automargin: true,
+    };
+
+    Plotly.newPlot('pieDiv', data, layout, { displaylogo: false }).then(function(){$("#spinner2").hide()});
+  });
+</script>
   </div>
 </div>
 
