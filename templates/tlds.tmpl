@@ -1,6 +1,18 @@
 {{template "top" $}}
 
 <div class="row">
+  <div class="col-md-6">
+    <div class="card text-white bg-warning mb-3" style="max-width: 20rem;">
+    <div class="card-header">Warning</div>
+    <div class="card-body">
+        <h4 class="card-title">This page may be slow...</h4>
+        <p class="card-text">There are lots of TLDs on the internet, and it takes a few seconds to crunch the most up-to-date numbers on all of them.</p>
+    </div>
+    </div>
+ </div>
+</div>
+
+<div class="row">
   <div class="col-md-12">
     <div class="card">
       <a href="#chart" id="chart" class="list-group-item d-flex justify-content-between align-items-center active">
@@ -29,7 +41,7 @@
               if (e.domains > max_value) {
                 max_value = e.domains;
               }
-              max_value = e.domains;
+              //max_value = e.domains;
             })
             data.push({
               type: 'scatter',
@@ -44,7 +56,7 @@
           /* sort largest zones first */
           /*data.sort((a, b) => (a.y[a.y.length-1] < b.y[b.y.length-1]) ? 1 : -1);*/
           /* sort by max value */
-          data.sort((a, b) => (a.max_value < b.max_value) ? 1 : -1);
+          data.sort((a, b) => (a.max_value > b.max_value) ? 1 : -1);
           var layout = {
             autosize: true,
             showlegend: true,
