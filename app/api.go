@@ -41,7 +41,6 @@ func APIStart(app *appContext, vdzServer *server.Server) {
 	addAPI("/counts/all/", "all_zone_counts", app.apiAllZoneHistoryCountsHandler)
 	//addAPI("/counts/top/", "top_zone_counts", app.apiTopZonesHandler)
 
-
 	// zones
 	addAPI("/zones", "zones", app.apiLatestZonesHandler)
 	addAPI("/zones/:zone", "zone_view", app.apiZoneHandler)

@@ -116,14 +116,17 @@
             y: domains,
             type: 'scatter',
             mode: "lines",
-            name: "Domains",
+            name: "Domains (total)",
+            line: {
+                dash: 'dot',
+            },  
           },
           {
             x: dates,
             y: oldC,
             type: 'scatter',
             mode: "lines",
-            name: "Removed",
+            name: "Removed (delta)",
             yaxis: 'y2',
           },
           {
@@ -131,7 +134,7 @@
             y: movedC,
             type: 'scatter',
             mode: "lines",
-            name: "Transferred",
+            name: "Transferred (delta)",
             yaxis: 'y2',
           },
           {
@@ -139,7 +142,7 @@
             y: newC,
             type: 'scatter',
             mode: "lines",
-            name: "New",
+            name: "New (delta)",
             yaxis: 'y2',
           }];
 
