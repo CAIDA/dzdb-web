@@ -112,8 +112,12 @@
             }
             nameservers[ns.name].push(ns);
           };
-          api_response.data.nameservers.forEach(add_ns_to_dict);
-          api_response.data.archive_nameservers.forEach(add_ns_to_dict);
+          if ('nameservers' in api_response.data) {
+            api_response.data.nameservers.forEach(add_ns_to_dict);
+          }
+          if ('archive_nameservers' in api_response.data) {
+            api_response.data.archive_nameservers.forEach(add_ns_to_dict);
+          }
 
           // merge dict into timeline
           timeline = [];
