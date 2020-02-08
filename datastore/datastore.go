@@ -392,7 +392,7 @@ func (ds *DataStore) GetDomain(ctx context.Context, domain string) (*model.Domai
 	d.Name = domain
 
 	// zone queries
-	err = ds.db.QueryRowContext(ctx, "select zones.zone, imports.date from zones, imports where zones.ID = imports.zone_id and imports.imported = true and zones.ID = $1 order by date desc limit 1", d.Zone.ID).Scan(&d.Zone.Name, &d.Zone.LastSeen)
+	err = ds.db.QueryRowContext(ctx, "select zones.zone, zones_imports.first_import_date, zones_imports.last_import_date from zones, zones_imports where zones.id = zones_imports.zone_id and zones.id = $1 limit 1;", d.Zone.ID).Scan(&d.Zone.Name, &d.Zone.FirstSeen, &d.Zone.LastSeen)
 	if err != nil {
 		return nil, err
 	}

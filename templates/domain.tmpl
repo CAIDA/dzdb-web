@@ -20,6 +20,7 @@
       <div class="card-body">
         <h4 class="card-title"><a href="/zones/{{$.Data.Zone.Name}}">{{$.Data.Zone.Name}}</a></h4>
         <p class="card-text">
+          First Updated: {{date $.Data.Zone.FirstSeen}} <br />
           Last Updated: {{date $.Data.Zone.LastSeen}}
         </p>
       </div>
@@ -79,6 +80,90 @@
         </tbody>
       </table>
     </div>
+  </div>
+</div>
+
+
+<div class="row">
+  <div class="col-md-12">
+    <div class="card">
+      <a href="#timeline" id="timeline"
+        class="list-group-item d-flex justify-content-between align-items-center active">
+        Nameserver Timeline
+      </a>
+      <div id="timelinespinner" class="spinner">
+        <div class="bounce1"></div>
+        <div class="bounce2"></div>
+        <div class="bounce3"></div>
+      </div>
+      <div id='timelineDiv'></div>
+    </div>
+    <script>
+      fetch("/api/domains/{{$.Data.Name}}")
+        .then(response => response.json())
+        .then(api_response => {
+
+          // get all ns into dict
+          var nameservers = {};
+          var yCounter = 0;
+          var add_ns_to_dict = function (ns) {
+            if (!(ns.name in nameservers)) {
+              nameservers[ns.name] = [];
+            }
+            nameservers[ns.name].push(ns);
+          };
+          api_response.data.nameservers.forEach(add_ns_to_dict);
+          api_response.data.archive_nameservers.forEach(add_ns_to_dict);
+
+          // merge dict into timeline
+          timeline = [];
+          for (const name in nameservers) {
+            yCounter = yCounter + 1;
+            var ns = {
+              x: [],
+              y: [],
+              text: [],
+              name: name,
+              line: { width: 10 },
+              type: 'scatter',
+              mode: 'lines+text',
+              connectgaps: false,
+              textposition: 'right',
+              textfont: {
+                size: 10,
+              }
+            };
+            for (var i = 0; i < nameservers[name].length; i++) {
+              if (!nameservers[name][i].hasOwnProperty("firstseen")) {
+                nameservers[name][i].firstseen = api_response.data.zone.firstseen;
+              }
+              if (!nameservers[name][i].hasOwnProperty("lastseen")) {
+                nameservers[name][i].lastseen = api_response.data.zone.lastseen;
+              }
+              ns.x.push(nameservers[name][i].firstseen, nameservers[name][i].lastseen, '');
+              ns.y.push(yCounter, yCounter, yCounter);
+              ns.text.push("", "", "");
+            }
+            ns.text[1] = name;
+            timeline.push(ns);
+          }
+
+          var layout = {
+            autosize: true,
+            showlegend: false,
+            automargin: true,
+            // height: 300,
+            yaxis: {
+              showgrid: false,
+              zeroline: false,
+              showline: false,
+              showticklabels: false,
+            }
+          };
+
+          Plotly.newPlot('timelineDiv', timeline, layout, { displaylogo: false }).then(function () { $("#timelinespinner").hide() });
+        });
+    </script>
   </div>
 </div>
 
