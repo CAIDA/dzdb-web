@@ -155,14 +155,22 @@
           var layout = {
             autosize: true,
             showlegend: false,
-            automargin: true,
-            // height: 300,
             yaxis: {
               showgrid: false,
               zeroline: false,
               showline: false,
               showticklabels: false,
-            }
+              automargin: true,
+            },
+            xaxis: {
+              automargin: true,
+            },
+            margin: {
+              l: 10,
+              r: 10,
+              b: 10,
+              t: 10,
+            },
           };
 
           Plotly.newPlot('timelineDiv', timeline, layout, { displaylogo: false }).then(function () { $("#timelinespinner").hide() });
