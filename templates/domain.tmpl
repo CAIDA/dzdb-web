@@ -28,61 +28,6 @@
   </div>
 </div>
 
-<div class="row">
-  <div class="col-md-6">
-    <div class="card">
-      <a href="#" class="list-group-item d-flex justify-content-between align-items-center active">
-        Current Nameservers
-        <span class="badge badge-light badge-pill">{{count (len $.Data.NameServers) $.Data.NameServerCount}}</span>
-      </a>
-      <table class="table table-striped table-hover">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>First Seen</th>
-          </tr>
-        </thead>
-        <tbody>
-          {{ range $key, $value := $.Data.NameServers }}
-          <tr>
-            <td><a href="/nameservers/{{$value.Name}}">{{$value.Name}}</a></td>
-            <td>{{date $value.FirstSeen}}</td>
-          </tr>
-          {{ end }}
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <div class="col-md-6">
-    <div class="card">
-      <a href="#" class="list-group-item d-flex justify-content-between align-items-center active">
-        Past Nameservers
-        <span
-          class="badge badge-light badge-pill">{{count (len $.Data.ArchiveNameServers) $.Data.ArchiveNameServerCount}}</span>
-      </a>
-      <table class="table table-striped table-hover">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>First Seen</th>
-            <th>Last Seen</th>
-          </tr>
-        </thead>
-        <tbody>
-          {{ range $key, $value := $.Data.ArchiveNameServers }}
-          <tr>
-            <td><a href="/nameservers/{{$value.Name}}">{{$value.Name}}</a></td>
-            <td>{{date $value.FirstSeen}}</td>
-            <td>{{date $value.LastSeen}}</td>
-          </tr>
-          {{ end }}
-        </tbody>
-      </table>
-    </div>
-  </div>
-</div>
-
 
 <div class="row">
   <div class="col-md-12">
@@ -170,5 +115,62 @@
     </script>
   </div>
 </div>
+
+
+<div class="row">
+  <div class="col-md-6">
+    <div class="card">
+      <a href="#" class="list-group-item d-flex justify-content-between align-items-center active">
+        Current Nameservers
+        <span class="badge badge-light badge-pill">{{count (len $.Data.NameServers) $.Data.NameServerCount}}</span>
+      </a>
+      <table class="table table-striped table-hover">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>First Seen</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{ range $key, $value := $.Data.NameServers }}
+          <tr>
+            <td><a href="/nameservers/{{$value.Name}}">{{$value.Name}}</a></td>
+            <td>{{date $value.FirstSeen}}</td>
+          </tr>
+          {{ end }}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="card">
+      <a href="#" class="list-group-item d-flex justify-content-between align-items-center active">
+        Past Nameservers
+        <span
+          class="badge badge-light badge-pill">{{count (len $.Data.ArchiveNameServers) $.Data.ArchiveNameServerCount}}</span>
+      </a>
+      <table class="table table-striped table-hover">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>First Seen</th>
+            <th>Last Seen</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{ range $key, $value := $.Data.ArchiveNameServers }}
+          <tr>
+            <td><a href="/nameservers/{{$value.Name}}">{{$value.Name}}</a></td>
+            <td>{{date $value.FirstSeen}}</td>
+            <td>{{date $value.LastSeen}}</td>
+          </tr>
+          {{ end }}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
 
 {{template "bottom" $}}
