@@ -57,9 +57,9 @@ func (ds *DataStore) GetIPNsZoneCount(ctx context.Context, ip string) (*model.Re
 	var err error
 	ipzc.IP = ip
 
-	query := "select zone, count(*) from zones, a_nameservers, a where a.id = a_nameservers.a_id and zones.id = a_nameservers.zone_id and a_nameservers.last_seen is null and a.ip = $1 group by zone order by count desc"
+	query := "select zone, count(*) from zones, a_nameservers, a where a.id = a_nameservers.a_id and zones.id = a_nameservers.zone_id and a.ip = $1 group by zone order by count desc"
 	if strings.Contains(ip, ":") {
-		query = "select zone, count(*) from zones, aaaa_nameservers, aaaa where aaaa.id = aaaa_nameservers.aaaa_id and zones.id = aaaa_nameservers.zone_id and aaaa_nameservers.last_seen is null and aaaa.ip = $1 group by zone order by count desc"
+		query = "select zone, count(*) from zones, aaaa_nameservers, aaaa where aaaa.id = aaaa_nameservers.aaaa_id and zones.id = aaaa_nameservers.zone_id and aaaa.ip = $1 group by zone order by count desc"
 	}
 
 	rows, err := ds.db.QueryContext(ctx, query, ip)
