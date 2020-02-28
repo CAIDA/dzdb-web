@@ -268,6 +268,7 @@ type NameServer struct {
 	ArchiveIP6         []*IP6     `json:"archive_ipv6,omitempty"`
 	IP6Count           *int64     `json:"ipv6_count,omitempty"`
 	ArchiveIP6Count    *int64     `json:"archive_ipv6_count,omitempty"`
+	Zone               *Zone      `json:"zone,omitempty"`
 }
 
 // GenerateMetaData generates metadata recursively of member models

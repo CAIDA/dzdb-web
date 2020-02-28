@@ -16,6 +16,105 @@
 </div>
 
 <div class="row">
+  <div class="col-md-12">
+    <div id="timeline_card" class="card">
+      <a href="#timeline" id="timeline"
+        class="list-group-item d-flex justify-content-between align-items-center active">
+        IPv4 Timeline
+      </a>
+      <div id="timelinespinner" class="spinner">
+        <div class="bounce1"></div>
+        <div class="bounce2"></div>
+        <div class="bounce3"></div>
+      </div>
+      <div id='timelineDiv'></div>
+    </div>
+    <script>
+      fetch("/api/nameservers/{{$.Data.Name}}")
+        .then(response => response.json())
+        .then(api_response => {
+
+          // get all ips into dict
+          var ips = {};
+          var yCounter = 0;
+          var add_ip_to_dict = function (ip) {
+            if (!(ip.name in ips)) {
+              ips[ip.name] = [];
+            }
+            ips[ip.name].push(ip);
+          };
+          if ('ipv4' in api_response.data) {
+            api_response.data.ipv4.forEach(add_ip_to_dict);
+          }
+          if ('archive_ipv4' in api_response.data) {
+            api_response.data.archive_ipv4.forEach(add_ip_to_dict);
+          }
+
+          // merge dict into timeline
+          timeline = [];
+          for (const name in ips) {
+            yCounter = yCounter + 1;
+            var ip = {
+              x: [],
+              y: [],
+              text: [],
+              name: name,
+              line: { width: 10 },
+              type: 'scatter',
+              mode: 'lines+text',
+              connectgaps: false,
+              textposition: 'right',
+              textfont: {
+                size: 10,
+              }
+            };
+            for (var i = 0; i < ips[name].length; i++) {
+              if (!ips[name][i].hasOwnProperty("firstseen")) {
+                ips[name][i].firstseen = api_response.data.zone.firstseen;
+              }
+              if (!ips[name][i].hasOwnProperty("lastseen")) {
+                ips[name][i].lastseen = api_response.data.zone.lastseen;
+              }
+              ip.x.push(ips[name][i].firstseen, ips[name][i].lastseen, '');
+              ip.y.push(yCounter, yCounter, yCounter);
+              ip.text.push("", "", "");
+            }
+            ip.text[1] = name;
+            timeline.push(ip);
+          }
+
+          var layout = {
+            autosize: true,
+            showlegend: false,
+            yaxis: {
+              showgrid: false,
+              zeroline: false,
+              showline: false,
+              showticklabels: false,
+              automargin: true,
+            },
+            xaxis: {
+              automargin: true,
+            },
+            margin: {
+              l: 10,
+              r: 10,
+              b: 10,
+              t: 10,
+            },
+          };
+
+          Plotly.newPlot('timelineDiv', timeline, layout, { displaylogo: false }).then(function () { $("#timelinespinner").hide() });
+          if (Object.keys(ips).length == 0) {
+            console.log("Here!")
+            $("#timeline_card").hide();
+          }
+        });
+    </script>
+  </div>
+</div>
+
+<div class="row">
   <div class="col-md-6">
     <div class="card">
       <a href="#" class="list-group-item d-flex justify-content-between align-items-center active">

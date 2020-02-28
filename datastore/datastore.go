@@ -636,6 +636,8 @@ func (ds *DataStore) GetImportProgress(ctx context.Context) (*model.ImportProgre
 // GetNameServer gets information for the provided nameserver
 func (ds *DataStore) GetNameServer(ctx context.Context, domain string) (*model.NameServer, error) {
 	var ns model.NameServer
+	var z model.Zone
+
 	var err error
 	ns.ID, err = ds.GetNameServerID(ctx, domain)
 	if err != nil {
@@ -713,6 +715,30 @@ func (ds *DataStore) GetNameServer(ctx context.Context, domain string) (*model.N
 		}
 		ip.Version = 4
 		ns.ArchiveIP4 = append(ns.ArchiveIP4, &ip)
+	}
+
+	// get zone_id for nameserver
+	// we need the zone_id for the IP Timeline
+	err = ds.db.QueryRowContext(ctx, "SELECT dns.zone_id FROM a_nameservers dns WHERE dns.nameserver_id = $1 limit 1", ns.ID).Scan(&z.ID)
+	if err != nil {
+		// If we do not have an glue record for the nameserver
+		// then there is no timeline so we do not need to worry
+		// about the zone_id
+		if err == sql.ErrNoRows {
+			z.ID = 0
+		} else {
+			return nil, err
+		}
+	}
+
+	// If we do not import the nameserver zone then
+	// we do not worry about populating the Zone fields
+	if z.ID != 0 {
+		err = ds.db.QueryRowContext(ctx, "select zones.zone, zones_imports.first_import_date, zones_imports.last_import_date from zones, zones_imports where zones.id = zones_imports.zone_id and zones.id = $1 limit 1;", z.ID).Scan(&z.Name, &z.FirstSeen, &z.LastSeen)
+		if err != nil {
+			return nil, err
+		}
+		ns.Zone = &z
 	}
 
 	// get current IP6
