@@ -701,7 +701,7 @@ func (ds *DataStore) GetNameServer(ctx context.Context, domain string) (*model.N
 	}
 
 	//get archive ipv4
-	rows, err = ds.db.QueryContext(ctx, "SELECT ip.ID, ip.ip, dns.first_seen, dns.last_seen FROM a_nameservers dns, a ip WHERE ip.ID = dns.a_id AND dns.last_seen IS NOT NULL AND dns.nameserver_id = $1 limit 100", ns.ID)
+	rows, err = ds.db.QueryContext(ctx, "SELECT ip.ID, ip.ip, ans.first_seen, ans.last_seen FROM a_nameservers ans, a ip WHERE ip.ID = ans.a_id AND ans.last_seen IS NOT NULL AND ans.nameserver_id = $1 limit 100", ns.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -719,7 +719,7 @@ func (ds *DataStore) GetNameServer(ctx context.Context, domain string) (*model.N
 
 	// get zone_id for nameserver
 	// we need the zone_id for the IP Timeline
-	err = ds.db.QueryRowContext(ctx, "SELECT dns.zone_id FROM a_nameservers dns WHERE dns.nameserver_id = $1 limit 1", ns.ID).Scan(&z.ID)
+	err = ds.db.QueryRowContext(ctx, "SELECT ans.zone_id FROM a_nameservers ans WHERE ans.nameserver_id = $1 limit 1", ns.ID).Scan(&z.ID)
 	if err != nil {
 		// If we do not have an glue record for the nameserver
 		// then there is no timeline so we do not need to worry
@@ -734,7 +734,7 @@ func (ds *DataStore) GetNameServer(ctx context.Context, domain string) (*model.N
 	// If we do not import the nameserver zone then
 	// we do not worry about populating the Zone fields
 	if z.ID != 0 {
-		err = ds.db.QueryRowContext(ctx, "select zones.zone, zones_imports.first_import_date, zones_imports.last_import_date from zones, zones_imports where zones.id = zones_imports.zone_id and zones.id = $1 limit 1;", z.ID).Scan(&z.Name, &z.FirstSeen, &z.LastSeen)
+		err = ds.db.QueryRowContext(ctx, "select zones.zone, zones_imports.first_import_date, zones_imports.last_import_date from zones, zones_imports where zones.id = zones_imports.zone_id and zones.id = $1 limit 1", z.ID).Scan(&z.Name, &z.FirstSeen, &z.LastSeen)
 		if err != nil {
 			return nil, err
 		}
