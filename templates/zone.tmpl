@@ -135,10 +135,14 @@
             };
             for (var i = 0; i < nameservers[name].length; i++) {
               if (!nameservers[name][i].hasOwnProperty("firstseen")) {
-                nameservers[name][i].firstseen = '{{$.Data.ImportData.FirstImportDate}}';
+                nameservers[name][i].firstseen = api_response.data.firstseen;
               }
               if (!nameservers[name][i].hasOwnProperty("lastseen")) {
-                nameservers[name][i].lastseen = '{{$.Data.ImportData.LastImportDate}}';
+                if (!api_response.data.hasOwnProperty("lastseen")) {
+                  nameservers[name][i].lastseen = new Date().toISOString();
+                } else {
+                  nameservers[name][i].lastseen = api_response.data.lastseen;
+                }
               }
               ns.x.push(nameservers[name][i].firstseen, nameservers[name][i].lastseen, '');
               ns.y.push(yCounter, yCounter, yCounter);
@@ -149,21 +153,27 @@
           }
 
           console.log(timeline);
-
-      var layout = {
-        autosize: true,
-        showlegend: false,
-        automargin: true,
-        // height: 300,
-        yaxis: {
-          showgrid: false,
-          zeroline: false,
-          showline: false,
-          showticklabels: false,
-        }
-      };
-
-      Plotly.newPlot('timelineDiv', timeline, layout, { displaylogo: false }).then(function () { $("#timelinespinner").hide() });
+          var layout = {
+            autosize: true,
+            showlegend: false,
+            yaxis: {
+              showgrid: false,
+              zeroline: false,
+              showline: false,
+              showticklabels: false,
+              automargin: true,
+            },
+            xaxis: {
+              automargin: true,
+            },
+            margin: {
+              l: 10,
+              r: 10,
+              b: 10,
+              t: 10,
+            },
+          };
+          Plotly.newPlot('timelineDiv', timeline, layout, { displaylogo: false }).then(function () { $("#timelinespinner").hide() });
         });
     </script>
   </div>
