@@ -30,7 +30,7 @@
 <div class="row">
   <div class="col-md-6">
     <div class="card">
-      <a href="#chart" id="chart" class="list-group-item d-flex justify-content-between align-items-center active">
+      <a href="#rootchart" id="rootchart" class="list-group-item d-flex justify-content-between align-items-center active">
         TLD ROOT Zone Growth
       </a>
       <div id="spinner1" class="spinner">
@@ -79,7 +79,7 @@
         <div class="bounce2"></div>
         <div class="bounce3"></div>
       </div>
-      <div id='pieDiv'></div>
+      <div id="pieDiv"></div>
     </div>
     <script>
 fetch("/api/zones")
@@ -141,7 +141,7 @@ fetch("/api/zones")
 <div class="row">
   <div class="col-md-12">
     <div class="card">
-      <a href="#chart" id="chart" class="list-group-item d-flex justify-content-between align-items-center active">
+      <a href="#domainschart" id="domainschart" class="list-group-item d-flex justify-content-between align-items-center active">
         Internet Domains Growth
       </a>
       <div id="spinner3" class="spinner">
@@ -149,7 +149,7 @@ fetch("/api/zones")
         <div class="bounce2"></div>
         <div class="bounce3"></div>
       </div>
-      <div id='domainHistoryDiv'></div>
+      <div id="domainHistoryDiv"></div>
     </div>
     <script>
       fetch("/api/counts/")
