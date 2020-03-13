@@ -17,6 +17,4 @@ WORKDIR /app/
 
 USER nobody
 
-EXPOSE 8082
-
 ENTRYPOINT /app/web -listen $HTTP_LISTEN_ADDR

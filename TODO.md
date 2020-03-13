@@ -1,4 +1,4 @@
-# from KEEP
+# TODO from KEEP
 
  * Need TLD zone page to list current number of domains (and history graph)
  * reverse index on NS
@@ -24,7 +24,7 @@ top NS
 all
 
 ## IPs
-some statS on index (total ip4/6)?
+some stats on index (total ip4/6)?
 
 # all
  pagination for all pages via api?
