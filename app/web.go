@@ -12,7 +12,6 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	"golang.org/x/net/idna"
-	//"log"
 )
 
 // object to hold application context and persistent storage

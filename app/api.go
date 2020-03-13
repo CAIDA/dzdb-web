@@ -303,7 +303,13 @@ func (app *appContext) apiZoneHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		panic(err1)
 	}
-
+	// add some metadata to the zone response
+	importData, err := app.ds.GetZoneImport(r.Context(), domain)
+	if err == nil {
+		// TODO check for datastore.ErrNoResource and sql.NoRows
+		// TODO in fact, make ErrNoResource include? sql.NowRows as well
+		data.ImportData = importData
+	}
 	server.WriteJSON(w, data)
 }
 
