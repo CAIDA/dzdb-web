@@ -17,29 +17,17 @@
 
 <div class="row">
   <div class="col-md-12">
-    <div id="timelinev4_card" class="card">
-      <a href="#timelinev4" id="timelinev4"
+    <div id="timelineIP_card" class="card">
+      <a href="#IPtimeline" id="IPtimeline"
         class="list-group-item d-flex justify-content-between align-items-center active">
-        IPv4 Timeline
+        IP Timeline
       </a>
-      <div id="timelinev4spinner" class="spinner">
+      <div id="IPtimelinespinner" class="spinner">
         <div class="bounce1"></div>
         <div class="bounce2"></div>
         <div class="bounce3"></div>
       </div>
-      <div id="timelineIPv4Div"></div>
-    </div>
-    <div id="timelinev6_card" class="card">
-      <a href="#timelinev6" id="timelinev6"
-        class="list-group-item d-flex justify-content-between align-items-center active">
-        IPv6 Timeline
-      </a>
-      <div id="timelinev6spinner" class="spinner">
-        <div class="bounce1"></div>
-        <div class="bounce2"></div>
-        <div class="bounce3"></div>
-      </div>
-      <div id="timelineIPv6Div"></div>
+      <div id="IPtimelineDiv"></div>
     </div>
     <script>
       fetch("/api/nameservers/{{$.Data.Name}}")
@@ -47,75 +35,61 @@
         .then(api_response => {
 
           // get all ipv4s into dict
-          var ipv4s = {};
-          var add_ipv4_to_dict = function (ip) {
-            if (!(ip.name in ipv4s)) {
-              ipv4s[ip.name] = [];
+          var ips = {};
+          var add_ip_to_dict = function (ip) {
+            if (!(ip.name in ips)) {
+              ips[ip.name] = [];
             }
-            ipv4s[ip.name].push(ip);
+            ips[ip.name].push(ip);
           };
           if ('ipv4' in api_response.data) {
-            api_response.data.ipv4.forEach(add_ipv4_to_dict);
+            api_response.data.ipv4.forEach(add_ip_to_dict);
           }
           if ('archive_ipv4' in api_response.data) {
-            api_response.data.archive_ipv4.forEach(add_ipv4_to_dict);
+            api_response.data.archive_ipv4.forEach(add_ip_to_dict);
           }
 
           // get all ipv6s into dict
-          var ipv6s = {};
-          var add_ipv6_to_dict = function (ip) {
-            if (!(ip.name in ipv6s)) {
-              ipv6s[ip.name] = [];
-            }
-            ipv6s[ip.name].push(ip);
-          };
           if ('ipv6' in api_response.data) {
-            api_response.data.ipv6.forEach(add_ipv6_to_dict);
+            api_response.data.ipv6.forEach(add_ip_to_dict);
           }
           if ('archive_ipv6' in api_response.data) {
-            api_response.data.archive_ipv6.forEach(add_ipv6_to_dict);
+            api_response.data.archive_ipv6.forEach(add_ip_to_dict);
           }
 
-          var merge_into_timeline = function(ips, timeline) {
-            // merge dict into timeline
-            var yCounter = 0;
-            for (const name in ips) {
-              yCounter = yCounter + 1;
-              var ip = {
-                x: [],
-                y: [],
-                text: [],
-                name: name,
-                line: { width: 10 },
-                type: 'scatter',
-                mode: 'lines+text',
-                connectgaps: false,
-                textposition: 'right',
-                textfont: {
-                  size: 10,
-                }
-              };
-              for (var i = 0; i < ips[name].length; i++) {
-                if (!ips[name][i].hasOwnProperty("firstseen")) {
-                  ips[name][i].firstseen = api_response.data.zone.firstseen;
-                }
-                if (!ips[name][i].hasOwnProperty("lastseen")) {
-                  ips[name][i].lastseen = api_response.data.zone.lastseen;
-                }
-                ip.x.push(ips[name][i].firstseen, ips[name][i].lastseen, '');
-                ip.y.push(yCounter, yCounter, yCounter);
-                ip.text.push("", "", "");
+          // merge dict into timeline
+          timeline = [];
+          var yCounter = 0;
+          for (const name in ips) {
+            yCounter = yCounter + 1;
+            var ip = {
+              x: [],
+              y: [],
+              text: [],
+              name: name,
+              line: { width: 10 },
+              type: 'scatter',
+              mode: 'lines+text',
+              connectgaps: false,
+              textposition: 'right',
+              textfont: {
+                size: 10,
               }
-              ip.text[1] = name;
-              timeline.push(ip);
+            };
+            for (var i = 0; i < ips[name].length; i++) {
+              if (!ips[name][i].hasOwnProperty("firstseen")) {
+                ips[name][i].firstseen = api_response.data.zone.firstseen;
+              }
+              if (!ips[name][i].hasOwnProperty("lastseen")) {
+                ips[name][i].lastseen = api_response.data.zone.lastseen;
+              }
+              ip.x.push(ips[name][i].firstseen, ips[name][i].lastseen, '');
+              ip.y.push(yCounter, yCounter, yCounter);
+              ip.text.push("", "", "");
             }
-            return timeline;
+            ip.text[1] = name;
+            timeline.push(ip);
           }
-
-          timelinev4 = [];
-          timelinev4 = merge_into_timeline(ipv4s, timelinev4);
-          timelinev6 = [];
-          timelinev6 = merge_into_timeline(ipv6s, timelinev6);
 
           var layout = {
             autosize: true,
@@ -138,14 +112,7 @@
             },
           };
 
-          Plotly.newPlot('timelineIPv4Div', timelinev4, layout, { displaylogo: false }).then(function () { $("#timelinev4spinner").hide() });
-          Plotly.newPlot('timelineIPv6Div', timelinev6, layout, { displaylogo: false }).then(function () { $("#timelinev6spinner").hide() });
-          if (Object.keys(ipv4s).length == 0) {
-            $("#timelinev4_card").hide();
-          }
-          if (Object.keys(ipv6s).length == 0) {
-            $("#timelinev6_card").hide();
-          }
+          Plotly.newPlot('IPtimelineDiv', timeline, layout, { displaylogo: false }).then(function () { $("#IPtimelinespinner").hide() });
         });
     </script>
   </div>
