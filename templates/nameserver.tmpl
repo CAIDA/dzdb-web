@@ -112,7 +112,11 @@
             },
           };
 
-          Plotly.newPlot('IPtimelineDiv', timeline, layout, { displaylogo: false }).then(function () { $("#IPtimelinespinner").hide() });
+          if (Object.keys(ips).length == 0) {	
+            $("#timelineIP_card").hide();	
+          } else {
+            Plotly.newPlot('IPtimelineDiv', timeline, layout, { displaylogo: false }).then(function () { $("#IPtimelinespinner").hide() });
+          }
         });
     </script>
   </div>
