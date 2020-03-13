@@ -646,7 +646,7 @@ func (ds *DataStore) GetNameServer(ctx context.Context, domain string) (*model.N
 	ns.Name = domain
 
 	// get NS metadata
-	err = ds.db.QueryRowContext(ctx, "select first_seen, last_seen, domains_count, domains_archive_count, a_count, a_archive_count, aaaa_count, aaaa_archive_count from nameserver_metadata where nameserver_id = $1", ns.ID).Scan(&ns.FirstSeen, &ns.LastSeen, &ns.DomainCount, &ns.ArchiveDomainCount, &ns.IP4Count, &ns.ArchiveIP4Count, &ns.IP6Count, &ns.IP6Count)
+	err = ds.db.QueryRowContext(ctx, "select first_seen, last_seen, domains_count, domains_archive_count, a_count, a_archive_count, aaaa_count, aaaa_archive_count from nameserver_metadata where nameserver_id = $1", ns.ID).Scan(&ns.FirstSeen, &ns.LastSeen, &ns.DomainCount, &ns.ArchiveDomainCount, &ns.IP4Count, &ns.ArchiveIP4Count, &ns.IP6Count, &ns.ArchiveIP6Count)
 	if err != nil {
 		return nil, err
 	}
