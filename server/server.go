@@ -15,6 +15,7 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/justinas/alice"
+	"github.com/rs/cors"
 	"gopkg.in/throttled/throttled.v2"
 	"gopkg.in/throttled/throttled.v2/store/memstore"
 )
@@ -161,9 +162,14 @@ func New(listenAddr string, apiConfig ServerApiConfig) (*Server, error) {
 		apiConfig:  apiConfig,
 	}
 
+	c := cors.New(cors.Options{
+		AllowedOrigins: []string{"http://127.0.0.1:5353"},
+	})
+
 	// setup server
 	server.router = httprouter.New()
 	handlers := alice.New(
+		c.Handler,
 		//context.ClearHandler,
 		//addContextHandler,
 		makeTimeoutHandler(server.apiConfig.ApiTimeout),
