@@ -85,7 +85,7 @@ fetch("/api/zones")
   .then(response => response.json())
   .then(api_response => {
     function compareRev(a, b) {
-      if (a.domaigns < b.domains) {
+      if (a.domains < b.domains) {
         return 1;
       }
       if (a.domains > b.domains) {
@@ -95,20 +95,18 @@ fetch("/api/zones")
     }
     api_response.data.zones.sort(compareRev);
 
-    num_other_limit = 100;
-
-
-    otherData = [];
-    for (i=0; i<num_other_limit; i++) {
+    var num_other_limit = 100;
+    var otherData = [];
+    for (var i=0; i<num_other_limit; i++) {
       otherData.push(api_response.data.zones[i]);
     }
     otherCount = 0;
-    for (i=num_other_limit; i<api_response.data.zones.length; i++) {
+    for (var i=num_other_limit; i<api_response.data.zones.length; i++) {
       otherCount = otherCount + api_response.data.zones[i].domains;
     }
     
-    values = [];
-    labels = [];
+    var values = [];
+    var labels = [];
     otherData.forEach(function (e) {
       values.push(e.domains);
       labels.push(e.zone);
@@ -133,7 +131,7 @@ fetch("/api/zones")
 
     Plotly.newPlot('pieDiv', data, layout, { displaylogo: false }).then(function(){$("#spinner2").hide()});
   });
-</script>
+    </script>
   </div>
 </div>
 
