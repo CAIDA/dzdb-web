@@ -41,7 +41,7 @@ type JSONErrors struct {
 
 // JSONError JSON-API error object
 type JSONError struct {
-	ID     string `json:"id"`
+	ID     string `json:"-"`
 	Status int    `json:"status"`
 	Title  string `json:"title"`
 	Detail string `json:"detail"`
@@ -159,7 +159,7 @@ func (zc *AllZoneCounts) GenerateMetaData() {
 // Zone holds information about a zone
 type Zone struct {
 	Metadata
-	ID                     int64             `json:"id"`
+	ID                     int64             `json:"-"`
 	Name                   string            `json:"name"`
 	FirstSeen              *time.Time        `json:"firstseen,omitempty"`
 	LastSeen               *time.Time        `json:"lastseen,omitempty"`
@@ -180,7 +180,7 @@ func (z *Zone) GenerateMetaData() {
 // Domain domain object
 type Domain struct {
 	Metadata
-	ID                     int64         `json:"id"`
+	ID                     int64         `json:"-"`
 	Name                   string        `json:"name"`
 	FirstSeen              *time.Time    `json:"firstseen,omitempty"`
 	LastSeen               *time.Time    `json:"lastseen,omitempty"`
@@ -252,7 +252,7 @@ func (f *NSFeed) GenerateMetaData() {
 // NameServer nameserver object
 type NameServer struct {
 	Metadata
-	ID                 int64      `json:"id"`
+	ID                 int64      `json:"-"`
 	Name               string     `json:"name"`
 	FirstSeen          *time.Time `json:"firstseen,omitempty"`
 	LastSeen           *time.Time `json:"lastseen,omitempty"`
@@ -310,7 +310,7 @@ func (ns *NameServer) GenerateMetaData() {
 // IP holds information about an IP address
 type IP struct {
 	Metadata
-	ID                     int64         `json:"id"`
+	ID                     int64         `json:"-"`
 	Name                   string        `json:"name"`
 	Version                int           `json:"version"`
 	FirstSeen              *time.Time    `json:"firstseen,omitempty"`
