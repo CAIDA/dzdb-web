@@ -29,7 +29,7 @@ type ServerApiConfig struct {
 
 var DefaultServerApiConfig = ServerApiConfig{
 	ApiTimeout:           60,
-	ApiRequestsPerMinute: 30,
+	ApiRequestsPerMinute: 4 * 60,
 	ApiMaxRequestHistory: 16384,
 	ApiRequestsBurst:     5,
 }
