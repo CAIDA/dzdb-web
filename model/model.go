@@ -385,3 +385,19 @@ type TLDLife struct {
 	Domains *int64     `json:"domains"`
 	Age     *string    `json:"age"`
 }
+
+type FeedCountList struct {
+	Search string      `json:"search"`
+	Type   string      `json:"type"`
+	Counts []FeedCount `json:"counts"`
+}
+
+// GenerateMetaData generates metadata recursively of member models
+func (fc *FeedCountList) GenerateMetaData() {
+	// TODO ?
+}
+
+type FeedCount struct {
+	Date  *time.Time `json:"date"`
+	Count int64      `json:"count"`
+}

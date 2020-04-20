@@ -8,6 +8,7 @@ import (
 	"log"
 	"math/rand"
 	"net"
+	"strings"
 	"time"
 
 	"vdz-web/model"
@@ -307,6 +308,65 @@ func (ds *DataStore) GetFeedNsMoved(ctx context.Context, date time.Time) (*model
 	}
 
 	return &f, err
+}
+
+func (ds *DataStore) GetNewFeedCount(ctx context.Context, search string) (*model.FeedCountList, error) {
+	list, err := ds.getFeedCount(ctx, "recent_new_domains", search)
+	if err != nil {
+		return nil, err
+	}
+	list.Type = "new"
+	return list, nil
+}
+
+func (ds *DataStore) GetOldFeedCount(ctx context.Context, search string) (*model.FeedCountList, error) {
+	list, err := ds.getFeedCount(ctx, "recent_old_domains", search)
+	if err != nil {
+		return nil, err
+	}
+	list.Type = "old"
+	return list, nil
+}
+
+func (ds *DataStore) GetMovedFeedCount(ctx context.Context, search string) (*model.FeedCountList, error) {
+	list, err := ds.getFeedCount(ctx, "recent_moved_domains", search)
+	if err != nil {
+		return nil, err
+	}
+	list.Type = "moved"
+	return list, nil
+}
+
+func (ds *DataStore) getFeedCount(ctx context.Context, table, search string) (*model.FeedCountList, error) {
+	var fc model.FeedCountList
+	fc.Search = search
+	var err error
+
+	if len(search) < 5 {
+		return nil, fmt.Errorf("search term must be at least %d long", 5)
+	}
+
+	search = strings.ToUpper(search)
+
+	// TODO add index here for like substring search
+	query := fmt.Sprintf("SELECT date, count(domain) FROM %s where domain like '%%' || $1 || '%%' group by date order by date desc", table)
+	rows, err := ds.db.QueryContext(ctx, query, search)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	fc.Counts = make([]model.FeedCount, 0, 20)
+
+	for rows.Next() {
+		var f model.FeedCount
+		err = rows.Scan(&f.Date, &f.Count)
+		if err != nil {
+			return nil, err
+		}
+		fc.Counts = append(fc.Counts, f)
+	}
+
+	return &fc, err
 }
 
 func (ds *DataStore) GetFeedNsNew(ctx context.Context, date time.Time) (*model.NSFeed, error) {

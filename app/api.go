@@ -22,10 +22,10 @@ func APIStart(app *appContext, vdzServer *server.Server) {
 	addAPI := func(path, description string, fn http.HandlerFunc) {
 		re := regexp.MustCompile(":[a-zA-Z0-9_]*")
 		paramPath := re.ReplaceAllStringFunc(path, func(s string) string { return fmt.Sprintf("{%s}", s[1:]) })
-		if fn == nil {
+		/*if fn == nil { // hide WIP
 			fn = server.HandlerNotImplemented
 			description = fmt.Sprintf("[WIP] %s", description)
-		}
+		}*/
 		app.api[description] = paramPath
 		vdzServer.Get("/api"+path, fn)
 	}
@@ -88,6 +88,7 @@ func APIStart(app *appContext, vdzServer *server.Server) {
 
 	// feeds
 	addAPI("/feeds/new", "feeds_new", nil)
+	addAPI("/feeds/new/search/:search", "feeds_new_search", app.apiFeedsSearchNewHandler)
 	addAPI("/feeds/new/date/:date", "feeds_new_date", app.apiFeedsNewHandler)
 	addAPI("/feeds/ns/new/date/:date", "feeds_ns_new_date", app.apiFeedsNsNewHandler)
 	//addAPI("/feeds/new/page/:page", "feeds_new_paged", nil)
@@ -95,6 +96,7 @@ func APIStart(app *appContext, vdzServer *server.Server) {
 	//addAPI("/feeds/new/:year/:month/:day/page/:page", "feeds_new_date_paged", nil)
 
 	addAPI("/feeds/old", "feeds_old", nil)
+	addAPI("/feeds/old/search/:search", "feeds_old_search", app.apiFeedsSearchOldHandler)
 	addAPI("/feeds/old/date/:date", "feeds_old_date", app.apiFeedsOldHandler)
 	addAPI("/feeds/ns/old/date/:date", "feeds_ns_old_date", app.apiFeedsNsOldHandler)
 	//addAPI("/feeds/old/page/:page", "feeds_old_paged", nil)
@@ -102,6 +104,7 @@ func APIStart(app *appContext, vdzServer *server.Server) {
 	//addAPI("/feeds/old/:year/:month/:day/page/:page", "feeds_old_date_paged", nil)
 
 	addAPI("/feeds/moved", "feeds_moved", nil)
+	addAPI("/feeds/moved/search/:search", "feeds_moved_search", app.apiFeedsSearchMovedHandler)
 	addAPI("/feeds/moved/date/:date", "feeds_moved_date", app.apiFeedsMovedHandler)
 	addAPI("/feeds/ns/moved/date/:date", "feeds_ns_moved_date", app.apiFeedsNsMovedHandler)
 	//addAPI("/feeds/moved/page/:page", "feeds_moved_paged", nil)
@@ -174,6 +177,52 @@ func (app *appContext) apiFeedsNewHandler(w http.ResponseWriter, r *http.Request
 
 	server.WriteJSON(w, data)
 }
+
+func (app *appContext) apiFeedsSearchMovedHandler(w http.ResponseWriter, r *http.Request) {
+	params := httprouter.ParamsFromContext(r.Context())
+	search := params.ByName("search")
+	data, err := app.ds.GetMovedFeedCount(r.Context(), search)
+	if err != nil {
+		if err == datastore.ErrNoResource {
+			server.WriteJSONError(w, server.ErrResourceNotFound)
+			return
+		}
+		panic(err)
+	}
+
+	server.WriteJSON(w, data)
+}
+
+func (app *appContext) apiFeedsSearchOldHandler(w http.ResponseWriter, r *http.Request) {
+	params := httprouter.ParamsFromContext(r.Context())
+	search := params.ByName("search")
+	data, err := app.ds.GetOldFeedCount(r.Context(), search)
+	if err != nil {
+		if err == datastore.ErrNoResource {
+			server.WriteJSONError(w, server.ErrResourceNotFound)
+			return
+		}
+		panic(err)
+	}
+
+	server.WriteJSON(w, data)
+}
+
+func (app *appContext) apiFeedsSearchNewHandler(w http.ResponseWriter, r *http.Request) {
+	params := httprouter.ParamsFromContext(r.Context())
+	search := params.ByName("search")
+	data, err := app.ds.GetNewFeedCount(r.Context(), search)
+	if err != nil {
+		if err == datastore.ErrNoResource {
+			server.WriteJSONError(w, server.ErrResourceNotFound)
+			return
+		}
+		panic(err)
+	}
+
+	server.WriteJSON(w, data)
+}
+
 func (app *appContext) apiFeedsMovedHandler(w http.ResponseWriter, r *http.Request) {
 	params := httprouter.ParamsFromContext(r.Context())
 	date, err := time.Parse("2006-01-02", params.ByName("date"))
@@ -191,6 +240,7 @@ func (app *appContext) apiFeedsMovedHandler(w http.ResponseWriter, r *http.Reque
 
 	server.WriteJSON(w, data)
 }
+
 func (app *appContext) apiFeedsOldHandler(w http.ResponseWriter, r *http.Request) {
 	params := httprouter.ParamsFromContext(r.Context())
 	date, err := time.Parse("2006-01-02", params.ByName("date"))
