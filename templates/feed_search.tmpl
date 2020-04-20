@@ -1,0 +1,108 @@
+{{template "top" $}}
+
+<div class="row">
+  <div class="col-md-6">
+    <div class="card mb-3">
+      <h3 class="card-header">Feed Search</h3>
+      <form onsubmit="feedSearch(); return false">
+        <div class="card-body">
+          <div class="form-group">
+            <input class="form-control form-control-lg" type="text" name="query" placeholder="example" id="search"
+              value="">
+          </div>
+          <div class="form-group">
+            <div class="custom-control custom-radio">
+              <input type="radio" id="oldRadio" name="feedType" class="custom-control-input">
+              <label class="custom-control-label" for="oldRadio">Old Feeds</label>
+            </div>
+            <div class="custom-control custom-radio">
+              <input type="radio" id="movedRadio" name="feedType" class="custom-control-input">
+              <label class="custom-control-label" for="movedRadio">Moved Feeds</label>
+            </div>
+            <div class="custom-control custom-radio">
+              <input type="radio" id="newRadio" name="feedType" class="custom-control-input" checked="">
+              <label class="custom-control-label" for="newRadio">New Feeds</label>
+            </div>
+          </div>
+          <div class="form-group">
+            <button type="submit" class="btn btn-primary">Search</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card text-white bg-secondary mb-3">
+      <div class="card-header">Info</div>
+      <div class="card-body">
+        <h4 class="card-title">Feed Search</h4>
+        <p class="card-text">Search feeds of old, moved, or new domain names for substring matches in the last year. Queries may take a few seconds to return.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="graph_row" class="row" style="display:none">
+  <div class="col-md-12">
+    <div class="card">
+      <a href="#feedchart" id="feedchart" class="list-group-item d-flex justify-content-between align-items-center active">
+        Feed Graph
+      </a>
+      <div id="spinner1" class="spinner">
+        <div class="bounce1"></div>
+        <div class="bounce2"></div>
+        <div class="bounce3"></div>
+      </div>
+      <div id="feedDiv"></div>
+    </div>
+  </div>
+</div>
+
+<script type="text/javascript">
+  function feedSearch() {
+    var type = "new";
+    if (document.getElementById("oldRadio").checked) {
+      type = "old";
+    }
+    if (document.getElementById("movedRadio").checked) {
+      type = "moved";
+    }
+    var term = document.getElementById("search").value;
+    if (term.length < 5) {
+      return;
+    }
+    
+    $("#graph_row").show()
+    $("#spinner1").show()
+    $("#feedDiv").hide()
+
+    fetch("/api/feeds/"+type+"/search/"+term)
+        .then(response => response.json())
+        .then(api_response => {
+          dates = [];
+          domains = [];
+          api_response.data.counts.forEach(function (e) {
+            dates.push(e.date);
+            domains.push(e.count);
+          });
+
+          var data = [{
+            x: dates,
+            y: domains,
+            type: 'scatter',
+            mode: "lines",
+            name: "TLDs",
+          }];
+
+          var layout = {
+            autosize: true,
+            showlegend: false,
+            automargin: true,
+          };
+
+          Plotly.newPlot('feedDiv', data, layout, { displaylogo: false }).then(function(){$("#spinner1").hide();$("#feedDiv").show();});
+        });
+  }
+</script>
+
+{{template "bottom" $}}

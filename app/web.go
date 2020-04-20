@@ -55,6 +55,7 @@ func Start(ds *datastore.DataStore, server *server.Server) {
 	server.Post("/search", app.searchHandler)
 	server.Get("/search", app.searchIndexHandler)
 	server.Get("/search/prefix", app.prefixIndexHandler)
+	server.Get("/search/feed", app.searchFeedHandler)
 	server.Get("/search/prefix/:type/:prefix", app.prefixHandler)
 
 	server.Get("/domains", app.domainIndexHandler)
@@ -282,6 +283,16 @@ func (app *appContext) prefixIndexHandler(w http.ResponseWriter, r *http.Request
 	var data model.PrefixList
 	p := Page{"Prefix", "Search", data}
 	err := app.templates.ExecuteTemplate(w, "prefix.tmpl", p)
+	if err != nil {
+		panic(err)
+	}
+}
+
+// searchFeedHandler shows the feed search page
+func (app *appContext) searchFeedHandler(w http.ResponseWriter, r *http.Request) {
+	var data model.PrefixList
+	p := Page{"Feed", "Search", data}
+	err := app.templates.ExecuteTemplate(w, "feed_search.tmpl", p)
 	if err != nil {
 		panic(err)
 	}
