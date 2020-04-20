@@ -106,8 +106,8 @@ func (zirs *ZoneImportResults) GenerateMetaData() {
 // ZoneImportResult holds data about the results of a single import
 type ZoneImportResult struct {
 	Metadata
-	FirstImportID   int64      `json:"first_import_id"`
-	LastImportID    int64      `json:"last_import_id"`
+	FirstImportID   int64      `json:"-"`
+	LastImportID    int64      `json:"-"`
 	FirstImportDate *time.Time `json:"first_date"`
 	LastImportDate  *time.Time `json:"last_date"`
 	Zone            string     `json:"zone"`
