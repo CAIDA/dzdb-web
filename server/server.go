@@ -20,18 +20,18 @@ import (
 	"gopkg.in/throttled/throttled.v2/store/memstore"
 )
 
-type ServerApiConfig struct {
-	ApiTimeout           int
-	ApiRequestsPerMinute int
-	ApiMaxRequestHistory int
-	ApiRequestsBurst     int
+type APIConfig struct {
+	APITimeout           int
+	APIRequestsPerMinute int
+	APIMaxRequestHistory int
+	APIRequestsBurst     int
 }
 
-var DefaultServerApiConfig = ServerApiConfig{
-	ApiTimeout:           60,
-	ApiRequestsPerMinute: 4 * 60,
-	ApiMaxRequestHistory: 16384,
-	ApiRequestsBurst:     5,
+var DefaultAPIConfig = APIConfig{
+	APITimeout:           60,
+	APIRequestsPerMinute: 4 * 60,
+	APIMaxRequestHistory: 16384,
+	APIRequestsBurst:     5,
 }
 
 // handler for catching a panic
@@ -152,11 +152,11 @@ type Server struct {
 
 	listenAddr string
 
-	apiConfig ServerApiConfig
+	apiConfig APIConfig
 }
 
 // New creates a new server object with the default (included) handlers
-func New(listenAddr string, apiConfig ServerApiConfig) (*Server, error) {
+func New(listenAddr string, apiConfig APIConfig) (*Server, error) {
 	server := &Server{
 		listenAddr: listenAddr,
 		apiConfig:  apiConfig,
@@ -172,7 +172,7 @@ func New(listenAddr string, apiConfig ServerApiConfig) (*Server, error) {
 		c.Handler,
 		//context.ClearHandler,
 		//addContextHandler,
-		makeTimeoutHandler(server.apiConfig.ApiTimeout),
+		makeTimeoutHandler(server.apiConfig.APITimeout),
 		loggingHandler,
 		recoverHandler,
 	)
@@ -187,9 +187,9 @@ func New(listenAddr string, apiConfig ServerApiConfig) (*Server, error) {
 
 	// add rate limiting after static handler
 	server.handlers = handlers.Append(makeThrottleHandler(
-		server.apiConfig.ApiRequestsPerMinute,
-		server.apiConfig.ApiRequestsBurst,
-		server.apiConfig.ApiMaxRequestHistory,
+		server.apiConfig.APIRequestsPerMinute,
+		server.apiConfig.APIRequestsBurst,
+		server.apiConfig.APIMaxRequestHistory,
 	))
 
 	//server.router.NotFound = notFoundJSON

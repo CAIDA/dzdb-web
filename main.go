@@ -35,7 +35,7 @@ func main() {
 	defer ds.Close()
 
 	// get server and start application
-	vdzServer, err := server.New(*listenAddr, server.DefaultServerApiConfig)
+	vdzServer, err := server.New(*listenAddr, server.DefaultAPIConfig)
 	if err != nil {
 		log.Fatal(err)
 	}
