@@ -22,10 +22,11 @@ func APIStart(app *appContext, vdzServer *server.Server) {
 	addAPI := func(path, description string, fn http.HandlerFunc) {
 		re := regexp.MustCompile(":[a-zA-Z0-9_]*")
 		paramPath := re.ReplaceAllStringFunc(path, func(s string) string { return fmt.Sprintf("{%s}", s[1:]) })
-		/*if fn == nil { // hide WIP
-			fn = server.HandlerNotImplemented
-			description = fmt.Sprintf("[WIP] %s", description)
-		}*/
+		if fn == nil { // hide WIP
+			return
+			//fn = server.HandlerNotImplemented
+			//description = fmt.Sprintf("[WIP] %s", description)
+		}
 		app.api[description] = paramPath
 		vdzServer.Get("/api"+path, fn)
 	}
