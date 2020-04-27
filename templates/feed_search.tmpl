@@ -37,6 +37,7 @@
       <div class="card-body">
         <h4 class="card-title">Feed Search</h4>
         <p class="card-text">Search feeds of old, moved, or new domain names for substring matches in the last year. Queries may take a few seconds to return.</p>
+        <p class="card-text">Queries must be at least 4 characters long and contain only valid domain characters.</p>
       </div>
     </div>
   </div>
@@ -68,7 +69,7 @@
       type = "moved";
     }
     var term = document.getElementById("search").value;
-    if (term.length < 5) {
+    if (term.length < 4) {
       return;
     }
     

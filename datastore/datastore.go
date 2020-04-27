@@ -342,8 +342,8 @@ func (ds *DataStore) getFeedCount(ctx context.Context, table, search string) (*m
 	fc.Search = search
 	var err error
 
-	if len(search) < 5 {
-		return nil, fmt.Errorf("search term must be at least %d long", 5)
+	if len(search) < 4 {
+		return nil, fmt.Errorf("search term must be at least %d long", 4)
 	}
 
 	search = strings.ToUpper(search)
