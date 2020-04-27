@@ -101,7 +101,8 @@
             automargin: true,
           };
 
-          Plotly.newPlot('feedDiv', data, layout, { displaylogo: false }).then(function(){$("#spinner1").hide();$("#feedDiv").show();});
+          $("#feedDiv").show();
+          Plotly.newPlot('feedDiv', data, layout, { displaylogo: false }).then(function(){$("#spinner1").hide()});
         });
   }
 </script>
