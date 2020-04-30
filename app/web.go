@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"strings"
 
-	"vdz-web/app/temfun"
-	"vdz-web/datastore"
-	"vdz-web/model"
-	"vdz-web/server"
+	"dnscoffee/app/temfun"
+	"dnscoffee/datastore"
+	"dnscoffee/model"
+	"dnscoffee/server"
 
 	"github.com/julienschmidt/httprouter"
 	"golang.org/x/net/idna"

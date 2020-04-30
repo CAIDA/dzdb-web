@@ -2,12 +2,12 @@ package main
 
 import (
 	"context"
+	"dnscoffee/app"
+	"dnscoffee/datastore"
+	"dnscoffee/server"
 	"flag"
 	"log"
 	"time"
-	"vdz-web/app"
-	"vdz-web/datastore"
-	"vdz-web/server"
 )
 
 var (
@@ -35,11 +35,11 @@ func main() {
 	defer ds.Close()
 
 	// get server and start application
-	vdzServer, err := server.New(*listenAddr, server.DefaultAPIConfig)
+	coffeeServer, err := server.New(*listenAddr, server.DefaultAPIConfig)
 	if err != nil {
 		log.Fatal(err)
 	}
-	app.Start(ds, vdzServer)
+	app.Start(ds, coffeeServer)
 	log.Printf("Server starting on %s", *listenAddr)
-	log.Fatal(vdzServer.Start())
+	log.Fatal(coffeeServer.Start())
 }

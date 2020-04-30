@@ -1,6 +1,6 @@
 package server
 
-import "vdz-web/model"
+import "dnscoffee/model"
 
 // variables to hold common json errors
 var (

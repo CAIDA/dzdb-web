@@ -1,20 +1,20 @@
 package app
 
 import (
+	"dnscoffee/datastore"
+	"dnscoffee/server"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"regexp"
 	"time"
-	"vdz-web/datastore"
-	"vdz-web/server"
 
 	"github.com/julienschmidt/httprouter"
 )
 
 // APIStart entry point for starting application
 // adds routes to the server so that the correct handlers are registered
-func APIStart(app *appContext, vdzServer *server.Server) {
+func APIStart(app *appContext, coffeeServer *server.Server) {
 	app.api = make(map[string]string)
 
 	// Adds a method to the router's GET handler but also adds it to the API index map
@@ -28,7 +28,7 @@ func APIStart(app *appContext, vdzServer *server.Server) {
 			//description = fmt.Sprintf("[WIP] %s", description)
 		}
 		app.api[description] = paramPath
-		vdzServer.Get("/api"+path, fn)
+		coffeeServer.Get("/api"+path, fn)
 	}
 
 	// imports
@@ -117,7 +117,7 @@ func APIStart(app *appContext, vdzServer *server.Server) {
 	addAPI("/research/active_ips/:date", "active_ips", app.apiActiveIPs)
 
 	// API index
-	vdzServer.Get("/api/", app.apiIndex)
+	coffeeServer.Get("/api/", app.apiIndex)
 }
 
 func (app *appContext) apiImportStatusHandler(w http.ResponseWriter, r *http.Request) {

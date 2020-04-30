@@ -56,7 +56,7 @@ version: '3'
 services:
     web:
         container_name: dnszone_web
-        image: lanrat/vdz-web
+        image: lanrat/dnscoffee
         restart: unless-stopped
         environment:
             - TZ=America/Los_Angeles

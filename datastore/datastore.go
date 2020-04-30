@@ -11,13 +11,13 @@ import (
 	"strings"
 	"time"
 
-	"vdz-web/model"
+	"dnscoffee/model"
 
 	_ "github.com/lib/pq" // for postgresql
 	"github.com/teepark/pqinterval"
 )
 
-// ErrNoResource a 404 for a vdz resource
+// ErrNoResource a 404 for a resource
 var ErrNoResource = errors.New("the requested object does not exist")
 
 // connectDB connects to the Postgresql database

@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"vdz-web/model"
+	"dnscoffee/model"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/justinas/alice"

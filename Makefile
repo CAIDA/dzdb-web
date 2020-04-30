@@ -10,7 +10,7 @@ BIN := web
 all: web
 
 docker: Dockerfile
-	docker build -t="lanrat/vdz-web" .
+	docker build -t="lanrat/dnscoffee" .
 
 $(BIN): $(SOURCES) $(MODULE_SOURCES) go.mod go.sum
 	$(CC) -o $@ $(SOURCES)

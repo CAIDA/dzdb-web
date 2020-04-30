@@ -1,10 +1,10 @@
 package app
 
 import (
+	"dnscoffee/datastore"
+	"dnscoffee/server"
 	"net/http"
 	"time"
-	"vdz-web/datastore"
-	"vdz-web/server"
 
 	"github.com/julienschmidt/httprouter"
 )

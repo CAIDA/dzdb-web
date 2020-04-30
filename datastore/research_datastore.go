@@ -2,9 +2,9 @@ package datastore
 
 import (
 	"context"
+	"dnscoffee/model"
 	"strings"
 	"time"
-	"vdz-web/model"
 )
 
 // GetActiveIPs returns the active IP addresses (IPv4 and IPv6) for a given date
