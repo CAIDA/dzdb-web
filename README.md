@@ -5,21 +5,21 @@
 Requires go compiler >= go1.13
 
 ```sh
-make
+$ make
 ```
 
 ## Running
 
 Database connection information is set via [libpq environment variables](https://www.postgresql.org/docs/current/libpq-envars.html).
 
-The listen address and post can be set with a flag.
+The listen address and port can be set with a flag.
 
 To run all thats needed is the compiled `web` binary and the `static/` and `templates/` directories. The `static/` and `templates/` directories should be in the cwd when calling `web`.
 
 ### Flags
 
 ```sh
-./web -h
+$ ./web -h
 Usage of ./web:
   -listen string
         ip:port to listen on (default "127.0.0.1:8080")
@@ -43,7 +43,7 @@ The docker build used a 2-stage build. The first stage compiles the go program t
 ### Build
 
 ```sh
-make docker
+$ make docker
 ```
 
 ### Run
