@@ -53,7 +53,6 @@
                     initNewGraph();
                     currentNodelist = currentNodelist.newListFromConfig(getOverrideMetadata(),updateOverview)
                     updateDisplay();
-                    console.log(currentNodelist);
                 }
             })
         })
@@ -70,7 +69,14 @@
                 document.body.removeChild(downloadSVGLink);
             }
         })
-        submitButton.addEventListener("click", async function(){
+        submitButton.addEventListener("click", loadDomainGraph);
+        domainInput.addEventListener("keyup",(event)=>{
+            if(event.keyCode === 13) {
+                event.preventDefault();
+                loadDomainGraph();
+            }
+        })
+        async function loadDomainGraph(){
             // Clear old output, show spinner
             initNewGraph();
             // Get domain input
@@ -79,14 +85,12 @@
             DNSResolutionGrapher.nodeListFromDomain(currentDomain,getOverrideMetadata(),updateOverview).then((nodeList)=>{
                 // Create svg representation
                 currentNodelist=nodeList;
-                console.log(currentNodelist);
                 updateDisplay();
             }).catch(error=>{
-                console.log(error);
                 // Hide spinner
                 treeSpinner.classList.remove("active");
             });
-        });
+        }
         function initNewGraph(){
             // Update graph state
             graphLoaded = false;
@@ -124,8 +128,6 @@
                 hideNodes.push("ip")
             }
             return {
-                // "resolveZones": mapZones.checked,
-                // "resolveArchive":mapArchive.checked,
                 "accumulationNodes":accumulationNodes,
                 "hideNodes":hideNodes,
                 "matchBranchColors":matchColors.checked,

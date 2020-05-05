@@ -1099,8 +1099,6 @@ const DNSResolutionGrapher = {};
                                     let nameserverPromises = [];
                                     nameserverPromises.push(resolveNode("/domains/"+domainName,
                                     depth+1,mappedLinks, nameserverData).catch((error)=>{}));
-                                    nameserverPromises.push(resolveNode("/nameservers/"+domainName,
-                                    depth+1,mappedLinks, nameserverData).catch((error)=>{}));
                                     await Promise.allSettled(nameserverPromises).then((results)=>{
                                         return new Promise(async (resolve,reject)=>{
                                             let validUrl = false;
@@ -1126,13 +1124,12 @@ const DNSResolutionGrapher = {};
                                                 // response and set hazard settings
                                                 if(zone!=null){
                                                     let zoneLink = "/zones/"+zone.name;
-                                                    await loadDNSCoffeeResponse(zoneLink,mappedLinks)
-                                                    .then(({dnsCoffeeResponse,followNodeChain})=>{
+                                                    const zoneData = mappedLinks["/API/ZONES"].data.zones;
+                                                    if(zoneData.map(zone=>zone.zone.toUpperCase())
+                                                        .includes(zone.name.toUpperCase())){
                                                         hazard = true;
                                                         hazardMessage="Potentially available for registration";
-                                                    }).catch((error)=>{
-                                                        // Zone is not available in database
-                                                    });
+                                                    }
                                                 }
                                                 let newMappedLinks = JSON.parse(JSON.stringify(mappedLinks));
                                                 newMappedLinks[("/api"+domainLink).toUpperCase()] = 
@@ -1696,7 +1693,7 @@ const DNSResolutionGrapher = {};
                 const urlParsedDomain = new URL(domainInput);
                 domainInput = urlParsedDomain.hostname;
             }catch(error){
-                console.warn(error.toString());
+
             }
             if(typeof(psl)!=="undefined"){
                 // PSL extracts domain name from hostname
@@ -1715,13 +1712,18 @@ const DNSResolutionGrapher = {};
                         // Update callback defaults to empty function
                         rootNodeList.updateFunction = ()=>{};
                     }
-                    resolveNode(link, 0, {}, rootNodeList).then((nodeList)=>{
-                        nodeList.updateLevels();
-                        resolve(nodeList);
-                    }).catch(error=>{
-                        reject(error)
-                    })
-
+                    // Load mapped links with zone data
+                    const mappedLinks = {};
+                    loadDNSCoffeeResponse("/zones",mappedLinks).then(()=>{
+                        resolveNode(link, 0, mappedLinks, rootNodeList).then((nodeList)=>{
+                            nodeList.updateLevels();
+                            resolve(nodeList);
+                        }).catch(error=>{
+                            reject(error)
+                        })
+                    }).catch((error)=>{
+                        throw Error("Unable to resolve zones")
+                    });
                 }else{
                     reject(Error("Invalid Domain Name"));
                 }
