@@ -2051,10 +2051,18 @@ const DNSResolutionGrapher = {};
                         const tooltipPos = tooltip.node().getElementsByTagName("div")[0].getBoundingClientRect();
                         const tooltipWidth = tooltipPos.width+20; /*10px padding*/
                         const tooltipHeight = tooltipPos.height+20; /*10px padding*/
+                        // Get scroll offset relative to document
+                        const scrollTop = window.pageXOffset || document.documentElement.scrollLeft;
+                        const scrollLeft = window.pageYOffset || document.documentElement.scrollTop;
+                        // Get wrapper position to adjust offset
+                        const wrapperPos = wrapper.node().getBoundingClientRect();
+                        const wrapperTopOffset = wrapperPos.top+scrollTop;
+                        const wrapperLeftOffset = wrapperPos.left+scrollLeft;
+                        console.log(wrapperTopOffset);
                         tooltip.style("width",tooltipWidth+"px")
                         .style("height",tooltipHeight+"px")
                         .style("max-height",(containerNode.getBoundingClientRect().height*0.9)+"px")
-                        .style("top",(d3.event.pageY-200)+"px").style("left",(d3.event.pageX-d.metadata.width)+"px");
+                        .style("top",(d3.event.pageY-wrapperTopOffset)+"px").style("left",(d3.event.pageX-wrapperLeftOffset)+"px");
                         d.metadata.mouseover=true;
                     }
                     d.metadata.mouseoverDebounce=true;
