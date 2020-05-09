@@ -125,12 +125,12 @@ const DNSResolutionGrapher = {};
             Edge.id=0;
         }
         this.id = "e"+Edge.id;
-        let sourceDomain = (checkBidirectional) ? psl.parse(sourceNode.name) : undefined;
+        let sourceDomain = (checkBidirectional) ? splitDomain(sourceNode.name) : undefined;
         let biDirectionalEdge = false;
         if(checkBidirectional && (sourceDomain.domain!=null || sourceDomain.tld!=null)){
             let targetDomain;
             if(targetNode.metadata.domain && targetNode.type!="ip"){
-                targetDomain = psl.parse(targetNode.metadata.domain);
+                targetDomain = splitDomain(targetNode.metadata.domain);
             }
             // If both target and source have the same domain or same tld and target isn't tld
             if((targetDomain!=null &&targetDomain.domain!=null && targetDomain.domain==sourceDomain.domain) || 
@@ -790,8 +790,8 @@ const DNSResolutionGrapher = {};
                                     }
                                     if(!this.metadata.hideNodes.includes(sourceType)){
                                         if(targetNode.children){
-                                            let sourceTLD = psl.parse(sourceNode.name).tld;
-                                            let targetTLD = psl.parse(targetNode.name).tld;
+                                            let sourceTLD = splitDomain(sourceNode.name).tld;
+                                            let targetTLD = splitDomain(targetNode.name).tld;
                                             // Only add edge if sourceNode and targetNode have same tld
                                             targetNode.children.forEach((child)=>{
                                                 if(child.type!="ip" || (sourceTLD!=null && targetTLD!=null 
@@ -810,8 +810,8 @@ const DNSResolutionGrapher = {};
                                                     source.metadata.hiddenTargets.push(targetNode);
                                                 }
                                             }else{
-                                                let sourceTLD = psl.parse(sourceNode.name).tld;
-                                                let targetTLD = psl.parse(targetNode.name).tld;
+                                                let sourceTLD = splitDomain(sourceNode.name).tld;
+                                                let targetTLD = splitDomain(targetNode.name).tld;
                                                 if(targetNode.type!="ip" || (sourceTLD!=null && targetTLD!=null 
                                                     && sourceTLD==targetTLD)){
                                                     this.add(new Edge(source,targetNode));
@@ -953,7 +953,7 @@ const DNSResolutionGrapher = {};
                 nodeData.add(currentNode);
                 if(followNodeChain){
                     // Create and push zone node list
-                    if(typeof(data.zone)!=="undefined"){
+                    if(data.zone!=null){
                         let zoneLink = "/zones/"+data.zone.name;
                         // Add zone promise to promises to wait for before returning
                         if(nodeData.metadata.resolveZones){
@@ -996,8 +996,8 @@ const DNSResolutionGrapher = {};
                     let mappedNameserverLinks = [];
                     for(const nameserver of nameservers){
                         try{
-                            let nameserverDomain=psl.parse(nameserver.name);
-                            let currentDomain = psl.parse(currentNode.name);
+                            let nameserverDomain=splitDomain(nameserver.name);
+                            let currentDomain = splitDomain(currentNode.name);
                             let runSync = false;
                             let sameDomain = false;
                             let hasDomain =false;
@@ -1116,7 +1116,7 @@ const DNSResolutionGrapher = {};
                                             if(!validUrl && nameserverData.metadata.showUnmappedNodes){
                                                 // Preload mapped links with domain data to circumvent fetch
                                                 let domainLink  ="/domains/"+domainName;
-                                                let zone = (nameserverDomain.tld && nameserverDomain.listed) 
+                                                let zone = (nameserverDomain.tld) 
                                                     ? {"name":nameserverDomain.tld} : null;
                                                 let hazard = !zone;
                                                 let hazardMessage = "Invalid TLD";
@@ -1182,7 +1182,7 @@ const DNSResolutionGrapher = {};
                                 if(nameserver.archive){
                                     nextNodeData.rootElement.metadata.archive = true;
                                 }
-                                let nameserverDomain=psl.parse(nextNodeData.rootElement.name);
+                                let nameserverDomain=splitDomain(nextNodeData.rootElement.name);
                                 // Set branch domain
                                 nextNodeData.rootElement.metadata.domain = nameserverDomain.domain.toUpperCase();
                                 for(const node of nextNodeData.rootElement.ips){
@@ -1681,6 +1681,14 @@ const DNSResolutionGrapher = {};
         }
         return nodeList
     }
+    // Handle url seperation
+    function splitDomain(url){
+        const parts = url.split(".").reverse();
+        return {
+            "tld":parts[0].toUpperCase(),
+            "domain":(parts.length>1) ? (`${parts[1]}.${parts[0]}`).toUpperCase() : null
+        }
+    }
     // Generates nodeList for a domain
     function nodeListFromDomain(domainInput, overrideMetadata={}, callback){
         const promise = new Promise(function(resolve,reject){
@@ -1695,40 +1703,35 @@ const DNSResolutionGrapher = {};
             }catch(error){
 
             }
-            if(typeof(psl)!=="undefined"){
-                // PSL extracts domain name from hostname
-                const parsedDomainInput = psl.parse(domainInput);
-                const domain = parsedDomainInput.domain;
-                if(domain){
-                    const link = "/domains/"+domain;
-                    const rootNodeList = new NodeList(overrideMetadata);
-                    if(callback!=null){
-                        if(typeof(callback)==='function'){
-                            rootNodeList.updateFunction = callback;
-                        }else{
-                            throw Error("Invalid callback function");
-                        }
+            const parsedDomainInput = splitDomain(domainInput);
+            const domain = parsedDomainInput.domain;
+            if(domain){
+                const link = "/domains/"+domain;
+                const rootNodeList = new NodeList(overrideMetadata);
+                if(callback!=null){
+                    if(typeof(callback)==='function'){
+                        rootNodeList.updateFunction = callback;
                     }else{
-                        // Update callback defaults to empty function
-                        rootNodeList.updateFunction = ()=>{};
+                        throw Error("Invalid callback function");
                     }
-                    // Load mapped links with zone data
-                    const mappedLinks = {};
-                    loadDNSCoffeeResponse("/zones",mappedLinks).then(()=>{
-                        resolveNode(link, 0, mappedLinks, rootNodeList).then((nodeList)=>{
-                            nodeList.updateLevels();
-                            resolve(nodeList);
-                        }).catch(error=>{
-                            reject(error)
-                        })
-                    }).catch((error)=>{
-                        throw Error("Unable to resolve zones")
-                    });
                 }else{
-                    reject(Error("Invalid Domain Name"));
+                    // Update callback defaults to empty function
+                    rootNodeList.updateFunction = ()=>{};
                 }
+                // Load mapped links with zone data
+                const mappedLinks = {};
+                loadDNSCoffeeResponse("/zones",mappedLinks).then(()=>{
+                    resolveNode(link, 0, mappedLinks, rootNodeList).then((nodeList)=>{
+                        nodeList.updateLevels();
+                        resolve(nodeList);
+                    }).catch(error=>{
+                        reject(error)
+                    })
+                }).catch((error)=>{
+                    throw Error("Unable to resolve zones")
+                });
             }else{
-                reject(Error("Dependecy PSL not loaded"));
+                reject(Error("Invalid Domain Name"));
             }
         })
         return promise;
