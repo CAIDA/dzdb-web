@@ -1094,11 +1094,19 @@ const DNSResolutionGrapher = {};
                             // If nameserver root domain is different from current domain, trace root
                             async function mapNameserverDomain(nameserverData,domainName, nameserver){
                                 const promise = new Promise(async (rootResolve,rootReject)=>{
-                                    let nameserverLink = nameserver.link || "/nameservers/"+nameserver.name;
+                                    const nameserverLink = nameserver.link || "/nameservers/"+nameserver.name;
+                                    const domainLink  ="/domains/"+domainName;
+                                    // Check if zone is mapped
+                                    const zoneData = mappedLinks["/API/ZONES"].data.zones;
+                                    const zone = (nameserverDomain.tld) ? {"name":nameserverDomain.tld} : null
+                                    const zoneMapped= zoneData.map(zone=>zone.zone.toUpperCase()).includes(zone.name.toUpperCase());
                                     // Check if root domain is either domain or nameserver
                                     let nameserverPromises = [];
-                                    nameserverPromises.push(resolveNode("/domains/"+domainName,
-                                    depth+1,mappedLinks, nameserverData).catch((error)=>{}));
+                                    // Only run zone lookup if zone is mapped
+                                    if(zoneMapped){
+                                        nameserverPromises.push(resolveNode(domainLink,
+                                        depth+1,mappedLinks, nameserverData).catch((error)=>{}));  
+                                    }
                                     await Promise.allSettled(nameserverPromises).then((results)=>{
                                         return new Promise(async (resolve,reject)=>{
                                             let validUrl = false;
@@ -1114,22 +1122,14 @@ const DNSResolutionGrapher = {};
                                             // If neither the nameserver or domain resolution works,
                                             // then begin checking if invalid url
                                             if(!validUrl && nameserverData.metadata.showUnmappedNodes){
-                                                // Preload mapped links with domain data to circumvent fetch
-                                                let domainLink  ="/domains/"+domainName;
-                                                let zone = (nameserverDomain.tld) 
-                                                    ? {"name":nameserverDomain.tld} : null;
+                                                // Preload mapped links with domain data to circumvent fetch;
                                                 let hazard = !zone;
                                                 let hazardMessage = "Invalid TLD";
                                                 // Check if zone is part of database, if it is store
                                                 // response and set hazard settings
-                                                if(zone!=null){
-                                                    let zoneLink = "/zones/"+zone.name;
-                                                    const zoneData = mappedLinks["/API/ZONES"].data.zones;
-                                                    if(zoneData.map(zone=>zone.zone.toUpperCase())
-                                                        .includes(zone.name.toUpperCase())){
-                                                        hazard = true;
-                                                        hazardMessage="Potentially available for registration";
-                                                    }
+                                                if(zone!=null && zoneMapped){
+                                                    hazard = true;
+                                                    hazardMessage="Potentially available for registration";
                                                 }
                                                 let newMappedLinks = JSON.parse(JSON.stringify(mappedLinks));
                                                 newMappedLinks[("/api"+domainLink).toUpperCase()] = 
