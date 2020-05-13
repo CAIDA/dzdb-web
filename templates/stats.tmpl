@@ -24,8 +24,8 @@
           api_response.data.dates.forEach(function (e) {
             dates.push(e.date);
             // time is in ns, divide by 6e+10 to get minutes
-            diffTime.push(e.diff_duration /  6e+10);
-            importTime.push(e.import_duration /  6e+10);
+            diffTime.push(e.diff_duration / 6e+10);
+            importTime.push(e.import_duration / 6e+10);
             zones.push(e.count);
           });
 
@@ -65,7 +65,12 @@
             }
           };
 
-          Plotly.newPlot('historyDiv', data, layout, { displaylogo: false }).then(function () { $("#spinner1").hide() });
+          var config = {
+            displaylogo: false,
+            responsive: true
+          };
+
+          Plotly.newPlot('historyDiv', data, layout, config).then(function () { $("#spinner1").hide() });
         });
     </script>
   </div>

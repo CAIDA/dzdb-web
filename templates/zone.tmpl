@@ -116,7 +116,13 @@
               t: 10,
             },
           };
-          Plotly.newPlot('timelineDiv', timeline, layout, { displaylogo: false }).then(function () { $("#timelinespinner").hide() });
+
+          var config = {
+            displaylogo: false,
+            responsive: true
+          };
+
+          Plotly.newPlot('timelineDiv', timeline, layout, config).then(function () { $("#timelinespinner").hide() });
         });
     </script>
   </div>
@@ -209,7 +215,12 @@
             },
           };
 
-          Plotly.newPlot('historyDiv', data, layout, { displaylogo: false }).then(function () { $("#spinner1").hide() });
+          var config = {
+            displaylogo: false,
+            responsive: true
+          };
+
+          Plotly.newPlot('historyDiv', data, layout, config).then(function () { $("#spinner1").hide() });
         });
     </script>
   </div>

@@ -112,10 +112,15 @@
             },
           };
 
-          if (Object.keys(ips).length == 0) {	
-            $("#timelineIP_card").hide();	
+          var config = {
+            displaylogo: false,
+            responsive: true
+          };
+
+          if (Object.keys(ips).length == 0) {
+            $("#timelineIP_card").hide();
           } else {
-            Plotly.newPlot('IPtimelineDiv', timeline, layout, { displaylogo: false }).then(function () { $("#IPtimelinespinner").hide() });
+            Plotly.newPlot('IPtimelineDiv', timeline, layout, config).then(function () { $("#IPtimelinespinner").hide() });
           }
         });
     </script>
