@@ -14,7 +14,7 @@ func (ds *DataStore) GetActiveIPs(ctx context.Context, date time.Time) (*model.A
 	aip.Date = date
 
 	query := "select distinct a.ip from a_nameservers, a where a_nameservers.a_id = a.id and first_seen <= $1 and (last_seen >= $1 or last_seen is NULL)"
-	rows, err := ds.db.QueryContext(ctx, query, date)
+	rows, err := ds.db.Query(ctx, query, date)
 	if err != nil {
 		return nil, err
 	}
@@ -31,7 +31,7 @@ func (ds *DataStore) GetActiveIPs(ctx context.Context, date time.Time) (*model.A
 	}
 
 	query = "select distinct aaaa.ip from aaaa_nameservers, aaaa where aaaa_nameservers.aaaa_id = aaaa.id and first_seen <= $1 and (last_seen >= $1 or last_seen is NULL)"
-	rows, err = ds.db.QueryContext(ctx, query, date)
+	rows, err = ds.db.Query(ctx, query, date)
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +62,7 @@ func (ds *DataStore) GetIPNsZoneCount(ctx context.Context, ip string) (*model.Re
 		query = "select zone, count(*) from zones, aaaa_nameservers, aaaa where aaaa.id = aaaa_nameservers.aaaa_id and zones.id = aaaa_nameservers.zone_id and aaaa.ip = $1 group by zone order by count desc"
 	}
 
-	rows, err := ds.db.QueryContext(ctx, query, ip)
+	rows, err := ds.db.Query(ctx, query, ip)
 	if err != nil {
 		return nil, err
 	}

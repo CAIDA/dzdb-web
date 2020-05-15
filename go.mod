@@ -4,6 +4,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/gomodule/redigo v2.0.0+incompatible // indirect
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
+	github.com/jackc/pgx/v4 v4.6.0
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/justinas/alice v1.2.0
 	github.com/lib/pq v1.4.0
