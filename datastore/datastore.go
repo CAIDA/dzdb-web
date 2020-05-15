@@ -14,60 +14,47 @@ import (
 
 	"dnscoffee/model"
 
+	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4/pgxpool"
-
-	//_ "github.com/lib/pq" // for postgresql
-	"github.com/teepark/pqinterval"
 )
 
 // ErrNoResource a 404 for a resource
 var ErrNoResource = errors.New("the requested object does not exist")
 
-// connectDB connects to the Postgresql database
-/*func connectDB(ctx context.Context) (*sql.DB, error) {
-	db, err := sql.Open("postgres", "")
-	if err != nil {
-		return nil, err
-	}
-	// test connection
-	err = db.PingContext(ctx)
-	if err != nil {
-		return db, err
-	}
-	return db, nil
-}*/
-
 // DataStore stores references to the database and
 // has methods for querying the database
 type DataStore struct {
-	//db *sql.DB
-	db *pgxpool.Conn
+	db *pgxpool.Pool
 }
 
 // New Creates a new DataStore with the provided database configuration
 // database connection variables are set from environment variables
 func New(ctx context.Context) (*DataStore, error) {
-	//conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_URL"))
 	pool, err := pgxpool.Connect(context.Background(), os.Getenv("DATABASE_URL"))
-	//db, err := connectDB(ctx)
 	if err != nil {
 		return nil, err
 	}
-	conn, err := pool.Acquire(ctx)
-	ds := DataStore{conn}
-	//err = ds.setSQLTimeout(cfg.Timeout)
-	return &ds, err
-}
 
-// sets the amount of time a SQL query can run before timing out
-func (ds *DataStore) setSQLTimeout(ctx context.Context, sec int) error {
-	_, err := ds.db.Exec(ctx, fmt.Sprintf("SET statement_timeout TO %d;", (1000*sec)))
-	return err
+	// test connection
+	poolConn, err := pool.Acquire(ctx)
+	if err != nil {
+		return nil, err
+	}
+	conn := poolConn.Conn()
+	err = conn.Ping(ctx)
+	if err != nil {
+		return nil, err
+	}
+	err = conn.Close(ctx)
+
+	ds := DataStore{pool}
+	return &ds, err
 }
 
 // Close closes the database connection
 func (ds *DataStore) Close() error {
-	return nil //ds.db.Close(context.Background())
+	ds.db.Close()
+	return nil
 }
 
 // GetDomainID gets the domain's ID and domain's zone's ID
@@ -88,9 +75,7 @@ func (ds *DataStore) GetIPID(ctx context.Context, ipStr string) (int64, int, err
 	ip := net.ParseIP(ipStr)
 	if ip.To4() != nil {
 		version = 4
-		// to use native golang IP types use pgx
-		// https://github.com/lib/pq/pull/390
-		err = ds.db.QueryRow(ctx, "SELECT id FROM a WHERE ip = $1", ip.String()).Scan(&id)
+		err = ds.db.QueryRow(ctx, "SELECT id FROM a WHERE ip = $1", ip).Scan(&id)
 		if err == sql.ErrNoRows {
 			err = ErrNoResource
 		}
@@ -98,7 +83,7 @@ func (ds *DataStore) GetIPID(ctx context.Context, ipStr string) (int64, int, err
 	}
 	if ip.To16() != nil {
 		version = 6
-		err = ds.db.QueryRow(ctx, "SELECT id FROM aaaa WHERE ip = $1", ip.String()).Scan(&id)
+		err = ds.db.QueryRow(ctx, "SELECT id FROM aaaa WHERE ip = $1", ip).Scan(&id)
 		if err == sql.ErrNoRows {
 			err = ErrNoResource
 		}
@@ -539,9 +524,6 @@ func (ds *DataStore) GetRandomDomain(ctx context.Context) (*model.Domain, error)
 	err = sql.ErrNoRows
 	for err == sql.ErrNoRows {
 		rid := rand.Int63n(count)
-		/* any domain */
-		//row := db.QueryRow("Select domain from domains where id = $1", rid)
-		/* active domains (slower) */
 		row := ds.db.QueryRow(ctx, "select domains.ID, domain from domains, domains_nameservers dns where dns.domain_id = id and domain_id = $1 and last_seen is null limit 1;", rid)
 		err = row.Scan(&domain.ID, &domain.Name)
 	}
@@ -675,7 +657,7 @@ func (ds *DataStore) GetImportProgress(ctx context.Context) (*model.ImportProgre
 		return nil, err
 	}
 	defer rows.Close()
-	var diffDuration, importDuration pqinterval.Interval
+	var diffDuration, importDuration pgtype.Interval
 	ip.Dates = make([]model.ImportDate, 0, history)
 
 	for rows.Next() {
@@ -684,11 +666,11 @@ func (ds *DataStore) GetImportProgress(ctx context.Context) (*model.ImportProgre
 		if err != nil {
 			return nil, err
 		}
-		ipd.DiffDuration, err = diffDuration.Duration()
+		err = diffDuration.AssignTo(&ipd.DiffDuration)
 		if err != nil {
 			return nil, err
 		}
-		ipd.ImportDuration, err = importDuration.Duration()
+		err = importDuration.AssignTo(&ipd.ImportDuration)
 		if err != nil {
 			return nil, err
 		}
@@ -759,11 +741,12 @@ func (ds *DataStore) GetNameServer(ctx context.Context, domain string) (*model.N
 	ns.IP4 = make([]*model.IP4, 0, 4)
 	for rows.Next() {
 		var ip model.IP4
-		err = rows.Scan(&ip.ID, &ip.Name, &ip.FirstSeen, &ip.LastSeen)
+		err = rows.Scan(&ip.ID, &ip.IP.IP, &ip.FirstSeen, &ip.LastSeen)
 		if err != nil {
 			return nil, err
 		}
 		ip.Version = 4
+		ip.Name = ip.IPString()
 		ns.IP4 = append(ns.IP4, &ip)
 	}
 
@@ -776,11 +759,12 @@ func (ds *DataStore) GetNameServer(ctx context.Context, domain string) (*model.N
 	ns.ArchiveIP4 = make([]*model.IP4, 0, 4)
 	for rows.Next() {
 		var ip model.IP4
-		err = rows.Scan(&ip.ID, &ip.Name, &ip.FirstSeen, &ip.LastSeen)
+		err = rows.Scan(&ip.ID, &ip.IP.IP, &ip.FirstSeen, &ip.LastSeen)
 		if err != nil {
 			return nil, err
 		}
 		ip.Version = 4
+		ip.Name = ip.IPString()
 		ns.ArchiveIP4 = append(ns.ArchiveIP4, &ip)
 	}
 
@@ -817,11 +801,12 @@ func (ds *DataStore) GetNameServer(ctx context.Context, domain string) (*model.N
 	ns.IP6 = make([]*model.IP6, 0, 4)
 	for rows.Next() {
 		var ip model.IP6
-		err = rows.Scan(&ip.ID, &ip.Name, &ip.FirstSeen, &ip.LastSeen)
+		err = rows.Scan(&ip.ID, &ip.IP.IP, &ip.FirstSeen, &ip.LastSeen)
 		if err != nil {
 			return nil, err
 		}
 		ip.Version = 6
+		ip.Name = ip.IPString()
 		ns.IP6 = append(ns.IP6, &ip)
 	}
 
@@ -834,11 +819,12 @@ func (ds *DataStore) GetNameServer(ctx context.Context, domain string) (*model.N
 	ns.ArchiveIP6 = make([]*model.IP6, 0, 4)
 	for rows.Next() {
 		var ip model.IP6
-		err = rows.Scan(&ip.ID, &ip.Name, &ip.FirstSeen, &ip.LastSeen)
+		err = rows.Scan(&ip.ID, &ip.IP.IP, &ip.FirstSeen, &ip.LastSeen)
 		if err != nil {
 			return nil, err
 		}
 		ip.Version = 6
+		ip.Name = ip.IPString()
 		ns.ArchiveIP6 = append(ns.ArchiveIP6, &ip)
 	}
 
@@ -853,7 +839,11 @@ func (ds *DataStore) GetIP(ctx context.Context, name string) (*model.IP, error) 
 	if err != nil {
 		return nil, err
 	}
-	ip.Name = name
+	netIP := net.ParseIP(name)
+	if netIP == nil {
+		return nil, fmt.Errorf("unable top parse IP %s", name)
+	}
+	ip.IP = &netIP
 
 	if ip.Version == 4 {
 		// get first_seen & last_seen
