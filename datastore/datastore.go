@@ -2,7 +2,6 @@ package datastore
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"log"
@@ -15,6 +14,7 @@ import (
 	"dnscoffee/model"
 
 	"github.com/jackc/pgtype"
+	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
@@ -30,7 +30,11 @@ type DataStore struct {
 // New Creates a new DataStore with the provided database configuration
 // database connection variables are set from environment variables
 func New(ctx context.Context) (*DataStore, error) {
-	pool, err := pgxpool.Connect(context.Background(), os.Getenv("DATABASE_URL"))
+	connPoolConfig, err := pgxpool.ParseConfig(os.Getenv("DATABASE_URL"))
+	if err != nil {
+		return nil, err
+	}
+	pool, err := pgxpool.ConnectConfig(ctx, connPoolConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +65,7 @@ func (ds *DataStore) Close() error {
 func (ds *DataStore) GetDomainID(ctx context.Context, domain string) (int64, int64, error) {
 	var id, zoneID int64
 	err := ds.db.QueryRow(ctx, "SELECT id, zone_id FROM domains WHERE domain = $1", domain).Scan(&id, &zoneID)
-	if err == sql.ErrNoRows {
+	if err == pgx.ErrNoRows {
 		err = ErrNoResource
 	}
 	return id, zoneID, err
@@ -72,19 +76,23 @@ func (ds *DataStore) GetIPID(ctx context.Context, ipStr string) (int64, int, err
 	var id int64
 	var version int
 	var err error
-	ip := net.ParseIP(ipStr)
-	if ip.To4() != nil {
+	var ip pgtype.Inet
+	err = ip.DecodeText(nil, []byte(ipStr))
+	if err != nil {
+		return -1, 0, err
+	}
+	if ip.IPNet.IP.To4() != nil {
 		version = 4
 		err = ds.db.QueryRow(ctx, "SELECT id FROM a WHERE ip = $1", ip).Scan(&id)
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			err = ErrNoResource
 		}
 		return id, version, err
 	}
-	if ip.To16() != nil {
+	if ip.IPNet.IP.To16() != nil {
 		version = 6
 		err = ds.db.QueryRow(ctx, "SELECT id FROM aaaa WHERE ip = $1", ip).Scan(&id)
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			err = ErrNoResource
 		}
 		return id, version, err
@@ -96,7 +104,7 @@ func (ds *DataStore) GetIPID(ctx context.Context, ipStr string) (int64, int, err
 func (ds *DataStore) GetZoneID(ctx context.Context, name string) (int64, error) {
 	var id int64
 	err := ds.db.QueryRow(ctx, "select id from zones where zone = $1 limit 1", name).Scan(&id)
-	if err == sql.ErrNoRows {
+	if err == pgx.ErrNoRows {
 		err = ErrNoResource
 	}
 	return id, err
@@ -116,7 +124,7 @@ func (ds *DataStore) GetZone(ctx context.Context, name string) (*model.Zone, err
 	// get first_seen & last_seen
 	err = ds.db.QueryRow(ctx, "select first_seen from zones_nameservers where zone_id = $1 order by first_seen asc nulls first limit 1", z.ID).Scan(&z.FirstSeen)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			z.FirstSeen = nil
 		} else {
 			return nil, err
@@ -125,7 +133,7 @@ func (ds *DataStore) GetZone(ctx context.Context, name string) (*model.Zone, err
 
 	err = ds.db.QueryRow(ctx, "select last_seen from zones_nameservers where zone_id = $1 order by last_seen desc nulls first limit 1", z.ID).Scan(&z.LastSeen)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			z.LastSeen = nil
 		} else {
 			return nil, err
@@ -189,7 +197,7 @@ func (ds *DataStore) GetZone(ctx context.Context, name string) (*model.Zone, err
 func (ds *DataStore) GetNameServerID(ctx context.Context, domain string) (int64, error) {
 	var id int64
 	err := ds.db.QueryRow(ctx, "SELECT id FROM nameservers WHERE domain = $1", domain).Scan(&id)
-	if err == sql.ErrNoRows {
+	if err == pgx.ErrNoRows {
 		err = ErrNoResource
 	}
 	return id, err
@@ -293,7 +301,7 @@ func (ds *DataStore) GetFeedNsMoved(ctx context.Context, date time.Time) (*model
 			f.Nameservers6 = append(f.Nameservers6, &ns)
 		} else {
 			// log this
-			log.Printf("Got NS Feed wth unknown IP version %d for %s\n", v, date)
+			log.Printf("Got NS Feed with unknown IP version %d for %s\n", v, date)
 			// skip unknown versions for now
 			continue
 		}
@@ -387,7 +395,7 @@ func (ds *DataStore) GetFeedNsNew(ctx context.Context, date time.Time) (*model.N
 			f.Nameservers6 = append(f.Nameservers6, &ns)
 		} else {
 			// log this
-			log.Printf("Got NS Feed wth unknown IP version %d for %s\n", v, date)
+			log.Printf("Got NS Feed with unknown IP version %d for %s\n", v, date)
 			// skip unknown versions for now
 			continue
 		}
@@ -422,7 +430,7 @@ func (ds *DataStore) GetFeedNsOld(ctx context.Context, date time.Time) (*model.N
 			f.Nameservers6 = append(f.Nameservers6, &ns)
 		} else {
 			// log this
-			log.Printf("Got NS Feed wth unknown IP version %d for %s\n", v, date)
+			log.Printf("Got NS Feed with unknown IP version %d for %s\n", v, date)
 			// skip unknown versions for now
 			continue
 		}
@@ -521,8 +529,8 @@ func (ds *DataStore) GetRandomDomain(ctx context.Context) (*model.Domain, error)
 		return nil, err
 	}
 	var domain model.Domain
-	err = sql.ErrNoRows
-	for err == sql.ErrNoRows {
+	err = pgx.ErrNoRows
+	for err == pgx.ErrNoRows {
 		rid := rand.Int63n(count)
 		row := ds.db.QueryRow(ctx, "select domains.ID, domain from domains, domains_nameservers dns where dns.domain_id = id and domain_id = $1 and last_seen is null limit 1;", rid)
 		err = row.Scan(&domain.ID, &domain.Name)
@@ -775,7 +783,7 @@ func (ds *DataStore) GetNameServer(ctx context.Context, domain string) (*model.N
 		// If we do not have an glue record for the nameserver
 		// then there is no timeline so we do not need to worry
 		// about the zone_id
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			z.ID = 0
 		} else {
 			return nil, err
@@ -844,6 +852,7 @@ func (ds *DataStore) GetIP(ctx context.Context, name string) (*model.IP, error) 
 		return nil, fmt.Errorf("unable top parse IP %s", name)
 	}
 	ip.IP = &netIP
+	ip.Name = ip.IPString()
 
 	if ip.Version == 4 {
 		// get first_seen & last_seen
@@ -1025,12 +1034,12 @@ func (ds *DataStore) GetAvailablePrefixes(ctx context.Context, name string) (*mo
 	}
 	for rows.Next() {
 		var domain model.PrefixResult
-		var lastSeen sql.NullTime
+		var lastSeen pgtype.Date
 		err = rows.Scan(&domain.Domain, &lastSeen)
 		if err != nil {
 			return nil, err
 		}
-		if lastSeen.Valid {
+		if lastSeen.Status == pgtype.Present {
 			domain.LastSeen = &lastSeen.Time
 		}
 		prefixes.Domains = append(prefixes.Domains, domain)
@@ -1052,12 +1061,12 @@ func (ds *DataStore) GetTakenPrefixes(ctx context.Context, name string) (*model.
 	}
 	for rows.Next() {
 		var domain model.PrefixResult
-		var firstSeen sql.NullTime
+		var firstSeen pgtype.Date
 		err = rows.Scan(&domain.Domain, &firstSeen)
 		if err != nil {
 			return nil, err
 		}
-		if firstSeen.Valid {
+		if firstSeen.Status == pgtype.Present {
 			domain.FirstSeen = &firstSeen.Time
 		}
 		prefixes.Domains = append(prefixes.Domains, domain)
@@ -1073,7 +1082,7 @@ func (ds *DataStore) GetDeadTLDs(ctx context.Context) ([]*model.TLDLife, error) 
 	select zone,
 		min(first_seen) as created,
 		max(last_Seen) as removed,
-		age(max(last_seen), min(first_seen)) as age,
+		age(max(last_seen), min(first_seen))::text as age,
 		max(domains) as domains
 	from dead_zones, zones_nameservers
 	left join import_zone_counts
