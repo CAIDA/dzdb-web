@@ -1,3 +1,4 @@
+// Package datastore implements the functions necessary to query the database
 package datastore
 
 import (

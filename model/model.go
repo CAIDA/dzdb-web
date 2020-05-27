@@ -1,3 +1,4 @@
+// Package model defined the types used by the API
 package model
 
 import (
@@ -59,7 +60,7 @@ func NewJSONError(id string, status int, title, detail string) *JSONError {
 	return jsonErr
 }
 
-// Err implements the error interface.
+// Error implements the error interface.
 func (err JSONError) Error() string {
 	return err.Detail
 }
@@ -154,7 +155,7 @@ type AllZoneCounts struct {
 // GenerateMetaData generates metadata recursively of member models
 func (zc *AllZoneCounts) GenerateMetaData() {
 	zc.Type = &zoneAllCountsType
-	zc.Link = fmt.Sprintf("/counts/all")
+	zc.Link = "/counts/all"
 }
 
 // Zone holds information about a zone

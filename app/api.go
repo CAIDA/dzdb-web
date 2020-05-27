@@ -1,3 +1,4 @@
+// Package app defines the helpers (web & api) for the frontend web service
 package app
 
 import (

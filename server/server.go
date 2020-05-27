@@ -1,3 +1,4 @@
+// Package server handles the http server for the frontend
 package server
 
 // Much of the design was models after this blog post
@@ -124,10 +125,13 @@ func HandlerNotImplemented(w http.ResponseWriter, r *http.Request) {
 
 // WriteJSONError returns an error as JSON
 // TODO make not all errors JSON
-func WriteJSONError(w http.ResponseWriter, err *model.JSONError) {
+func WriteJSONError(w http.ResponseWriter, jsonErr *model.JSONError) {
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(err.Status)
-	json.NewEncoder(w).Encode(model.JSONErrors{Errors: []*model.JSONError{err}})
+	w.WriteHeader(jsonErr.Status)
+	err := json.NewEncoder(w).Encode(model.JSONErrors{Errors: []*model.JSONError{jsonErr}})
+	if err != nil {
+		panic(err)
+	}
 }
 
 // WriteJSON writes JSON from data to the response
