@@ -5,7 +5,7 @@ MODULE_SOURCES := $(shell find */ -type f -name '*.go' )
 SOURCES := $(shell find . -maxdepth 1 -type f -name '*.go')
 BIN := web
 
-.PHONY: all fmt docker clean
+.PHONY: all fmt docker clean check
 
 all: web
 
@@ -20,3 +20,7 @@ clean:
 
 fmt:
 	gofmt -s -w -l .
+
+check:
+	golangci-lint run || true
+	staticcheck -unused.whole-program -checks all ./...

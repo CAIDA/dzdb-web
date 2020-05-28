@@ -70,6 +70,7 @@ func Start(ds *datastore.DataStore, server *server.Server) {
 
 	// research
 	server.Get("/research/ipnszonecount/:ip", app.ipNsZoneCountHandler)
+	server.Get("/research/trust-tree", app.trustTreeHandler)
 }
 
 func (app *appContext) searchIndexHandler(w http.ResponseWriter, r *http.Request) {
@@ -386,6 +387,14 @@ func (app *appContext) ipNsZoneCountHandler(w http.ResponseWriter, r *http.Reque
 
 	p := Page{"IP NS Zone Count", "IP NS Zone Count", data}
 	err = app.templates.ExecuteTemplate(w, "ipnszonecount.tmpl", p)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (app *appContext) trustTreeHandler(w http.ResponseWriter, r *http.Request) {
+	p := Page{"Trust Tree", "Trust Tree", nil}
+	err := app.templates.ExecuteTemplate(w, "trusttree.tmpl", p)
 	if err != nil {
 		panic(err)
 	}

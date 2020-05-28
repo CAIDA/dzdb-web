@@ -1,3 +1,4 @@
+// Package temfun defines functions included in the html templates
 package temfun
 
 import (

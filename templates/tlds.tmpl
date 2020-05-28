@@ -3,13 +3,14 @@
 <div class="row">
   <div class="col-md-6">
     <div class="card text-white bg-warning mb-3">
-    <div class="card-header">Warning</div>
-    <div class="card-body">
+      <div class="card-header">Warning</div>
+      <div class="card-body">
         <h4 class="card-title">This page may be slow...</h4>
-        <p class="card-text">There are lots of TLDs on the internet, and it takes a few seconds to crunch the most up-to-date numbers on all of them.</p>
+        <p class="card-text">There are lots of TLDs on the internet, and it takes a few seconds to crunch the most
+          up-to-date numbers on all of them.</p>
+      </div>
     </div>
-    </div>
- </div>
+  </div>
 </div>
 
 <div class="row">
@@ -50,7 +51,7 @@
               y: domains,
               // fill: "tozeroy",
               max_value: max_value,
-              stackgroup:"one",
+              stackgroup: "one",
             })
           });
           /* sort largest zones first */
@@ -77,7 +78,12 @@
             }]
           };
 
-          Plotly.newPlot('tldHistoryDiv', data, layout, { displaylogo: false }).then(function () { $("#spinner1").hide() });
+          var config = {
+            displaylogo: false,
+            responsive: true
+          };
+
+          Plotly.newPlot('tldHistoryDiv', data, layout, config).then(function () { $("#spinner1").hide() });
         });
     </script>
   </div>

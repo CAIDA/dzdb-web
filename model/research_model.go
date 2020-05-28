@@ -7,11 +7,11 @@ import (
 
 // API Explain Strings
 var (
-	IpNsZoneCountType = "ip_ns_zone_count"
+	IPNsZoneCountType = "ip_ns_zone_count"
 	ActiveIPsType     = "active_ips"
 )
 
-type ResearchIpNsZoneCount struct {
+type ResearchIPNsZoneCount struct {
 	Metadata
 	IP           string              `json:"ip"`
 	ZoneNSCounts []ResearchZoneCount `json:"zone_counts"`
@@ -39,7 +39,7 @@ func (aip *ActiveIPs) GenerateMetaData() {
 }
 
 // GenerateMetaData generates metadata recursively of member models
-func (ipzc *ResearchIpNsZoneCount) GenerateMetaData() {
-	ipzc.Type = &IpNsZoneCountType
-	ipzc.Link = "/research/ipnszonecount/" + ipzc.IP
+func (c *ResearchIPNsZoneCount) GenerateMetaData() {
+	c.Type = &IPNsZoneCountType
+	c.Link = "/research/ipnszonecount/" + c.IP
 }

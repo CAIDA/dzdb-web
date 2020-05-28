@@ -118,7 +118,12 @@
             },
           };
 
-          Plotly.newPlot('timelineDiv', timeline, layout, { displaylogo: false }).then(function () { $("#timelinespinner").hide() });
+          var config = {
+            displaylogo: false,
+            responsive: true
+          };
+
+          Plotly.newPlot('timelineDiv', timeline, layout, config).then(function () { $("#timelinespinner").hide() });
         });
     </script>
   </div>

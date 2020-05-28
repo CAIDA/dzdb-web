@@ -10,7 +10,7 @@ $ make
 
 ## Running
 
-Database connection information is set via [libpq environment variables](https://www.postgresql.org/docs/current/libpq-envars.html).
+Database connection information is set via `$DATABASE_URL` environment variable
 
 The listen address and port can be set with a flag.
 
@@ -28,10 +28,7 @@ Usage of ./web:
 ### Example
 
 ```sh
-$ export PGHOST=localhost
-$ export PGDATABASE=DATABASE_NAME
-$ export PGUSER=DB_USER
-$ export PGPASSWORD=DB_PASSWORD
+$ export DATABASE_URL="postgresql://user:pass@host:port/db"
 $ ./web
 2020/04/29 21:45:22 Server starting on 127.0.0.1:8080
 ```
@@ -60,10 +57,7 @@ services:
         restart: unless-stopped
         environment:
             - TZ=America/Los_Angeles
-            - PGHOST=DATABASE_HOST
-            - PGUSER=DATABASE_USER
-            - PGPASSWORD=DATABASE_PASSWORD
-            - PGDATABASE=DATABASE_NAME
+            - DATABASE_URL="postgresql://user:pass@host:port/db"
             - HTTP_LISTEN_ADDR=0.0.0.0:8082
         healthcheck:
             test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:8082/ || exit 1"]

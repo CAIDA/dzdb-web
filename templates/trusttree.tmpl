@@ -1,0 +1,124 @@
+{{template "top" $}}
+
+<link rel="stylesheet" type="text/css" href="/static/tree/tree.css">
+
+
+<div class="row justify-content-center">
+  <div class="col-9 col-md-6 order-md-2 order-1">
+
+    <h1>Trust Tree Visualization</h1>
+
+    <div class="input-group">
+      <input type="text" class="form-control" id="domainInput" placeholder="example.com">
+      <div class="input-group-append">
+        <button type="submit" class="btn btn-primary " id="submitButton">Submit</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row justify-content-center">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header">
+        <div>Trust Tree</div>
+        <div class="header-button">
+          <svg class="bi bi-download" width="1em" height="1em" viewBox="0 0 16 16" fill="currentColor"
+            xmlns="http://www.w3.org/2000/svg">
+            <path fill-rule="evenodd"
+              d="M.5 8a.5.5 0 01.5.5V12a1 1 0 001 1h12a1 1 0 001-1V8.5a.5.5 0 011 0V12a2 2 0 01-2 2H2a2 2 0 01-2-2V8.5A.5.5 0 01.5 8z"
+              clip-rule="evenodd" />
+            <path fill-rule="evenodd"
+              d="M5 7.5a.5.5 0 01.707 0L8 9.793 10.293 7.5a.5.5 0 11.707.707l-2.646 2.647a.5.5 0 01-.708 0L5 8.207A.5.5 0 015 7.5z"
+              clip-rule="evenodd" />
+            <path fill-rule="evenodd" d="M8 1a.5.5 0 01.5.5v8a.5.5 0 01-1 0v-8A.5.5 0 018 1z" clip-rule="evenodd" />
+          </svg>
+          <ul class="button-menu">
+            <li class="menu-item">
+              <div id="downloadSVG">Download SVG</div>
+            </li>
+            <li class="menu-item"><a id="downloadGML">Download GraphML</a></li>
+          </ul>
+        </div>
+        <div class="header-button">
+          <svg class="bi bi-three-dots-vertical" width="1em" height="1em" viewBox="0 0 16 16" fill="currentColor"
+            xmlns="http://www.w3.org/2000/svg">
+            <path fill-rule="evenodd"
+              d="M9.5 13a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zm0-5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zm0-5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"
+              clip-rule="evenodd" />
+          </svg>
+          <div class="button-menu">
+            <div class="configWrapper">
+              <div>
+                <input type="checkbox" id="accNameservers">
+                <label for="accNameservers">Accumulate Nameservers</label>
+              </div>
+              <div>
+                <input type="checkbox" id="accIPs" checked>
+                <label for="accIPs">Accumulate IPs</label>
+              </div>
+              <div>
+                <input type="checkbox" id="hideNameservers" checked>
+                <label for="hideNameservers">Hide Nameservers</label>
+              </div>
+              <div>
+                <input type="checkbox" id="hideIPs">
+                <label for="hideIPs">Hide IPs</label>
+              </div>
+              <div>
+                <input type="checkbox" id="matchColors" checked>
+                <label for="matchColors">Match Branch Colors</label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="row justify-content-center overviewWrapper">
+          <div class="col-4"><span class="overviewHeader" id="nodeCount">0 nodes</span></div>
+          <div class="col-4"><span class="overviewHeader" id="domainCount">0 domains</span></div>
+          <div class="col-4"><span class="overviewHeader" id="hazardCount">0 hazards</span></div>
+        </div>
+        <div id="treeWrapper" class="row treeWrapper justify-content-center">
+          <div class="col-12">
+            <hr>
+            <div class="spinner" id="treeSpinner">
+              <div class="bounce1"></div>
+              <div class="bounce2"></div>
+              <div class="bounce3"></div>
+            </div>
+          </div>
+          <div class="col-12">
+            <div id="treeOutput"></div>
+            <div id="meshOutput"></div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="svgToggleButton active" id="svgToggleTree">
+              <img src="/static/tree/tree.svg">
+            </div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="svgToggleButton" id="svgToggleMesh">
+              <img src="/static/tree/mesh.svg">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  if (typeof module === "undefined") {
+    window.module = { "exports": {} };
+  }
+</script>
+<script src="https://d3js.org/d3.v5.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/axios-rate-limit@1.2.1/src/index.min.js"></script>
+<script type="text/javascript" src="/static/tree/axios-fetch.js"></script>
+<script type="text/javascript" src="/static/tree/priority-queue.js"></script>
+<script type="text/javascript" src="/static/tree/color.js"></script>
+<script type="text/javascript" src="/static/tree/dns-resolution-grapher.js" charset="utf-8"></script>
+<script type="text/javascript" src="/static/tree/script.js"></script>
+
+{{template "bottom" $}}

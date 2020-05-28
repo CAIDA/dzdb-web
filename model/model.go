@@ -1,7 +1,9 @@
+// Package model defined the types used by the API
 package model
 
 import (
 	"fmt"
+	"net"
 	"time"
 )
 
@@ -58,7 +60,7 @@ func NewJSONError(id string, status int, title, detail string) *JSONError {
 	return jsonErr
 }
 
-// Err implements the error interface.
+// Error implements the error interface.
 func (err JSONError) Error() string {
 	return err.Detail
 }
@@ -135,7 +137,7 @@ func (zc *ZoneCount) GenerateMetaData() {
 	zc.Link = fmt.Sprintf("/counts/zones/%s", zc.Zone)
 }
 
-// ZoneCounts contatns stats and counts for a single zone on a single day
+// ZoneCounts contains stats and counts for a single zone on a single day
 type ZoneCounts struct {
 	Date    time.Time `json:"date"`
 	Domains int64     `json:"domains"`
@@ -153,7 +155,7 @@ type AllZoneCounts struct {
 // GenerateMetaData generates metadata recursively of member models
 func (zc *AllZoneCounts) GenerateMetaData() {
 	zc.Type = &zoneAllCountsType
-	zc.Link = fmt.Sprintf("/counts/all")
+	zc.Link = "/counts/all"
 }
 
 // Zone holds information about a zone
@@ -312,6 +314,7 @@ type IP struct {
 	Metadata
 	ID                     int64         `json:"-"`
 	Name                   string        `json:"name"`
+	IP                     *net.IP       `json:"-"`
 	Version                int           `json:"version"`
 	FirstSeen              *time.Time    `json:"firstseen,omitempty"`
 	LastSeen               *time.Time    `json:"lastseen,omitempty"`
@@ -329,6 +332,17 @@ type IP4 struct {
 // IP6 is an alias to the IP type
 type IP6 struct {
 	IP
+}
+
+// IPString returns the IP as a string
+// if it is an AAAA records with an IPv4 address returns the value in IPv6 notation
+// must be called after version and IP are set
+func (ip *IP) IPString() string {
+	ipStr := ip.IP.String()
+	if ip.Version == 6 && ip.IP.To4() != nil {
+		ipStr = fmt.Sprintf("::FFFF:%s", ipStr)
+	}
+	return ipStr
 }
 
 // GenerateMetaData generates metadata recursively of member models

@@ -116,8 +116,13 @@
           automargin: true,
         };
 
+        var config = {
+          displaylogo: false,
+          responsive: true
+        };
+
         $("#feedDiv").show();
-        Plotly.newPlot('feedDiv', data, layout, { displaylogo: false }).then(function () { $("#spinner1").hide() });
+        Plotly.newPlot('feedDiv', data, layout, config).then(function () { $("#spinner1").hide() });
 
       });
   }
