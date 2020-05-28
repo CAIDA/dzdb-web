@@ -7,6 +7,7 @@ const DNSResolutionGrapher = {};
         }
         this.id = "n"+Node.id;
         this.type = type;
+        this.uniqueName = `${type}~${name}`.toLowerCase()
         this.uniqueType = this.type;
         this.parents =[];
         this.biDirectionalNodes = [];
@@ -28,7 +29,7 @@ const DNSResolutionGrapher = {};
         this.addParent = function(node){
             let nodeFound = false;
             for(const oldNode of this.parents){
-                if(node.name==oldNode.name){
+                if(node.uniqueName==oldNode.uniqueName){
                     nodeFound=true;
                     break;
                 }
@@ -36,7 +37,7 @@ const DNSResolutionGrapher = {};
             if(!nodeFound){
                 this.parents.push(node);
                 for(const oldNode of this.children){
-                    if(node.name==oldNode.name){
+                    if(node.uniqueName==oldNode.uniqueName){
                         nodeFound=true;
                         break;
                     }
@@ -46,7 +47,7 @@ const DNSResolutionGrapher = {};
         this.addChild = function(node){
             let nodeFound = false;
             for(const oldNode of this.children){
-                if(node.name==oldNode.name){
+                if(node.uniqueName==oldNode.uniqueName){
                     nodeFound=true;
                     break;
                 }
@@ -58,7 +59,7 @@ const DNSResolutionGrapher = {};
         this.addBiDirectionalNode= function(node){
             let nodeFound = false;
             for(const oldNode of this.biDirectionalNodes){
-                if(node.name==oldNode.name){
+                if(node.uniqueName==oldNode.uniqueName){
                     nodeFound=true;
                     break;
                 }
@@ -294,7 +295,7 @@ const DNSResolutionGrapher = {};
             let containsElement = false;
             if(element instanceof Node){
                 for(let i=0;i<this.nodes.length;++i){
-                    if(this.nodes[i].name==element.name){
+                    if(this.nodes[i].uniqueName==element.uniqueName){
                         containsElement=this.nodes[i];
                         break;
                     }
@@ -329,8 +330,8 @@ const DNSResolutionGrapher = {};
                 let node = toUpdateNodes.remove();
                 node.positioning= node.positioning||{};
                 if(!updateDepth(node)){
-                    let retryNames = retryNodes.map(node=>node.name);
-                    let nodeIndex = retryNames.indexOf(node.name);
+                    let retryNames = retryNodes.map(node=>node.uniqueName);
+                    let nodeIndex = retryNames.indexOf(node.uniqueName);
                     if(nodeIndex!=-1){
                         retryNodes.splice(nodeIndex,1);
                     }
@@ -350,7 +351,7 @@ const DNSResolutionGrapher = {};
             });
             for(let i=0;i<retryNodes.length;i++){
                 let missingParents = retryNodes[i].parents.filter((node)=> !node.metadata.hidden &
-                    !updatedNodes.includes(node.name));
+                    !updatedNodes.includes(node.uniqueName));
                 missingParents.forEach((node)=>{
                     updateDepth(node,true);
                 })
@@ -379,20 +380,20 @@ const DNSResolutionGrapher = {};
                 for(let j=0;j<newLevels[i].length;j++){
                     let node = newLevels[i][j];
                     // Get all of node's hierarchical nodes' names
-                    let nodeHierarchy=node.children.concat(node.parents).map((node)=>node.name);
+                    let nodeHierarchy=node.children.concat(node.parents).map((node)=>node.uniqueName);
                     // If the hierarchical node is also in the current row, assign its position
-                    let sameRowHierarchical = newLevels[i].filter((node)=>nodeHierarchy.includes(node.name));
+                    let sameRowHierarchical = newLevels[i].filter((node)=>nodeHierarchy.includes(node.uniqueName));
                     if(sameRowHierarchical.length>0){
                         // Each node gets assigned a position within the row to minimize distance between
                         // hierarchical nodes. Node position is set to the assigned position, or to 3j+1
                         // to allow space to place adjacent elements on either side
-                        if(innerRowPosition[node.name]==null){
-                            innerRowPosition[node.name]= {"index":3*j+1,"position":"center"};
+                        if(innerRowPosition[node.uniqueName]==null){
+                            innerRowPosition[node.uniqueName]= {"index":3*j+1,"position":"center"};
                         }
                         for(let k = 0;k<sameRowHierarchical.length;k++){
-                            let sameRowNodeName = sameRowHierarchical[k].name;
-                            let anchorIndex =  innerRowPosition[node.name].index;
-                            let anchorPosition =  innerRowPosition[node.name].position;
+                            let sameRowNodeName = sameRowHierarchical[k].uniqueName;
+                            let anchorIndex =  innerRowPosition[node.uniqueName].index;
+                            let anchorPosition =  innerRowPosition[node.uniqueName].position;
                             // Alternate between left and right of current node for hierarchical nodes
                             if(innerRowPosition[sameRowNodeName]==null){
                                 let sameRowIndex,sameRowPosition;
@@ -420,21 +421,21 @@ const DNSResolutionGrapher = {};
                         }
                         // Make all non hierarchical nodes shift left of hierarchical nodes
                         avgHierachicalIndex += -10000;
-                        innerRowPosition[node.name] = {"index":avgHierachicalIndex,"position":"none"};
+                        innerRowPosition[node.uniqueName] = {"index":avgHierachicalIndex,"position":"none"};
                     }
                 }
                 // Sort nodes by intra-row position
-                newLevels[i].sort((a,b)=>innerRowPosition[a.name].index-innerRowPosition[b.name].index);
+                newLevels[i].sort((a,b)=>innerRowPosition[a.uniqueName].index-innerRowPosition[b.uniqueName].index);
                 // Update overall position
                 for(let j=0;j<newLevels[i].length;j++){
-                    overallPosition[newLevels[i][j].name] = j;
+                    overallPosition[newLevels[i][j].uniqueName] = j;
                 }
             }
             this.levels = newLevels;
             function updateDepth(node,forceAddNode=false){
                 let canUpdateDepth = true;
                 let maxAdjacentNodes = 2;
-                if(!updatedNodes.includes(node.name)){
+                if(!updatedNodes.includes(node.uniqueName)){
                     // Set default adjacent count for each node
                     node.positioning = node.positioning || {};
                     node.positioning.adjacent = node.positioning.adjacent || 0;
@@ -443,8 +444,8 @@ const DNSResolutionGrapher = {};
                         // valid depths, and have already been processed
                         let viableParents = node.parents.filter(
                         (parent)=>!parent.metadata.hidden && parent.metadata.depth!=null);
-                        let visitedViableParents = viableParents.filter((parent)=>updatedNodes.includes(parent.name) ||
-                            node.biDirectionalNodes.map(parent=>parent.name).includes(parent.name));
+                        let visitedViableParents = viableParents.filter((parent)=>updatedNodes.includes(parent.uniqueName) ||
+                            node.biDirectionalNodes.map(parent=>parent.uniqueName).includes(parent.uniqueName));
                         // Check if all viable nodes have been visited first or are bidirectional
                         if(visitedViableParents.length==viableParents.length && viableParents.length>0){
                             let parentDepths = getParentDepths(node);
@@ -513,7 +514,7 @@ const DNSResolutionGrapher = {};
                         node.positioning.priority = 0;
                     }
                     if((canUpdateDepth || forceAddNode)){
-                        updatedNodes.push(node.name);
+                        updatedNodes.push(node.uniqueName);
                         newLevels[node.metadata.depth]= newLevels[node.metadata.depth] || [];
                         newLevels[node.metadata.depth].push(node);
                     }
@@ -529,7 +530,7 @@ const DNSResolutionGrapher = {};
                     }).forEach((child)=>{
                         let isBidirectional = node.biDirectionalNodes
                             .filter((node)=>!node.metadata.hidden && node.metadata.depth!=null)
-                            .map((node)=>node.name).includes(child.name);
+                            .map((node)=>node.uniqueName).includes(child.uniqueName);
                         child.positioning = child.positioning || {};
                         let viableParents = child.parents.filter((node)=>!node.metadata.hidden && node.metadata.depth!=null);
                         let viableChildren = child.children.filter((node)=>!node.metadata.hidden && node.metadata.depth!=null);
@@ -543,9 +544,9 @@ const DNSResolutionGrapher = {};
                         }else{
                             child.positioning.priority = parentPriority+1.1;
                         }
-                        let retryNames = retryNodes.map(node=>node.name)
+                        let retryNames = retryNodes.map(node=>node.uniqueName)
                         // Only add if node isn't already a retry node
-                        if(!retryNames.includes(child.name)){
+                        if(!retryNames.includes(child.uniqueName)){
                             toUpdateNodes.add(child); 
                         }  
                     });
@@ -557,7 +558,7 @@ const DNSResolutionGrapher = {};
                         let viableChildren = anchor.children.filter((anchor)=>!anchor.metadata.hidden 
                             && anchor.metadata.depth!=null);
                         let viableNodes =viableParents.concat(viableChildren
-                            .filter((child)=>!viableParents.map((parent)=>parent.name).includes(child.name)))
+                            .filter((child)=>!viableParents.map((parent)=>parent.uniqueName).includes(child.uniqueName)))
                         let toUpdateNodes = [...viableNodes,anchor];
                         let retryNodes = [];
                         toUpdateNodes.forEach((node)=>{  
@@ -567,7 +568,7 @@ const DNSResolutionGrapher = {};
                             let viableUpdateChildren = node.children.filter((node)=>!node.metadata.hidden 
                                 && node.metadata.depth!=null);
                             let viableUpdateNodes =viableUpdateParents.concat(viableUpdateChildren
-                                .filter((child)=>!viableUpdateParents.map((parent)=>parent.name).includes(child.name)))
+                                .filter((child)=>!viableUpdateParents.map((parent)=>parent.uniqueName).includes(child.uniqueName)))
                             viableUpdateNodes.forEach((node)=>{
                                 nodeDepths[node.metadata.depth] = nodeDepths[node.metadata.depth] || []; 
                                 nodeDepths[node.metadata.depth].push(node);
@@ -578,14 +579,14 @@ const DNSResolutionGrapher = {};
                             // If too many adjacent nodes, offset all not updated nodes
                             if(node.positioning.adjacent>maxAdjacentNodes){
                                 // Move all not updated nodes off of adjacent spots that aren't the anchor node
-                                viableUpdateParents.filter((parent)=>!updatedNodes.includes(parent.name)
-                                    && parent.name!=anchor.name)
+                                viableUpdateParents.filter((parent)=>!updatedNodes.includes(parent.uniqueName)
+                                    && parent.uniqueName!=anchor.uniqueName)
                                 .forEach(parent=>{
                                     parent.metadata.depth=Math.min(...parent.children.map(child=>child.metadata.depth))-1;
                                     parent.metadata.depth=Math.max(parent.metadata.depth,0);
                                 })
-                                viableUpdateChildren.filter((child)=>!updatedNodes.includes(child.name)
-                                    && child.name!=anchor.name)
+                                viableUpdateChildren.filter((child)=>!updatedNodes.includes(child.uniqueName)
+                                    && child.uniqueName!=anchor.uniqueName)
                                 .forEach(child=>{
                                     child.metadata.depth=Math.max(...child.parents.map(child=>child.metadata.depth))+1;
                                 })
@@ -688,29 +689,29 @@ const DNSResolutionGrapher = {};
                             currentBranch.nodes.push(element);
                         }
                     }else{
-                        const priorParentsNames = priorNode.parents.map(parent=>parent.name);
-                        const priorChildrenNames = priorNode.children.map(child=>child.name);
-                        const priorBiDirectionalNames = priorNode.biDirectionalNodes.map(node=>node.name);
+                        const priorParentsNames = priorNode.parents.map(parent=>parent.uniqueName);
+                        const priorChildrenNames = priorNode.children.map(child=>child.uniqueName);
+                        const priorBiDirectionalNames = priorNode.biDirectionalNodes.map(node=>node.uniqueName);
                         // Remove duplicate reference from parents, children, and bidirectional
                         // Readd reference to original node
                         element.parents.forEach((parent)=>{
-                            parent.children=parent.children.filter((node)=>node.name!=element.name);
+                            parent.children=parent.children.filter((node)=>node.uniqueName!=element.uniqueName);
                             parent.children.push(priorNode);
-                            if(!priorParentsNames.includes(parent.name)){
+                            if(!priorParentsNames.includes(parent.uniqueName)){
                                 priorNode.parents.push(parent);
                             }
                         });
                         element.children.forEach((child)=>{
-                            child.parents=child.parents.filter((node)=>node.name!=element.name);
+                            child.parents=child.parents.filter((node)=>node.uniqueName!=element.uniqueName);
                             child.parents.push(priorNode);
-                            if(!priorChildrenNames.includes(child.name)){
+                            if(!priorChildrenNames.includes(child.uniqueName)){
                                 priorNode.children.push(child);
                             }
                         });
                         element.biDirectionalNodes.forEach((node)=>{
-                            node.biDirectionalNodes=node.biDirectionalNodes.filter((node)=>node.name!=element.name);
+                            node.biDirectionalNodes=node.biDirectionalNodes.filter((node)=>node.uniqueName!=element.uniqueName);
                             node.biDirectionalNodes.push(priorNode);
-                            if(!priorChildrenNames.includes(node.name)){
+                            if(!priorChildrenNames.includes(node.uniqueName)){
                                 priorNode.biDirectionalNodes.push(node);
                             }
                         });
@@ -719,7 +720,7 @@ const DNSResolutionGrapher = {};
                             for(const newNode of element.metadata.substitutes){
                                 let nodeFound = false;
                                 for(const oldNode of priorNode.metadata.substitutes){
-                                    if(oldNode.name ==newNode.name){
+                                    if(oldNode.uniqueName ==newNode.uniqueName){
                                         nodeFound=true;
                                         break;
                                     }
@@ -776,7 +777,7 @@ const DNSResolutionGrapher = {};
                                 targetNode.metadata.hiddenTargets = targetNode.metadata.hiddenTargets || [];
                                 let targetFound = false;
                                 for(const oldNode of sourceNode.metadata.hiddenTargets){
-                                    if(oldNode.name == targetNode.name){
+                                    if(oldNode.uniqueName == targetNode.uniqueName){
                                         targetFound=true;
                                         break;
                                     }
@@ -790,8 +791,9 @@ const DNSResolutionGrapher = {};
                                     }
                                     if(!this.metadata.hideNodes.includes(sourceType)){
                                         if(targetNode.children){
-                                            let sourceTLD = splitDomain(sourceNode.name).tld;
-                                            let targetTLD = splitDomain(targetNode.name).tld;
+                                            // Rely on domain if available, since accumulation node names can't be split
+                                            let sourceTLD = splitDomain(sourceNode.metadata.domain || sourceNode.name).tld;
+                                            let targetTLD = splitDomain(targetNode.metadata.domain || targetNode.name).tld;
                                             // Only add edge if sourceNode and targetNode have same tld
                                             targetNode.children.forEach((child)=>{
                                                 if(child.type!="ip" || (sourceTLD!=null && targetTLD!=null 
@@ -806,7 +808,7 @@ const DNSResolutionGrapher = {};
                                     }else if(this.metadata.hideNodes.includes(sourceNode.type)){
                                         sourceNode.metadata.hiddenSources.forEach((source)=>{
                                             if(this.metadata.hideNodes.includes(targetNode.type)){    
-                                                if(!source.metadata.hiddenTargets.map(node=>node.name).includes(targetNode.name)){
+                                                if(!source.metadata.hiddenTargets.map(node=>node.uniqueName).includes(targetNode.uniqueName)){
                                                     source.metadata.hiddenTargets.push(targetNode);
                                                 }
                                             }else{
