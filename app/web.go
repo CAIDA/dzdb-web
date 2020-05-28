@@ -1,6 +1,7 @@
 package app
 
 import (
+	"fmt"
 	"html/template"
 	"net/http"
 	"strings"
@@ -9,6 +10,7 @@ import (
 	"dnscoffee/datastore"
 	"dnscoffee/model"
 	"dnscoffee/server"
+	"dnscoffee/version"
 
 	"github.com/julienschmidt/httprouter"
 	"golang.org/x/net/idna"
@@ -45,6 +47,7 @@ func Start(ds *datastore.DataStore, server *server.Server) {
 
 	//TODO add feeds page
 	//server.Get("/feeds", app.TodoHandler)
+	server.Get("/version", app.VersionHandler)
 	server.Get("/about", app.AboutHandler)
 
 	server.Get("/", app.IndexHandler)
@@ -329,6 +332,10 @@ func (app *appContext) prefixHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func (app *appContext) VersionHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "%s\n", version.String())
 }
 
 func (app *appContext) AboutHandler(w http.ResponseWriter, r *http.Request) {
