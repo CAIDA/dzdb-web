@@ -5,6 +5,7 @@ import (
 	"dnscoffee/app"
 	"dnscoffee/datastore"
 	"dnscoffee/server"
+	"dnscoffee/version"
 	"flag"
 	"log"
 	"time"
@@ -17,6 +18,7 @@ var (
 // main
 func main() {
 	flag.Parse()
+	log.Printf("version: %s", version.String())
 	// get datstore
 	// if no DB wait for valid connection
 	var ds *datastore.DataStore

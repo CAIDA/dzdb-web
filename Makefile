@@ -1,5 +1,10 @@
+GIT_DATE := $(shell git log -1 --date=short --pretty='%ai')
+GIT_HASH := $(shell git rev-parse HEAD)
+GIT_BRANCH := $(shell git symbolic-ref --short HEAD)
+
 # creates static binaries
-CC := CGO_ENABLED=0 go build -ldflags "-w -s" -trimpath -a -installsuffix cgo
+LD_FLAGS := -ldflags "-w -s -X 'dnscoffee/version.GitDate=$(GIT_DATE)' -X 'dnscoffee/version.GitHash=$(GIT_HASH)' -X 'dnscoffee/version.GitBranch=$(GIT_BRANCH)'"
+CC := CGO_ENABLED=0 go build -trimpath -a -installsuffix cgo $(LD_FLAGS)
 
 MODULE_SOURCES := $(shell find */ -type f -name '*.go' )
 SOURCES := $(shell find . -maxdepth 1 -type f -name '*.go')
