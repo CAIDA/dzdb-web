@@ -1540,16 +1540,12 @@ const DNSResolutionGrapher = {};
         // Set branch colors
         if(nodeList.metadata.matchBranchColors){
             if(Color!=null){
-                for(const branch of Object.values(nodeList.branches)){
-                    if(!branch.color || branch.color.length==0){
-                        let rgb;
-                        do{
-                            rgb =Color.random();
-                        }while(Color.contrastTextColor(rgb)!="#000000");
-                        const hex = Color.rgbToHex(rgb);
-                        branch.color = hex;
-                    }
-                }
+                Object.keys(nodeList.branches).forEach((branchName)=>{
+                    const branch = nodeList.branches[branchName];
+                    const branchColor = Color.randomFromString(branchName);
+                    branch.color = branchColor.hexString;
+                    branch.textColor = Color.contrastTextColor(branchColor.hexString,"hex");
+                })
             }else{
                 throw Error("Dependecy Color not loaded");
             }
@@ -1617,18 +1613,21 @@ const DNSResolutionGrapher = {};
                     };
                     // Node styles
                     // Use type specific style or default
-                    if(!nodeList.metadata.matchBranchColors || !(node.metadata.domain!=null
-                        && nodeList.branches[node.metadata.domain.toUpperCase()] != null)){
+                    if(!nodeList.metadata.matchBranchColors || 
+                        !(node.metadata.domain!=null && nodeList.branches[node.metadata.domain.toUpperCase()] != null)
+                    ){
                         node.metadata.fillColor =  styleConfig.nodeFillColor[node.uniqueType] 
-                        || styleConfig.nodeFillColor['default'];
+                            || styleConfig.nodeFillColor['default'];
+                        node.metadata.textColor = styleConfig.nodeTextColor;
                     }else{
                         node.metadata.fillColor =  nodeList.branches[node.metadata.domain.toUpperCase()].color || 
                         styleConfig.nodeFillColor[node.uniqueType] || styleConfig.nodeFillColor['default'];
+                        node.metadata.textColor = nodeList.branches[node.metadata.domain.toUpperCase()].textColor 
+                            || styleConfig.nodeTextColor;
                     }
                     node.metadata.borderColor = styleConfig.nodeBorderColor;
                     node.metadata.borderWidth = styleConfig.nodeBorderWidth;
                     node.metadata.fontSize = styleConfig.nodeFontSize;
-                    node.metadata.textColor = styleConfig.nodeTextColor;
                     node.metadata.borderRadius = styleConfig.nodeBorderRadius[node.uniqueType] 
                     || styleConfig.nodeBorderRadius['default'];
 
@@ -1965,7 +1964,8 @@ const DNSResolutionGrapher = {};
             .attr("x", (d)=>parseInt(svgWidth/2)+parseInt(d.metadata.x)+ parseInt(d.metadata.width/2))
             .attr("y", (d)=>parseInt(d.metadata.y)+(d.metadata.height)/2)
             .attr("width", (d)=>d.metadata.width)
-            .attr("height", (d)=>d.metadata.height).text((d)=>d.name);
+            .attr("height", (d)=>d.metadata.height).text((d)=>d.name)
+            .attr("fill",(d)=>d.metadata.textColor);
             // Add danger symbol for hazardous nodes
             const hazardWrapper = nodes.filter((d)=>d.metadata.hazard).append("g");
             // Add circle for hazard symbol
