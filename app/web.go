@@ -205,12 +205,6 @@ func (app *appContext) rootHandler(w http.ResponseWriter, r *http.Request) {
 		// TODO check for datastore.ErrNoResource and sql.NoRows
 		// TODO in fact, make ErrNoResource include? sql.NowRows as well
 		data.ImportData = importData
-
-		domains, err := app.ds.GetDomainsInZoneID(r.Context(), data.ID)
-		if err != nil {
-			panic(err)
-		}
-		data.Domains = &domains
 	}
 
 	p := Page{"ROOT Zone", "Zones", data}
@@ -243,6 +237,8 @@ func (app *appContext) zoneHandler(w http.ResponseWriter, r *http.Request) {
 			panic(err)
 		}
 		data.Domains = &domains
+	} else {
+		// TODO add first_date field for zones I don't import
 	}
 
 	p := Page{name, "Zones", data}
