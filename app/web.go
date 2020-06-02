@@ -182,7 +182,7 @@ func (app *appContext) tldIndexHandler(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	p := Page{"TLDs", "TLDs", data}
+	p := Page{"TLDs", "Zones", data}
 	err = app.templates.ExecuteTemplate(w, "tlds.tmpl", p)
 	if err != nil {
 		panic(err)
@@ -213,7 +213,7 @@ func (app *appContext) rootHandler(w http.ResponseWriter, r *http.Request) {
 		data.Domains = &domains
 	}
 
-	p := Page{"ROOT Zone", "ROOT", data}
+	p := Page{"ROOT Zone", "Zones", data}
 	err = app.templates.ExecuteTemplate(w, "root.tmpl", p)
 	if err != nil {
 		panic(err)
