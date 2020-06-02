@@ -14,13 +14,13 @@ Database connection information is set via `$DATABASE_URL` environment variable
 
 The listen address and port can be set with a flag.
 
-To run all thats needed is the compiled `web` binary and the `static/` and `templates/` directories. The `static/` and `templates/` directories should be in the cwd when calling `web`.
+To run all thats needed is the compiled `dnscoffee` binary and the `static/` and `templates/` directories. The `static/` and `templates/` directories should be in the cwd when calling `dnscoffee`.
 
 ### Flags
 
 ```sh
-$ ./web -h
-Usage of ./web:
+$ ./dnscoffee -h
+Usage of ./dnscoffee:
   -listen string
         ip:port to listen on (default "127.0.0.1:8080")
 ```
@@ -29,7 +29,7 @@ Usage of ./web:
 
 ```sh
 $ export DATABASE_URL="postgresql://user:pass@host:port/db"
-$ ./web
+$ ./dnscoffee
 2020/04/29 21:45:22 Server starting on 127.0.0.1:8080
 ```
 
