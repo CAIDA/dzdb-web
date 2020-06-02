@@ -65,6 +65,7 @@ func Start(ds *datastore.DataStore, server *server.Server) {
 	server.Get("/domains/:domain", app.domainHandler)
 	server.Get("/ip/:ip", app.ipHandler)
 	server.Get("/nameservers/:nameserver", app.nameserverHandler)
+	server.Get("/root/", app.rootHandler)
 	server.Get("/zones/:zone", app.zoneHandler)
 	server.Get("/zones", app.zoneIndexHandler)
 	server.Get("/tlds", app.tldIndexHandler)
@@ -183,6 +184,37 @@ func (app *appContext) tldIndexHandler(w http.ResponseWriter, r *http.Request) {
 
 	p := Page{"TLDs", "TLDs", data}
 	err = app.templates.ExecuteTemplate(w, "tlds.tmpl", p)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (app *appContext) rootHandler(w http.ResponseWriter, r *http.Request) {
+	name := ""
+	data, err := app.ds.GetZone(r.Context(), name)
+	if err != nil {
+		if err == datastore.ErrNoResource {
+			// TODO make http err (not json)
+			server.WriteJSONError(w, server.ErrResourceNotFound)
+			return
+		}
+		panic(err)
+	}
+	importData, err := app.ds.GetZoneImport(r.Context(), name)
+	if err == nil {
+		// TODO check for datastore.ErrNoResource and sql.NoRows
+		// TODO in fact, make ErrNoResource include? sql.NowRows as well
+		data.ImportData = importData
+
+		domains, err := app.ds.GetDomainsInZoneID(r.Context(), data.ID)
+		if err != nil {
+			panic(err)
+		}
+		data.Domains = &domains
+	}
+
+	p := Page{name, "ROOT", data}
+	err = app.templates.ExecuteTemplate(w, "root.tmpl", p)
 	if err != nil {
 		panic(err)
 	}
@@ -410,10 +442,11 @@ func (app *appContext) trustTreeHandler(w http.ResponseWriter, r *http.Request) 
 // helper
 func cleanDomain(domain string) string {
 	domain = strings.TrimSpace(domain)
-	domain, err := idna.ToASCII(strings.ToUpper(domain))
+	domain, err := idna.ToASCII(domain)
 	if err != nil {
 		panic(err)
 	}
+	domain = strings.ToUpper(domain)
 	return domain
 }
 
