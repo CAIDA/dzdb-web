@@ -213,7 +213,7 @@ func (app *appContext) rootHandler(w http.ResponseWriter, r *http.Request) {
 		data.Domains = &domains
 	}
 
-	p := Page{name, "ROOT", data}
+	p := Page{"ROOT Zone", "ROOT", data}
 	err = app.templates.ExecuteTemplate(w, "root.tmpl", p)
 	if err != nil {
 		panic(err)
