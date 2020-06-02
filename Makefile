@@ -11,11 +11,11 @@ CC := CGO_ENABLED=0 go build -trimpath -a -installsuffix cgo $(LD_FLAGS)
 
 MODULE_SOURCES := $(shell find */ -type f -name '*.go' )
 SOURCES := $(shell find . -maxdepth 1 -type f -name '*.go')
-BIN := web
+BIN := dnscoffee
 
 .PHONY: all fmt docker clean check
 
-all: web
+all: $(BIN)
 
 docker: Dockerfile
 	docker build -t="lanrat/dnscoffee" .

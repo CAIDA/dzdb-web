@@ -9,7 +9,7 @@ RUN make
 # final stage
 FROM alpine
 
-COPY --from=build-env /go/app/web /app/
+COPY --from=build-env /go/app/dnscoffee /app/
 COPY --from=build-env /go/app/templates /app/templates
 COPY --from=build-env /go/app/static /app/static
 
@@ -17,4 +17,4 @@ WORKDIR /app/
 
 USER nobody
 
-ENTRYPOINT /app/web -listen $HTTP_LISTEN_ADDR
+ENTRYPOINT /app/dnscoffee -listen $HTTP_LISTEN_ADDR
