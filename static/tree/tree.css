@@ -1,0 +1,119 @@
+
+#domainInput,
+#domainInput + *{
+    margin-bottom: 5%;
+}
+.svgToggleButton{
+    width: 100%;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    box-sizing: border-box;
+    height: 35px;
+    text-align: center;
+    cursor: pointer;
+    background-color: #AAA;
+    margin-top: 2%;
+    border-radius: 5px;
+    filter: brightness(1);
+    transition: filter 0.15s ease-in-out;
+}
+.svgToggleButton:hover{
+    filter: brightness(1.2);
+}
+.svgToggleButton.active{
+    background-color:#2386c4;
+}
+.svgToggleButton.show{
+    display: flex;
+}
+.svgToggleButton img{
+    width: 25px;
+}
+/*Default simulation off*/
+#meshOutput{
+    display: none;
+}
+#treeOutput,#treeOutput svg,
+#meshOutput,#meshOutput svg
+{
+    max-height: 500px;
+    margin: 0 auto;
+}
+/*Card styles*/
+.card-header{
+    background-color:#2C3E50;
+    color: #fff;
+    padding: 0 20px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    border-bottom: 0;
+}
+.card-header .header-button{
+    all:unset;
+    color: #FFF;
+    background-color: transparent;
+    transition: background-color 0.15s ease-in-out;
+    cursor: pointer;
+    font-size: 20px;
+    margin-left: auto;
+    padding: 10px;
+    position: relative;
+}
+.header-button .button-menu{
+    white-space: nowrap;
+    position: absolute;
+    right: 0;
+    top: 100%;
+    color: #333;
+    font-size: 16px;
+    background-color: #FFF;
+    box-shadow: 0 3px 3px rgba(0,0,0,0.3);
+    z-index: 10;
+    display: none;
+    list-style-type: none;
+    margin:0;
+    padding: 0;
+}
+.button-menu .menu-item{
+    white-space: nowrap;
+    padding: 0.75em;
+    margin:0;
+    transition: background-color 0.15s ease-in-out;
+    background-color: transparent;
+}
+.button-menu .menu-item:hover{
+    background-color: rgba(0,0,0,0.1);
+}
+.button-menu .menu-item a{
+    all:unset;
+}
+.button-menu .configWrapper{
+    font-size: 16px;
+    padding: 1em;
+}
+.configWrapper label{
+    margin: 2% 0;
+}
+.header-button:hover .button-menu,
+.header-button .button-menu:hover{
+    display: block;
+}
+.card-header .header-button+.header-button{
+    margin-left: 0;
+}
+.card-header .header-button:hover{
+    background-color: rgba(255,255,255,0.15);
+}
+.overviewHeader{
+    text-align: center;
+    display: block;
+}
+.treeWrapper:not(.active){
+    display: none;
+}
+/** SPINNER **/
+.spinner:not(.active){
+    display: none;
+}

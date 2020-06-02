@@ -73,7 +73,12 @@
             automargin: true,
           };
 
-          Plotly.newPlot('pieDiv', data, layout, { displaylogo: false }).then(function(){$("#spinner1").hide()});
+          var config = {
+            displaylogo: false,
+            responsive: true
+          };
+
+          Plotly.newPlot('pieDiv', data, layout, config).then(function () { $("#spinner1").hide() });
         });
     </script>
   </div>

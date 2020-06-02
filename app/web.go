@@ -1,6 +1,7 @@
 package app
 
 import (
+	"fmt"
 	"html/template"
 	"net/http"
 	"strings"
@@ -9,6 +10,7 @@ import (
 	"dnscoffee/datastore"
 	"dnscoffee/model"
 	"dnscoffee/server"
+	"dnscoffee/version"
 
 	"github.com/julienschmidt/httprouter"
 	"golang.org/x/net/idna"
@@ -45,6 +47,7 @@ func Start(ds *datastore.DataStore, server *server.Server) {
 
 	//TODO add feeds page
 	//server.Get("/feeds", app.TodoHandler)
+	server.Get("/version", app.VersionHandler)
 	server.Get("/about", app.AboutHandler)
 
 	server.Get("/", app.IndexHandler)
@@ -62,6 +65,7 @@ func Start(ds *datastore.DataStore, server *server.Server) {
 	server.Get("/domains/:domain", app.domainHandler)
 	server.Get("/ip/:ip", app.ipHandler)
 	server.Get("/nameservers/:nameserver", app.nameserverHandler)
+	server.Get("/root/", app.rootHandler)
 	server.Get("/zones/:zone", app.zoneHandler)
 	server.Get("/zones", app.zoneIndexHandler)
 	server.Get("/tlds", app.tldIndexHandler)
@@ -70,6 +74,7 @@ func Start(ds *datastore.DataStore, server *server.Server) {
 
 	// research
 	server.Get("/research/ipnszonecount/:ip", app.ipNsZoneCountHandler)
+	server.Get("/research/trust-tree", app.trustTreeHandler)
 }
 
 func (app *appContext) searchIndexHandler(w http.ResponseWriter, r *http.Request) {
@@ -179,6 +184,37 @@ func (app *appContext) tldIndexHandler(w http.ResponseWriter, r *http.Request) {
 
 	p := Page{"TLDs", "TLDs", data}
 	err = app.templates.ExecuteTemplate(w, "tlds.tmpl", p)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (app *appContext) rootHandler(w http.ResponseWriter, r *http.Request) {
+	name := ""
+	data, err := app.ds.GetZone(r.Context(), name)
+	if err != nil {
+		if err == datastore.ErrNoResource {
+			// TODO make http err (not json)
+			server.WriteJSONError(w, server.ErrResourceNotFound)
+			return
+		}
+		panic(err)
+	}
+	importData, err := app.ds.GetZoneImport(r.Context(), name)
+	if err == nil {
+		// TODO check for datastore.ErrNoResource and sql.NoRows
+		// TODO in fact, make ErrNoResource include? sql.NowRows as well
+		data.ImportData = importData
+
+		domains, err := app.ds.GetDomainsInZoneID(r.Context(), data.ID)
+		if err != nil {
+			panic(err)
+		}
+		data.Domains = &domains
+	}
+
+	p := Page{"ROOT Zone", "ROOT", data}
+	err = app.templates.ExecuteTemplate(w, "root.tmpl", p)
 	if err != nil {
 		panic(err)
 	}
@@ -330,6 +366,10 @@ func (app *appContext) prefixHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (app *appContext) VersionHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "%s\n", version.String())
+}
+
 func (app *appContext) AboutHandler(w http.ResponseWriter, r *http.Request) {
 	p := Page{"About", "About", nil}
 	err := app.templates.ExecuteTemplate(w, "about.tmpl", p)
@@ -391,13 +431,22 @@ func (app *appContext) ipNsZoneCountHandler(w http.ResponseWriter, r *http.Reque
 	}
 }
 
-// helper
-func cleanDomain(domain string) string {
-	domain = strings.TrimSpace(domain)
-	domain, err := idna.ToASCII(strings.ToUpper(domain))
+func (app *appContext) trustTreeHandler(w http.ResponseWriter, r *http.Request) {
+	p := Page{"Trust Tree", "Trust Tree", nil}
+	err := app.templates.ExecuteTemplate(w, "trusttree.tmpl", p)
 	if err != nil {
 		panic(err)
 	}
+}
+
+// helper
+func cleanDomain(domain string) string {
+	domain = strings.TrimSpace(domain)
+	domain, err := idna.ToASCII(domain)
+	if err != nil {
+		panic(err)
+	}
+	domain = strings.ToUpper(domain)
 	return domain
 }
 

@@ -39,7 +39,12 @@
             automargin: true,
           };
 
-          Plotly.newPlot('pieDiv', data, layout, { displaylogo: false }).then(function(){$("#spinner1").hide()});
+          var config = {
+            displaylogo: false,
+            responsive: true
+          };
+
+          Plotly.newPlot('pieDiv', data, layout, config).then(function () { $("#spinner1").hide() });
         });
     </script>
   </div>
@@ -66,7 +71,7 @@
         <tbody>
           {{ range $key, $value := $.Data.Zones }}
           <tr>
-            <td><a href="/zones/{{$value.Zone}}">{{$value.Zone}}</a></td>
+            <td>{{if $value.Zone}}<a href="/zones/{{$value.Zone}}">{{$value.Zone}}</a>{{else}}<a href="/root/">ROOT zone</a>{{end}}</td>
             <td>{{$value.Domains}}</td>
             <td>{{$value.Records}}</td>
             <td>{{$value.Count}}</td>

@@ -20,7 +20,9 @@
     <div class="card text-white bg-secondary mb-3">
       <div class="card-header">DNS Coffee?</div>
       <div class="card-body">
-        <p class="card-text">DNS Coffee collects and archives stats from DNS <a href="https://en.wikipedia.org/wiki/Zone_file">Zone files</a> in order to provide insights into the growth and changes in DNS over time.</p>
+        <p class="card-text">DNS Coffee collects and archives stats from DNS <a
+            href="https://en.wikipedia.org/wiki/Zone_file">Zone files</a> in order to provide insights into the growth
+          and changes in DNS over time.</p>
       </div>
     </div>
   </div>
@@ -29,7 +31,8 @@
 <div class="row">
   <div class="col-md-6">
     <div class="card">
-      <a href="#rootchart" id="rootchart" class="list-group-item d-flex justify-content-between align-items-center active">
+      <a href="#rootchart" id="rootchart"
+        class="list-group-item d-flex justify-content-between align-items-center active">
         TLD ROOT Zone Growth
       </a>
       <div id="spinner1" class="spinner">
@@ -40,7 +43,7 @@
       <div id="historyDiv"></div>
     </div>
     <script>
-      fetch("/api/counts/zone/ROOT")
+      fetch("/api/counts/root")
         .then(response => response.json())
         .then(api_response => {
           dates = [];
@@ -64,7 +67,12 @@
             automargin: true,
           };
 
-          Plotly.newPlot('historyDiv', data, layout, { displaylogo: false }).then(function(){$("#spinner1").hide()});
+          var config = {
+            displaylogo: false,
+            responsive: true
+          };
+
+          Plotly.newPlot('historyDiv', data, layout, config).then(function () { $("#spinner1").hide() });
         });
     </script>
   </div>
@@ -81,56 +89,61 @@
       <div id="pieDiv"></div>
     </div>
     <script>
-fetch("/api/zones")
-  .then(response => response.json())
-  .then(api_response => {
-    function compareRev(a, b) {
-      if (a.domains < b.domains) {
-        return 1;
-      }
-      if (a.domains > b.domains) {
-        return -1;
-      }
-      return 0;
-    }
-    api_response.data.zones.sort(compareRev);
+      fetch("/api/zones")
+        .then(response => response.json())
+        .then(api_response => {
+          function compareRev(a, b) {
+            if (a.domains < b.domains) {
+              return 1;
+            }
+            if (a.domains > b.domains) {
+              return -1;
+            }
+            return 0;
+          }
+          api_response.data.zones.sort(compareRev);
 
-    var num_other_limit = 100;
-    var otherData = [];
-    for (var i=0; i<num_other_limit; i++) {
-      otherData.push(api_response.data.zones[i]);
-    }
-    otherCount = 0;
-    for (var i=num_other_limit; i<api_response.data.zones.length; i++) {
-      otherCount = otherCount + api_response.data.zones[i].domains;
-    }
-    
-    var values = [];
-    var labels = [];
-    otherData.forEach(function (e) {
-      values.push(e.domains);
-      labels.push(e.zone);
-    });
-    values.push(otherCount);
-    labels.push("*other*");
+          var num_other_limit = 100;
+          var otherData = [];
+          for (var i = 0; i < num_other_limit; i++) {
+            otherData.push(api_response.data.zones[i]);
+          }
+          otherCount = 0;
+          for (var i = num_other_limit; i < api_response.data.zones.length; i++) {
+            otherCount = otherCount + api_response.data.zones[i].domains;
+          }
 
-    var data = [{
-      values: values,
-      labels: labels,
-      textinfo: "label+percent",
-      hoverinfo: 'label+value+percent',
-      textposition: "inside",
-      type: 'pie'
-    }];
+          var values = [];
+          var labels = [];
+          otherData.forEach(function (e) {
+            values.push(e.domains);
+            labels.push(e.zone);
+          });
+          values.push(otherCount);
+          labels.push("*other*");
 
-    var layout = {
-      autosize: true,
-      showlegend: false,
-      automargin: true,
-    };
+          var data = [{
+            values: values,
+            labels: labels,
+            textinfo: "label+percent",
+            hoverinfo: 'label+value+percent',
+            textposition: "inside",
+            type: 'pie'
+          }];
 
-    Plotly.newPlot('pieDiv', data, layout, { displaylogo: false }).then(function(){$("#spinner2").hide()});
-  });
+          var layout = {
+            autosize: true,
+            showlegend: false,
+            automargin: true,
+          };
+
+          var config = {
+            displaylogo: false,
+            responsive: true
+          };
+
+          Plotly.newPlot('pieDiv', data, layout, config).then(function () { $("#spinner2").hide() });
+        });
     </script>
   </div>
 </div>
@@ -138,7 +151,8 @@ fetch("/api/zones")
 <div class="row">
   <div class="col-md-12">
     <div class="card">
-      <a href="#domainschart" id="domainschart" class="list-group-item d-flex justify-content-between align-items-center active">
+      <a href="#domainschart" id="domainschart"
+        class="list-group-item d-flex justify-content-between align-items-center active">
         Internet Domains Growth
       </a>
       <div id="spinner3" class="spinner">
@@ -173,7 +187,12 @@ fetch("/api/zones")
             automargin: true,
           };
 
-          Plotly.newPlot('domainHistoryDiv', data, layout, { displaylogo: false }).then(function(){$("#spinner3").hide()});
+          var config = {
+            displaylogo: false,
+            responsive: true
+          };
+
+          Plotly.newPlot('domainHistoryDiv', data, layout, config).then(function () { $("#spinner3").hide() });
         });
     </script>
   </div>

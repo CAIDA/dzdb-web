@@ -14,7 +14,7 @@ func (ds *DataStore) GetActiveIPs(ctx context.Context, date time.Time) (*model.A
 	aip.Date = date
 
 	query := "select distinct a.ip from a_nameservers, a where a_nameservers.a_id = a.id and first_seen <= $1 and (last_seen >= $1 or last_seen is NULL)"
-	rows, err := ds.db.QueryContext(ctx, query, date)
+	rows, err := ds.db.Query(ctx, query, date)
 	if err != nil {
 		return nil, err
 	}
@@ -31,7 +31,7 @@ func (ds *DataStore) GetActiveIPs(ctx context.Context, date time.Time) (*model.A
 	}
 
 	query = "select distinct aaaa.ip from aaaa_nameservers, aaaa where aaaa_nameservers.aaaa_id = aaaa.id and first_seen <= $1 and (last_seen >= $1 or last_seen is NULL)"
-	rows, err = ds.db.QueryContext(ctx, query, date)
+	rows, err = ds.db.Query(ctx, query, date)
 	if err != nil {
 		return nil, err
 	}
@@ -52,24 +52,24 @@ func (ds *DataStore) GetActiveIPs(ctx context.Context, date time.Time) (*model.A
 
 // GetIPNsZoneCount returns the count of nameservers pointing to an IP grouped
 // by the zone
-func (ds *DataStore) GetIPNsZoneCount(ctx context.Context, ip string) (*model.ResearchIpNsZoneCount, error) {
-	var ipzc model.ResearchIpNsZoneCount
+func (ds *DataStore) GetIPNsZoneCount(ctx context.Context, ip string) (*model.ResearchIPNsZoneCount, error) {
+	var ipZoneCount model.ResearchIPNsZoneCount
 	var err error
-	ipzc.IP = ip
+	ipZoneCount.IP = ip
 
 	query := "select zone, count(*) from zones, a_nameservers, a where a.id = a_nameservers.a_id and zones.id = a_nameservers.zone_id and a.ip = $1 group by zone order by count desc"
 	if strings.Contains(ip, ":") {
 		query = "select zone, count(*) from zones, aaaa_nameservers, aaaa where aaaa.id = aaaa_nameservers.aaaa_id and zones.id = aaaa_nameservers.zone_id and aaaa.ip = $1 group by zone order by count desc"
 	}
 
-	rows, err := ds.db.QueryContext(ctx, query, ip)
+	rows, err := ds.db.Query(ctx, query, ip)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 	total := float64(0)
 
-	ipzc.ZoneNSCounts = make([]model.ResearchZoneCount, 0)
+	ipZoneCount.ZoneNSCounts = make([]model.ResearchZoneCount, 0)
 	for rows.Next() {
 		var zc model.ResearchZoneCount
 		err = rows.Scan(&zc.Zone, &zc.Count)
@@ -77,12 +77,12 @@ func (ds *DataStore) GetIPNsZoneCount(ctx context.Context, ip string) (*model.Re
 			return nil, err
 		}
 		total = total + float64(zc.Count)
-		ipzc.ZoneNSCounts = append(ipzc.ZoneNSCounts, zc)
+		ipZoneCount.ZoneNSCounts = append(ipZoneCount.ZoneNSCounts, zc)
 	}
 	// set percents
-	for i := range ipzc.ZoneNSCounts {
-		ipzc.ZoneNSCounts[i].Percent = 100 * float64(ipzc.ZoneNSCounts[i].Count) / total
+	for i := range ipZoneCount.ZoneNSCounts {
+		ipZoneCount.ZoneNSCounts[i].Percent = 100 * float64(ipZoneCount.ZoneNSCounts[i].Count) / total
 	}
 
-	return &ipzc, nil
+	return &ipZoneCount, nil
 }
