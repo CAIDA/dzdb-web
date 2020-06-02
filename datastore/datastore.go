@@ -447,6 +447,8 @@ func (ds *DataStore) GetDomain(ctx context.Context, domain string) (*model.Domai
 	d.Zone = &z
 	var err error
 	d.ID, d.Zone.ID, err = ds.GetDomainID(ctx, domain)
+	// TODO err can be ErrNoRows and not ErrNoResource
+	// fix here and for other methods too
 	if err != nil {
 		return nil, err
 	}
@@ -1003,7 +1005,7 @@ func (ds *DataStore) GetAvailablePrefixes(ctx context.Context, name string) (*mo
 		  WHERE
 			 taken.zone_id IS NULL
 			 AND zones.id = zones_imports.zone_id
-			 AND zones.zone != 'ROOT'
+			 AND zones.zone != ''
 			 AND zones.zone != 'ARPA'
 	   )
 	   SELECT

@@ -40,10 +40,12 @@ func APIStart(app *appContext, coffeeServer *server.Server) {
 	// counts
 	addAPI("/counts/", "zone_counts", app.apiInternetHistoryCountsHandler)
 	addAPI("/counts/zone/:zone", "internet_counts", app.apiZoneHistoryCountsHandler)
+	addAPI("/counts/root/", "internet_counts", app.apiZoneHistoryCountsHandler)
 	addAPI("/counts/all/", "all_zone_counts", app.apiAllZoneHistoryCountsHandler)
 	//addAPI("/counts/top/", "top_zone_counts", app.apiTopZonesHandler)
 
 	// zones
+	addAPI("/root/", "zone_view", app.apiZoneHandler)
 	addAPI("/zones", "zones", app.apiLatestZonesHandler)
 	addAPI("/zones/:zone", "zone_view", app.apiZoneHandler)
 	addAPI("/zones/:zone/import", "zone_import", app.apiZoneImportHandler)
