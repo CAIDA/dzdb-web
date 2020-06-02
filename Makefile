@@ -1,4 +1,4 @@
-GIT_DATE := $(shell git log -1 --date=short --pretty='%aI')
+GIT_DATE := $(shell git log -1 --pretty='%aI')
 GIT_HASH := $(shell git rev-parse HEAD)
 GIT_BRANCH := $(shell git symbolic-ref --short HEAD)
 
