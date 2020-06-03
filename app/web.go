@@ -72,9 +72,8 @@ func Start(ds *datastore.DataStore, server *server.Server) {
 	server.Get("/tlds/graveyard", app.tldGraveyardIndexHandler)
 	server.Get("/stats", app.statsHandler)
 
-	server.Get("/trust-tree", app.trustTreeHandler)
-
 	// research
+	server.Get("/research/trust-tree", app.trustTreeHandler)
 	server.Get("/research/ipnszonecount/:ip", app.ipNsZoneCountHandler)
 }
 
