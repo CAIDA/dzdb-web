@@ -86,7 +86,7 @@
             // Get domain input
             currentDomain = domainInput.value;
             // set url hash
-            window.location.hash = "#" + currentDomain;
+            window.location.hash = "#" + encodeURIComponent(currentDomain);
             // Generate node list
             DNSResolutionGrapher.nodeListFromDomain(currentDomain, getOverrideMetadata(), updateOverview).then((nodeList) => {
                 // Create svg representation
@@ -163,7 +163,7 @@
             finishNewGraph();
         }
         if (document.location.hash != "") {
-            domainInput.value = window.location.hash.substring(1);
+            domainInput.value = decodeURIComponent(window.location.hash.substring(1));
             loadDomainGraph();
         }
     });

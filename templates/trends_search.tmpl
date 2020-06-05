@@ -57,7 +57,7 @@
     }
 
     // set url hash
-    window.location.hash = "#" + term;
+    window.location.hash = "#" + encodeURIComponent(term);
 
     $("#graph_row").show()
     $("#spinner1").show()
@@ -130,7 +130,7 @@
       });
   }
   if (document.location.hash != "") {
-    searchInput.value = window.location.hash.substring(1);
+    searchInput.value = decodeURIComponent(window.location.hash.substring(1));
     TrendsSearch();
   }
 </script>
