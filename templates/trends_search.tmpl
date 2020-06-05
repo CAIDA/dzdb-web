@@ -24,7 +24,7 @@
         <h4 class="card-title">Trends Search</h4>
         <p class="card-text">Search feeds of old, moved, and new domain names for substring matches in the last year.</p>
         <p class="card-text">Queries must be at least 4 characters long and contain only valid domain characters.</p>
-        <p class="card-text">Multiple terms can be plotted together by seperating terms with a comma.</p>
+        <p class="card-text">Multiple terms can be plotted together by separating terms with a space.</p>
       </div>
     </div>
   </div>
@@ -74,10 +74,9 @@
     // build list of promises
     //var actions = plots.map(fn);
     var actions = [];
-    term.split(",").forEach(function (q) {
+    term.split(" ").forEach(function (q) {
       q = q.trim();
       if (q.length < min_len) {
-        // TODO err/warn
         return;
       }
       plots.forEach(function (p) {
