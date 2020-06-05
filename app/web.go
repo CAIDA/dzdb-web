@@ -237,8 +237,6 @@ func (app *appContext) zoneHandler(w http.ResponseWriter, r *http.Request) {
 			panic(err)
 		}
 		data.Domains = &domains
-	} else {
-		// TODO add first_date field for zones I don't import
 	}
 
 	p := Page{name, "Zones", data}
@@ -261,7 +259,7 @@ func (app *appContext) nameserverHandler(w http.ResponseWriter, r *http.Request)
 		panic(err)
 	}
 
-	p := Page{name, "DNS", data}
+	p := Page{name, "Records", data}
 	err = app.templates.ExecuteTemplate(w, "nameserver.tmpl", p)
 	if err != nil {
 		panic(err)
@@ -282,7 +280,7 @@ func (app *appContext) domainHandler(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	p := Page{domain, "DNS", data}
+	p := Page{domain, "Records", data}
 	err = app.templates.ExecuteTemplate(w, "domain.tmpl", p)
 	if err != nil {
 		panic(err)
@@ -303,7 +301,7 @@ func (app *appContext) ipHandler(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	p := Page{name, "DNS", data}
+	p := Page{name, "Records", data}
 	err = app.templates.ExecuteTemplate(w, "ip.tmpl", p)
 	if err != nil {
 		panic(err)
@@ -375,7 +373,7 @@ func (app *appContext) AboutHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *appContext) IndexHandler(w http.ResponseWriter, r *http.Request) {
-	p := Page{"Home", "Home", nil}
+	p := Page{"Home", "", nil}
 	err := app.templates.ExecuteTemplate(w, "home.tmpl", p)
 	if err != nil {
 		panic(err)
@@ -383,7 +381,7 @@ func (app *appContext) IndexHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *appContext) domainIndexHandler(w http.ResponseWriter, r *http.Request) {
-	p := Page{"Domains", "DNS", nil}
+	p := Page{"Domains", "Records", nil}
 	err := app.templates.ExecuteTemplate(w, "domains.tmpl", p)
 	if err != nil {
 		panic(err)
@@ -391,7 +389,7 @@ func (app *appContext) domainIndexHandler(w http.ResponseWriter, r *http.Request
 }
 
 func (app *appContext) nameserverIndexHandler(w http.ResponseWriter, r *http.Request) {
-	p := Page{"Name Servers", "DNS", nil}
+	p := Page{"Name Servers", "Records", nil}
 	err := app.templates.ExecuteTemplate(w, "nameservers.tmpl", p)
 	if err != nil {
 		panic(err)
@@ -399,7 +397,7 @@ func (app *appContext) nameserverIndexHandler(w http.ResponseWriter, r *http.Req
 }
 
 func (app *appContext) ipIndexHandler(w http.ResponseWriter, r *http.Request) {
-	p := Page{"IPs", "DNS", nil}
+	p := Page{"IPs", "Records", nil}
 	err := app.templates.ExecuteTemplate(w, "ips.tmpl", p)
 	if err != nil {
 		panic(err)
