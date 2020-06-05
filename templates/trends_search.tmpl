@@ -3,8 +3,8 @@
 <div class="row">
   <div class="col-md-6">
     <div class="card mb-3">
-      <h3 class="card-header">Feed Search</h3>
-      <form onsubmit="feedSearch(); return false">
+      <h3 class="card-header">Trends Search</h3>
+      <form onsubmit="TrendsSearch(); return false">
         <div class="card-body">
           <div class="form-group">
             <input class="form-control form-control-lg" type="text" name="query" placeholder="example" id="search"
@@ -21,7 +21,7 @@
     <div class="card text-white bg-secondary mb-3">
       <div class="card-header">Info</div>
       <div class="card-body">
-        <h4 class="card-title">Feed Search</h4>
+        <h4 class="card-title">Trends Search</h4>
         <p class="card-text">Search feeds of old, moved, and new domain names for substring matches in the last year.
         </p>
         <p class="card-text">Queries must be at least 4 characters long and contain only valid domain characters.</p>
@@ -33,22 +33,22 @@
 <div id="graph_row" class="row" style="display:none">
   <div class="col-md-12">
     <div class="card">
-      <a href="#feedchart" id="feedchart"
+      <a href="#trendschart" id="trendschart"
         class="list-group-item d-flex justify-content-between align-items-center active">
-        Feed Graph
+        Trends Graph
       </a>
       <div id="spinner1" class="spinner">
         <div class="bounce1"></div>
         <div class="bounce2"></div>
         <div class="bounce3"></div>
       </div>
-      <div id="feedDiv"></div>
+      <div id="trendDiv"></div>
     </div>
   </div>
 </div>
 
 <script type="text/javascript">
-  function feedSearch() {
+  function TrendsSearch() {
     var term = document.getElementById("search").value;
     if (term.length < 4) {
       // TODO show error
@@ -57,33 +57,32 @@
 
     $("#graph_row").show()
     $("#spinner1").show()
-    $("#feedDiv").hide()
+    $("#trendDiv").hide()
 
     Promise.all([
       fetch("/api/feeds/new/search/" + term).then(response => response.json()),
       fetch("/api/feeds/moved/search/" + term).then(response => response.json()),
       fetch("/api/feeds/old/search/" + term).then(response => response.json()),
     ])
-      .then(([newFeed, movedFeed, oldFeed]) => {
-        //console.log(newFeed, movedFeed, oldFeed);
+      .then(([newTrends, movedTrends, oldTrends]) => {
 
         newDates = [];
         newDomains = [];
-        newFeed.data.counts.forEach(function (e) {
+        newTrends.data.counts.forEach(function (e) {
           newDates.push(e.date);
           newDomains.push(e.count);
         });
 
         oldDates = [];
         oldDomains = [];
-        oldFeed.data.counts.forEach(function (e) {
+        oldTrends.data.counts.forEach(function (e) {
           oldDates.push(e.date);
           oldDomains.push(e.count);
         });
 
         movedDates = [];
         movedDomains = [];
-        movedFeed.data.counts.forEach(function (e) {
+        movedTrends.data.counts.forEach(function (e) {
           movedDates.push(e.date);
           movedDomains.push(e.count);
         });
@@ -121,8 +120,8 @@
           responsive: true
         };
 
-        $("#feedDiv").show();
-        Plotly.newPlot('feedDiv', data, layout, config).then(function () { $("#spinner1").hide() });
+        $("#trendDiv").show();
+        Plotly.newPlot('trendDiv', data, layout, config).then(function () { $("#spinner1").hide() });
 
       });
   }
