@@ -92,53 +92,56 @@ func (app *appContext) searchHandler(w http.ResponseWriter, r *http.Request) {
 	s.Type = r.FormValue("type")
 	var err error
 
-	// first handle when there is only a single result and single result type
-	switch s.Type {
-	case "zone":
-		_, err = app.ds.GetZoneID(r.Context(), s.Query)
-		if err == nil {
-			http.Redirect(w, r, "/zones/"+s.Query, http.StatusFound)
-			return
-		}
-	case "domain":
-		_, _, err = app.ds.GetDomainID(r.Context(), s.Query)
-		if err == nil {
-			http.Redirect(w, r, "/domains/"+s.Query, http.StatusFound)
-			return
-		}
-	case "nameserver":
-		_, err = app.ds.GetNameServerID(r.Context(), s.Query)
-		if err == nil {
-			http.Redirect(w, r, "/nameservers/"+s.Query, http.StatusFound)
-			return
-		}
-	case "ip":
-		_, _, err = app.ds.GetIPID(r.Context(), s.Query)
-		if err == nil {
-			http.Redirect(w, r, "/ip/"+s.Query, http.StatusFound)
-			return
-		}
-	default:
-		s.Results = make([]model.SearchResult, 0)
-		// now handle multiple results types
-		// this is a very poor exact match search... add prefix too?
-		if _, err = app.ds.GetZoneID(r.Context(), s.Query); err == nil {
-			s.Results = append(s.Results, model.SearchResult{Name: s.Query, Link: "/zones/" + s.Query, Type: "zone"})
-		}
-		if _, _, err = app.ds.GetDomainID(r.Context(), s.Query); err == nil {
-			s.Results = append(s.Results, model.SearchResult{Name: s.Query, Link: "/domains/" + s.Query, Type: "domain"})
-		}
-		if _, err = app.ds.GetNameServerID(r.Context(), s.Query); err == nil {
-			s.Results = append(s.Results, model.SearchResult{Name: s.Query, Link: "/nameservers/" + s.Query, Type: "nameserver"})
-		}
-		if _, _, err = app.ds.GetIPID(r.Context(), s.Query); err == nil {
-			s.Results = append(s.Results, model.SearchResult{Name: s.Query, Link: "/ip/" + s.Query, Type: "IP"})
-		}
+	// since the root zone is the empty string, this prevents empty searches from redirecting to the zones page
+	if len(s.Query) > 0 {
+		// first handle when there is only a single result and single result type
+		switch s.Type {
+		case "zone":
+			_, err = app.ds.GetZoneID(r.Context(), s.Query)
+			if err == nil {
+				http.Redirect(w, r, "/zones/"+s.Query, http.StatusFound)
+				return
+			}
+		case "domain":
+			_, _, err = app.ds.GetDomainID(r.Context(), s.Query)
+			if err == nil {
+				http.Redirect(w, r, "/domains/"+s.Query, http.StatusFound)
+				return
+			}
+		case "nameserver":
+			_, err = app.ds.GetNameServerID(r.Context(), s.Query)
+			if err == nil {
+				http.Redirect(w, r, "/nameservers/"+s.Query, http.StatusFound)
+				return
+			}
+		case "ip":
+			_, _, err = app.ds.GetIPID(r.Context(), s.Query)
+			if err == nil {
+				http.Redirect(w, r, "/ip/"+s.Query, http.StatusFound)
+				return
+			}
+		default:
+			s.Results = make([]model.SearchResult, 0)
+			// now handle multiple results types
+			// this is a very poor exact match search... add prefix too?
+			if _, err = app.ds.GetZoneID(r.Context(), s.Query); err == nil {
+				s.Results = append(s.Results, model.SearchResult{Name: s.Query, Link: "/zones/" + s.Query, Type: "zone"})
+			}
+			if _, _, err = app.ds.GetDomainID(r.Context(), s.Query); err == nil {
+				s.Results = append(s.Results, model.SearchResult{Name: s.Query, Link: "/domains/" + s.Query, Type: "domain"})
+			}
+			if _, err = app.ds.GetNameServerID(r.Context(), s.Query); err == nil {
+				s.Results = append(s.Results, model.SearchResult{Name: s.Query, Link: "/nameservers/" + s.Query, Type: "nameserver"})
+			}
+			if _, _, err = app.ds.GetIPID(r.Context(), s.Query); err == nil {
+				s.Results = append(s.Results, model.SearchResult{Name: s.Query, Link: "/ip/" + s.Query, Type: "IP"})
+			}
 
-		// still want to redirect if only one type is found
-		if len(s.Results) == 1 {
-			http.Redirect(w, r, s.Results[0].Link, http.StatusFound)
-			return
+			// still want to redirect if only one type is found
+			if len(s.Results) == 1 {
+				http.Redirect(w, r, s.Results[0].Link, http.StatusFound)
+				return
+			}
 		}
 	}
 
