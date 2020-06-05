@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/julienschmidt/httprouter"
@@ -214,7 +215,7 @@ func (app *appContext) apiFeedsSearchOldHandler(w http.ResponseWriter, r *http.R
 
 func (app *appContext) apiFeedsSearchNewHandler(w http.ResponseWriter, r *http.Request) {
 	params := httprouter.ParamsFromContext(r.Context())
-	search := params.ByName("search")
+	search := strings.ToLower(params.ByName("search"))
 	data, err := app.ds.GetNewFeedCount(r.Context(), search)
 	if err != nil {
 		if err == datastore.ErrNoResource {

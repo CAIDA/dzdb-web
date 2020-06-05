@@ -22,9 +22,9 @@
       <div class="card-header">Info</div>
       <div class="card-body">
         <h4 class="card-title">Trends Search</h4>
-        <p class="card-text">Search feeds of old, moved, and new domain names for substring matches in the last year.
-        </p>
+        <p class="card-text">Search feeds of old, moved, and new domain names for substring matches in the last year.</p>
         <p class="card-text">Queries must be at least 4 characters long and contain only valid domain characters.</p>
+        <p class="card-text">Multiple terms can be plotted together by seperating terms with a comma.</p>
       </div>
     </div>
   </div>
@@ -49,9 +49,10 @@
 
 <script type="text/javascript">
   var searchInput = document.getElementById("search");
+  var min_len = 4;
   function TrendsSearch() {
-    var term = searchInput.value;
-    if (term.length < 4) {
+    var term = decodeURIComponent(searchInput.value);
+    if (term.length < min_len) {
       // TODO show error
       return;
     }
@@ -63,71 +64,62 @@
     $("#spinner1").show()
     $("#trendDiv").hide()
 
-    Promise.all([
-      fetch("/api/feeds/new/search/" + term).then(response => response.json()),
-      fetch("/api/feeds/moved/search/" + term).then(response => response.json()),
-      fetch("/api/feeds/old/search/" + term).then(response => response.json()),
-    ])
-      .then(([newTrends, movedTrends, oldTrends]) => {
+    // api calls to run for each query
+    var plots = ["new", "moved", "old"];
+    // function to make a promise for each api call
+    var makePromise = function(p, q) {
+      return fetch("/api/feeds/" + p + "/search/" + encodeURIComponent(q)).then(response => response.json());
+    };
 
-        newDates = [];
-        newDomains = [];
-        newTrends.data.counts.forEach(function (e) {
-          newDates.push(e.date);
-          newDomains.push(e.count);
+    // build list of promises
+    //var actions = plots.map(fn);
+    var actions = [];
+    term.split(",").forEach(function (q) {
+      q = q.trim();
+      if (q.length < min_len) {
+        // TODO err/warn
+        return;
+      }
+      plots.forEach(function (p) {
+        actions.push(makePromise(p, q))
+      });
+    });
+
+    Promise.all(actions).then((trendsData) => {
+      var data = [];
+
+      trendsData.forEach(function (t) {
+        var dates = [];
+        var domains = [];
+        t.data.counts.forEach(function (e) {
+          dates.push(e.date);
+          domains.push(e.count);
         });
-
-        oldDates = [];
-        oldDomains = [];
-        oldTrends.data.counts.forEach(function (e) {
-          oldDates.push(e.date);
-          oldDomains.push(e.count);
-        });
-
-        movedDates = [];
-        movedDomains = [];
-        movedTrends.data.counts.forEach(function (e) {
-          movedDates.push(e.date);
-          movedDomains.push(e.count);
-        });
-
-        var data = [{
-          x: newDates,
-          y: newDomains,
+        data.push({
+          x: dates,
+          y: domains,
           type: 'scatter',
           mode: "lines",
-          name: "New Domains",
-        },
-        {
-          x: movedDates,
-          y: movedDomains,
-          type: 'scatter',
-          mode: "lines",
-          name: "Moved Domains",
-        },
-        {
-          x: oldDates,
-          y: oldDomains,
-          type: 'scatter',
-          mode: "lines",
-          name: "Old Domains",
-        }];
-
-        var layout = {
-          autosize: true,
-          showlegend: true,
-          automargin: true,
-        };
-
-        var config = {
-          displaylogo: false,
-          responsive: true
-        };
-
-        $("#trendDiv").show();
-        Plotly.newPlot('trendDiv', data, layout, config).then(function () { $("#spinner1").hide() });
+          name: `${t.data.search} ${t.data.type}`,
+        })
 
       });
+
+      var layout = {
+        autosize: true,
+        showlegend: true,
+        automargin: true,
+      };
+
+      var config = {
+        displaylogo: false,
+        responsive: true
+      };
+
+      $("#trendDiv").show();
+      Plotly.newPlot('trendDiv', data, layout, config).then(function () { $("#spinner1").hide() });
+
+    });
   }
   if (document.location.hash != "") {
     searchInput.value = decodeURIComponent(window.location.hash.substring(1));
