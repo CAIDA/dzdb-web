@@ -51,7 +51,7 @@
   var searchInput = document.getElementById("search");
   var min_len = 4;
   function TrendsSearch() {
-    var term = decodeURIComponent(searchInput.value);
+    var term = searchInput.value;
     if (term.length < min_len) {
       // TODO show error
       return;
