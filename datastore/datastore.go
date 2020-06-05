@@ -191,6 +191,14 @@ func (ds *DataStore) GetZone(ctx context.Context, name string) (*model.Zone, err
 		z.ArchiveNameServers = append(z.ArchiveNameServers, &ns)
 	}
 
+	// get some root metadata
+	var root model.RootZone
+	err = ds.db.QueryRow(ctx, "select first_import_date, last_import_date from zones_imports, zones where zones.id = zones_imports.zone_id and zones.zone = ''").Scan(&root.FirstImport, &root.LastImport)
+	if err != nil {
+		return nil, err
+	}
+	z.RootImport = &root
+
 	return &z, err
 }
 
@@ -547,8 +555,25 @@ func (ds *DataStore) GetRandomDomain(ctx context.Context) (*model.Domain, error)
 // GetZoneImport gets the most-recent recent ZoneImportResult for the given zone
 func (ds *DataStore) GetZoneImport(ctx context.Context, zone string) (*model.ZoneImportResult, error) {
 	var r model.ZoneImportResult
-
-	err := ds.db.QueryRow(ctx, "select zones.zone, import_zone_counts.domains, import_zone_counts.records, zones_imports.first_import_date, zones_imports.first_import_id, zones_imports.last_import_date,zones_imports.last_import_id, zones_imports.count from zones, zones_imports, import_zone_counts where zones.id = zones_imports.zone_id and zones_imports.last_import_id = import_zone_counts.import_id and zones.zone = $1", zone).Scan(&r.Zone, &r.Domains, &r.Records, &r.FirstImportDate, &r.FirstImportID, &r.LastImportDate, &r.LastImportID, &r.Count)
+	err := ds.db.QueryRow(ctx,
+		`SELECT
+			zones.zone,
+			import_zone_counts.domains,
+			import_zone_counts.records,
+			zones_imports.first_import_date,
+			zones_imports.first_import_id,
+			zones_imports.last_import_date,
+			zones_imports.last_import_id,
+			zones_imports.count
+		from
+			zones,
+			zones_imports,
+			import_zone_counts
+		where
+			zones.id = zones_imports.zone_id
+			and zones_imports.last_import_id = import_zone_counts.import_id
+			and zones.zone = $1`,
+		zone).Scan(&r.Zone, &r.Domains, &r.Records, &r.FirstImportDate, &r.FirstImportID, &r.LastImportDate, &r.LastImportID, &r.Count)
 	if err != nil {
 		return nil, err
 	}

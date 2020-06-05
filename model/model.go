@@ -9,6 +9,7 @@ import (
 
 var (
 	domainType            = "domain"
+	zoneType              = "zone"
 	feedType              = "feed"
 	feedNsType            = "feed_ns"
 	nameServerType        = "nameserver"
@@ -171,11 +172,18 @@ type Zone struct {
 	ArchiveNameServerCount *int64            `json:"archive_nameserver_count,omitempty"`
 	ImportData             *ZoneImportResult `json:"import_data,omitempty"`
 	Domains                *[]Domain         `json:"domains,omitempty"`
+	RootImport             *RootZone         `json:"root,omitempty"`
+}
+
+// RootZone adds root metadata to the zone types
+type RootZone struct {
+	FirstImport *time.Time `json:"first_import"`
+	LastImport  *time.Time `json:"last_import"`
 }
 
 // GenerateMetaData generates metadata recursively of member models
 func (z *Zone) GenerateMetaData() {
-	z.Type = &domainType
+	z.Type = &zoneType
 	z.Link = fmt.Sprintf("/zones/%s", z.Name)
 }
 
