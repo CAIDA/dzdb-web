@@ -48,12 +48,16 @@
 </div>
 
 <script type="text/javascript">
+  var searchInput = document.getElementById("search");
   function TrendsSearch() {
-    var term = document.getElementById("search").value;
+    var term = searchInput.value;
     if (term.length < 4) {
       // TODO show error
       return;
     }
+
+    // set url hash
+    window.location.hash = "#" + term;
 
     $("#graph_row").show()
     $("#spinner1").show()
@@ -124,6 +128,10 @@
         Plotly.newPlot('trendDiv', data, layout, config).then(function () { $("#spinner1").hide() });
 
       });
+  }
+  if (document.location.hash != "") {
+    searchInput.value = window.location.hash.substring(1);
+    TrendsSearch();
   }
 </script>
 
