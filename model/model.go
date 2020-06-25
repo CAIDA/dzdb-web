@@ -70,6 +70,7 @@ func (err JSONError) Error() string {
 type ImportProgress struct {
 	Metadata
 	Imports int64        `json:"imports_left"`
+	Diffs   int64        `json:"diffs_left"`
 	Days    int          `json:"days_left"`
 	Dates   []ImportDate `json:"dates"` // gets last n days
 }

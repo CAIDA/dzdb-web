@@ -716,6 +716,23 @@ func (ds *DataStore) GetImportProgress(ctx context.Context) (*model.ImportProgre
 		return nil, err
 	}
 
+	// get diffs remaining
+	// this only gets forward counting diffs
+	err = ds.db.QueryRow(ctx,
+		`select
+		count(id)
+	  from
+		imports,
+		import_progress m1
+	  where
+		m1.import_id = id
+		and imported = false
+		and m1.zonediff_path is null
+		and m1.zonefile_path is not null`).Scan(&ip.Diffs)
+	if err != nil {
+		return nil, err
+	}
+
 	rows, err := ds.db.Query(ctx, "select date, sum(diff_duration) took_diff, sum(import_duration) took_import, count(CASE WHEN imports.imported THEN 1 END) from imports, import_progress where imports.id = import_progress.import_id group by date order by date desc limit $1", history)
 	if err != nil {
 		return nil, err
