@@ -140,7 +140,11 @@ const DNSResolutionGrapher = {};
                         this.metadata.hazard.merge(this.metadata.branch.hazard);
                     }
                     // Combine hazard messages into one string
-                    const hazardMessage = this.metadata.hazard.toList().join("<br>");
+                    const hazardMessage = this.metadata.hazard.toList().map((msg)=>{
+                        const msgParts = msg.split("]");
+                        msgParts.shift()
+                        return msgParts.join()
+                    }).join("<br>");
                     this.metadata.tooltip+=`<b style="display:block;color:#FF0000">${hazardMessage}</b>`;
                 }
                 if(this.metadata.warning.size > 0){
@@ -149,7 +153,11 @@ const DNSResolutionGrapher = {};
                         this.metadata.warning.merge(this.metadata.branch.warning)
                     }
                     // Combine warning messages into one string
-                    const warningMessage = this.metadata.warning.toList().join("<br>");
+                    const warningMessage = this.metadata.warning.toList().map((msg)=>{
+                        const msgParts = msg.split("]");
+                        msgParts.shift()
+                        return msgParts.join()
+                    }).join("<br>");
                     this.metadata.tooltip+=`<b style="display:block;color:#CA9E2A">${warningMessage}</b>`;
                 }
                 this.metadata.tooltip += "<div>";   
@@ -261,10 +269,8 @@ const DNSResolutionGrapher = {};
         })
         this.updateOverview = function(property,nodeName){
             if(nodeName!=null){   
-                this.overview[property] = this.overview[property] || [];
-                if(!this.overview[property].includes(nodeName.toUpperCase())){
-                    this.overview[property].push(nodeName.toUpperCase());
-                }
+                this.overview[property] = this.overview[property] || new Set();
+                this.overview[property].add(nodeName.toUpperCase());
                 this.updateFunction(this.overview);
             }
         }
@@ -280,6 +286,10 @@ const DNSResolutionGrapher = {};
                     currentBranch.hazard.merge(node.metadata.hazard);
                     // Update stats for each hazard domains
                     this.updateOverview("hazard",node.metadata.domain);
+                    // Add each hazard error code to overview
+                    currentBranch.hazard.toList().forEach((hazard)=>{
+                        this.updateOverview("errorCodes",hazard.split("]")[0])
+                    })
                     currentBranch.nodes.forEach((node)=>{
                         node.metadata.hazard.merge(currentBranch.hazard);
                         node.setTooltip();
@@ -733,6 +743,10 @@ const DNSResolutionGrapher = {};
                                 currentBranch.warning.merge(element.metadata.warning);
                                 // Update stats for each warning domains
                                 this.updateOverview("warning",element.metadata.domain);
+                                // Add each warning error code to overview
+                                currentBranch.warning.toList().forEach((warning)=>{
+                                    this.updateOverview("errorCodes",warning.split("]")[0])
+                                })
                                 currentBranch.nodes.forEach((node)=>{
                                     node.metadata.warning.merge(currentBranch.warning);
                                     node.setTooltip();
@@ -1225,7 +1239,7 @@ const DNSResolutionGrapher = {};
                                                     // Check if zone is part of database, if it is store
                                                     // response and set hazard settings
                                                     if(zone!=null && zoneMapped){
-                                                        hazard.add("Potentially available for registration");
+                                                        hazard.add(`0]Domain '${nameserverDomain.domain}' potentially available for registration`);
                                                     }
                                                     let newMappedLinks = JSON.parse(JSON.stringify(mappedLinks));
                                                     newMappedLinks[("/api"+domainLink).toUpperCase()] = 
@@ -1289,13 +1303,13 @@ const DNSResolutionGrapher = {};
                             }else{
                                 const warning = new MsgSet();
                                 if(nsRecordIp){
-                                    warning.add(`NS record '${nameserver.name}' with IPv4/6 address`);
+                                    warning.add(`1]NS record '${nameserver.name}' with IPv4/6 address`);
                                 }
                                 if(nsRecordWildcard){
-                                    warning.add(`NS record '${nameserver.name}' has a wildcard domain`);
+                                    warning.add(`2]NS record '${nameserver.name}' has a wildcard domain`);
                                 }
                                 if(nsRecordZone){
-                                    warning.add(`NS record '${nameserver.name}' points to a potential TLD`);
+                                    warning.add(`3]NS record '${nameserver.name}' points to a potential TLD`);
                                 }
                                 const authNameserverNode = new Node("nameserver",nameserver.name,{
                                     "depth":depth+1,
@@ -1344,7 +1358,7 @@ const DNSResolutionGrapher = {};
                         const ipName = (ip.version==4) ? parseIPv4(ip.name) : ipaddr.js.parse(ip.name).toString().toLowerCase();
                         // Test if ip is belongs to a public nameserver
                         if(publicNameserverList.includes(ipName)){
-                            ipNode.metadata.warning.add(`A/AAAA record '${ipNode.name}' belongs to a public nameserver`);
+                            ipNode.metadata.warning.add(`4]IP '${ipNode.name}' belongs to a public nameserver`);
                         }
                         // Test if ip is in private address space
                         const ipRange = ipaddr.js.parse(ipName).range();
@@ -1353,7 +1367,7 @@ const DNSResolutionGrapher = {};
                             ipRange === "loopback" ||
                             ipRange === "private"
                         ){
-                            ipNode.metadata.warning.add(`${currentNode.name}'s IP '${ipNode.name}' is a part of private address space`);
+                            ipNode.metadata.warning.add(`5]${currentNode.name}'s IP '${ipNode.name}' is a part of private address space`);
                         }
                         nodeData.nodes.push(ipNode);
                         currentNode.ips.push(ipNode);
@@ -1368,7 +1382,7 @@ const DNSResolutionGrapher = {};
                             let data = response_json.data;
                             ipNode.metadata.asns = data.asns;  
                             if(ipNode.metadata.asns.length==0){
-                                ipNode.metadata.warning.add(`${currentNode.name}'s IP ${ipNode.name} does not have an AS`);
+                                ipNode.metadata.warning.add(`6]${currentNode.name}'s IP '${ipNode.name}' does not have an AS`);
                             } 
                             currentEdge = new Edge(currentNode,ipNode);
                             nodeData.edges.push(currentEdge);
@@ -2302,8 +2316,12 @@ const DNSResolutionGrapher = {};
                     // Update text and rect posistions
                     // d.x, d.y are center coordinates for the rect, must be top-left based
                     nodes.selectAll("text")
-                    .attr("x",d=>d.x)
-                    .attr("y",d=>d.y)
+                    .attr("x",d=>{
+                        // Ensure nodes appear on screen in mesh mode
+                        d.x = (d.x < 0) ? 0 : d.x;
+                        d.y = (d.y < 0) ? 0 : d.y;
+                        return d.x
+                    }).attr("y",d=>d.y)
                     nodes.selectAll("rect")
                     .attr("x",d=>d.x - parseInt(d.metadata.width)/2)
                     .attr("y",d=>d.y - parseInt(d.metadata.height)/2)
