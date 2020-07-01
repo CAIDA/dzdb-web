@@ -29,6 +29,13 @@ clean:
 fmt:
 	gofmt -s -w -l .
 
-check:
-	golangci-lint run || true
-	staticcheck -unused.whole-program -checks all ./...
+check: | lint check1 check2
+
+check1:
+	golangci-lint run
+
+check2:
+	staticcheck -f stylish -checks all ./...
+
+lint:
+	golint ./...

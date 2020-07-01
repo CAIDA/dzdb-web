@@ -78,13 +78,13 @@
             };
             for (var i = 0; i < nameservers[name].length; i++) {
               if (!nameservers[name][i].hasOwnProperty("firstseen")) {
-                nameservers[name][i].firstseen = api_response.data.import_data.first_date;
+                nameservers[name][i].firstseen = api_response.data.root.first_import;
               }
               if (!nameservers[name][i].hasOwnProperty("lastseen")) {
                 if (!api_response.data.hasOwnProperty("lastseen")) {
                   nameservers[name][i].lastseen = new Date().toISOString();
                 } else {
-                  nameservers[name][i].lastseen = api_response.data.import_data.last_date;
+                  nameservers[name][i].lastseen = api_response.data.root.last_import;
                 }
               }
               ns.x.push(nameservers[name][i].firstseen, nameservers[name][i].lastseen, '');

@@ -8,6 +8,16 @@
 
     <h1>Trust Tree Visualization</h1>
 
+    <div class="card">
+      <div class="card-body">
+        <p class="card-text">This Trust Tree Visualization tool is a prototype to detect potentially problematic
+          delegations. The tool uses the zone files from over 1250 zone files to build dependencies for the domain in
+          question. These dependencies typically include other domains and IP addresses that will be trusted in course
+          of resolution for the inputted domain. Note, this tool is based on just zone file data.</p>
+      </div>
+    </div>
+
+
     <div class="input-group">
       <input type="text" class="form-control" id="domainInput" placeholder="example.com">
       <div class="input-group-append">
@@ -103,22 +113,38 @@
             </div>
           </div>
         </div>
+        <div class="row error-content hidden" id="errorContent"></div>
       </div>
     </div>
   </div>
 </div>
-<script>
-  if (typeof module === "undefined") {
-    window.module = { "exports": {} };
-  }
+<script type="text/javascript">
+    if(typeof module==="undefined"){
+        window.module = {
+            get exports(){
+                return {}
+            },
+            set exports(value){
+                if(value.name && !window[value.name]){
+                    window[value.name] = value;
+                }else{
+                    const script = [...document.getElementsByTagName("script")].pop();
+                    const filename = script.src.split("/").pop().split(".")[0];
+                    window[filename] = value  
+                }                 
+            }
+        };
+    }
 </script>
 <script src="https://d3js.org/d3.v5.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/axios-rate-limit@1.2.1/src/index.min.js"></script>
+<script src="https://unpkg.com/ipaddr.js@1.9.1/lib/ipaddr.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios-rate-limit@1.2.1/src/index.min.js"></script>
 <script type="text/javascript" src="/static/tree/axios-fetch.js"></script>
 <script type="text/javascript" src="/static/tree/priority-queue.js"></script>
 <script type="text/javascript" src="/static/tree/ac-colors.min.js"></script>
 <script type="text/javascript" src="/static/tree/dns-resolution-grapher.js" charset="utf-8"></script>
+<script type="text/javascript" src="/static/tree/dns-errors.js"></script>
 <script type="text/javascript" src="/static/tree/script.js"></script>
 
 {{template "bottom" $}}

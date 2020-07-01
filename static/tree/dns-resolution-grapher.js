@@ -1,6 +1,33 @@
 const DNSResolutionGrapher = {};
 (function(exports){
-    // Definitions for node, edge, nodelist
+    // List of public nameserver ips
+    const publicNameserverList = ['8.8.8.8','8.8.4.4','9.9.9.9','149.112.112.112','208.67.222.222',
+    '208.67.220.220','1.1.1.1','1.0.0.1','185.228.168.9','185.228.169.9','64.6.64.6','64.6.65.6',
+    '198.101.242.72','23.253.163.53','176.103.130.130','176.103.130.131',"2001:4860:4860::8888",
+    "2001:4860:4860::8844","2620:fe::fe","2620:fe::9","9.9.9.10","2620:fe::10","2620:119:35::35",
+    "2620:119:53::53","2606:4700:4700::1111","2606:4700:4700::1001","2a0d:2a00:1::2","2a0d:2a00:2::2",
+    "2620:74:1b::1:1","2620:74:1c::2:2","198.101.242.72","23.253.163.53","2001:4800:780e:510:a8cf:392e:ff04:8982",
+    "2001:4801:7825:103:be76:4eff:fe10:2e49","2a00:5a60::ad1:0ff","2a00:5a60::ad2:0ff","84.200.69.80",
+    "84.200.70.40","8.26.56.26","8.20.247.20","205.171.3.66","205.171.202.166","195.46.39.39",
+    "195.46.39.40","66.187.76.168","147.135.76.183","147.135.76.183","216.146.35.35","216.146.36.36",
+    "45.33.97.5","37.235.1.177","77.88.8.8","77.88.8.1","91.239.100.100","89.233.43.71",
+    "74.82.42.42","109.69.8.51","156.154.70.5","156.154.71.5","45.77.165.194",
+    "45.32.36.36"].map((ns)=>ipaddr.parse(ns).toString().toLowerCase());
+    // Definitions for MsgSet node, edge, nodelist
+    class MsgSet extends Set{
+        merge(iterable){
+            if(typeof iterable[Symbol.iterator] === 'function'){
+                [...iterable].forEach((item)=>{
+                    this.add(item);
+                })
+            }else{
+                throw new TypeError("Parameter 1 must be iterable");
+            }
+        }
+        toList(){
+            return [...this];
+        }
+    }
     function Node(type,name, metadata={}){
         if(typeof(Node.id)==="undefined"){
             Node.id=0;
@@ -26,6 +53,8 @@ const DNSResolutionGrapher = {};
         }
         this.name = name;
         this.metadata = metadata;
+        this.metadata.hazard = this.metadata.hazard || new MsgSet();
+        this.metadata.warning = this.metadata.warning || new MsgSet();
         this.addParent = function(node){
             let nodeFound = false;
             for(const oldNode of this.parents){
@@ -71,7 +100,8 @@ const DNSResolutionGrapher = {};
         this.setTooltip = function(){
             if(this.metadata.accumulation
                 || (this.metadata.hiddenTargets && this.metadata.hiddenTargets.length>0)
-                || (this.metadata.hazard && this.metadata.hazard.length>0)
+                || (this.metadata.hazard && this.metadata.hazard.size > 0)
+                || (this.metadata.warning && this.metadata.warning.size > 0)
                 || (this.metadata.preload && this.metadata.preload.length>0)){
                 let accumulationNodes = this.metadata.substitutes || [];
                 let hiddenTargets = this.metadata.hiddenTargets || [];
@@ -104,14 +134,31 @@ const DNSResolutionGrapher = {};
                 if(this.metadata.preload){
                     this.metadata.tooltip+=`<em style="display:block;">Database does not contain this domain</em>`;
                 }
-                if(this.metadata.hazard){
-                    // Set hazard message to node-specific message
-                    let hazardMessage=this.metadata.hazardMessage;
-                    // Set hazard message to branch message
-                    if(this.metadata.branch !=null && this.metadata.branch.hazardMessage!=null){
-                        hazardMessage = this.metadata.branch.hazardMessage.join("<br>");
+                if(this.metadata.hazard.size>0){
+                    // Add branch hazards to node hazards
+                    if(this.metadata.branch !=null && this.metadata.branch.hazard!=null){
+                        this.metadata.hazard.merge(this.metadata.branch.hazard);
                     }
+                    // Combine hazard messages into one string
+                    const hazardMessage = this.metadata.hazard.toList().map((msg)=>{
+                        const msgParts = msg.split("]");
+                        msgParts.shift()
+                        return msgParts.join()
+                    }).join("<br>");
                     this.metadata.tooltip+=`<b style="display:block;color:#FF0000">${hazardMessage}</b>`;
+                }
+                if(this.metadata.warning.size > 0){
+                    // Add branch warnings to node warnings
+                    if(this.metadata.branch !=null && this.metadata.branch.warning!=null){
+                        this.metadata.warning.merge(this.metadata.branch.warning)
+                    }
+                    // Combine warning messages into one string
+                    const warningMessage = this.metadata.warning.toList().map((msg)=>{
+                        const msgParts = msg.split("]");
+                        msgParts.shift()
+                        return msgParts.join()
+                    }).join("<br>");
+                    this.metadata.tooltip+=`<b style="display:block;color:#CA9E2A">${warningMessage}</b>`;
                 }
                 this.metadata.tooltip += "<div>";   
             }else{
@@ -214,6 +261,7 @@ const DNSResolutionGrapher = {};
                 "edgeLineWidth":"2.0",
             }
         };
+        NodeList.prototype.ipRegExp=new RegExp(/((^\s*((([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5]))\s*$)|(^\s*((([0-9A-Fa-f]{1,4}:){7}([0-9A-Fa-f]{1,4}|:))|(([0-9A-Fa-f]{1,4}:){6}(:[0-9A-Fa-f]{1,4}|((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){5}(((:[0-9A-Fa-f]{1,4}){1,2})|:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){4}(((:[0-9A-Fa-f]{1,4}){1,3})|((:[0-9A-Fa-f]{1,4})?:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){3}(((:[0-9A-Fa-f]{1,4}){1,4})|((:[0-9A-Fa-f]{1,4}){0,2}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){2}(((:[0-9A-Fa-f]{1,4}){1,5})|((:[0-9A-Fa-f]{1,4}){0,3}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){1}(((:[0-9A-Fa-f]{1,4}){1,6})|((:[0-9A-Fa-f]{1,4}){0,4}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(:(((:[0-9A-Fa-f]{1,4}){1,7})|((:[0-9A-Fa-f]{1,4}){0,5}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:)))(%.+)?\s*$))/);
         Object.keys(overrideMetadata).forEach((key)=>{
             if(key in this.metadata){
                 this.metadata[key] = overrideMetadata[key];
@@ -221,11 +269,51 @@ const DNSResolutionGrapher = {};
         })
         this.updateOverview = function(property,nodeName){
             if(nodeName!=null){   
-                this.overview[property] = this.overview[property] || [];
-                if(!this.overview[property].includes(nodeName.toUpperCase())){
-                    this.overview[property].push(nodeName.toUpperCase());
-                }
+                this.overview[property] = this.overview[property] || new Set();
+                this.overview[property].add(nodeName.toUpperCase());
                 this.updateFunction(this.overview);
+            }
+        }
+        this.updateHazards = function(node){
+            // Maintain hazard status across branch
+            // If current element is a hazard element
+            // then set all nodes in branch to hazard
+            if(node.metadata.domain != null){
+                const currentBranch = this.branches[node.metadata.domain.toUpperCase()];
+                if(node.metadata.hazard.size > 0){
+                    // Append hazard message to branch
+                    currentBranch.hazard=currentBranch.hazard || new MsgSet();
+                    currentBranch.hazard.merge(node.metadata.hazard);
+                    // Update stats for each hazard domains
+                    this.updateOverview("hazard",node.metadata.domain);
+                    // Add each hazard error code to overview
+                    currentBranch.hazard.toList().forEach((hazard)=>{
+                        this.updateOverview("errorCodes",hazard.split("]")[0])
+                    })
+                    currentBranch.nodes.forEach((node)=>{
+                        node.metadata.hazard.merge(currentBranch.hazard);
+                        node.setTooltip();
+                    })
+                }
+                // If current branch contains a hazard node,
+                // then all incoming nodes are hazardous
+                if(currentBranch.hazard!=null){
+                    node.metadata.hazard.merge(currentBranch.hazard);
+                    // Update stats for each hazard node
+                    node.setTooltip();
+                }
+                node.parents.forEach((parent)=>{
+                    let newHazardFound = false;
+                    node.metadata.hazard.toList().forEach((hazard)=>{
+                        if(!parent.metadata.hazard.has(hazard)){
+                            parent.metadata.hazard.add(hazard);
+                            newHazardFound = true;
+                        }
+                    })
+                    if(newHazardFound){
+                        this.updateHazards(parent);
+                    }
+                })
             }
         }
         // Create new nodelist with same properties as old nodelist
@@ -648,29 +736,27 @@ const DNSResolutionGrapher = {};
                                 this.branches[element.metadata.domain.toUpperCase()]={nodes:[]};
                             }
                             let currentBranch = this.branches[element.metadata.domain.toUpperCase()];
-                            // Maintain hazard status across branch
-                            // If current element is a hazard element
-                            // then set all nodes in branch to hazard
-                            if(element.metadata.hazard){
-                                currentBranch.hazard=true;
-                                // Append hazard message to branch
-                                currentBranch.hazardMessage = currentBranch.hazardMessage || [];
-                                if(element.metadata.hazardMessage!=null &&
-                                    !currentBranch.hazardMessage.includes(element.metadata.hazardMessage)){
-                                    currentBranch.hazardMessage.push(element.metadata.hazardMessage);
-                                }
-                                // Update stats for each hazard domains
-                                this.updateOverview("hazard",element.metadata.domain);
+                            this.updateHazards(element);
+                            if(element.metadata.warning.size>0){
+                                // Append warning message to branch
+                                currentBranch.warning=currentBranch.warning || new MsgSet();
+                                currentBranch.warning.merge(element.metadata.warning);
+                                // Update stats for each warning domains
+                                this.updateOverview("warning",element.metadata.domain);
+                                // Add each warning error code to overview
+                                currentBranch.warning.toList().forEach((warning)=>{
+                                    this.updateOverview("errorCodes",warning.split("]")[0])
+                                })
                                 currentBranch.nodes.forEach((node)=>{
-                                    node.metadata.hazard=true;
+                                    node.metadata.warning.merge(currentBranch.warning);
                                     node.setTooltip();
                                 })
                             }
-                            // If current branch contains a hazard node,
-                            // then all incoming nodes are hazardous
-                            if(currentBranch.hazard){
-                                element.metadata.hazard=true;
-                                // Update stats for each hazard node
+                             // If current branch contains a warning node,
+                            // then all incoming nodes are misconfigured
+                            if(currentBranch.warning!=null){
+                                element.metadata.warning.merge(currentBranch.warning);
+                                // Update stats for each warning node
                                 element.setTooltip();
                             }
                             // Maintain preload status across branch
@@ -766,6 +852,8 @@ const DNSResolutionGrapher = {};
                         }
                         if(!priorEdge){
                             this.edges.push(element);
+                            // Update hazards
+                            this.updateHazards(targetNode);
                             // Set hidden nodes
                             if(this.metadata.hideNodes.includes(sourceType) || 
                                 this.metadata.hideNodes.includes(targetType)){
@@ -939,16 +1027,15 @@ const DNSResolutionGrapher = {};
             let responsePromises = [];
             let data = response_json.data;
             let preload = response_json.preload;
-            let hazard = data.hazard;
-            let hazardMessage = data.hazardMessage;
             // Create Base Node
             let type = data.type;
             let name = data.name;
             currentNode = new Node(type,name,{"link":data.link,"depth":depth});
             // Maintain preload/hazard state from the pre-mapped links
             currentNode.metadata.preload = preload;
-            currentNode.metadata.hazard = hazard;
-            currentNode.metadata.hazardMessage = (hazard) ? hazardMessage : undefined;
+            if(data.hazard!=null){
+                currentNode.metadata.hazard.merge(data.hazard);
+            }
             if(data.type=="domain"){
                 // Push Domain Node
                 currentNode.metadata.domain = name.toUpperCase();
@@ -997,201 +1084,243 @@ const DNSResolutionGrapher = {};
                     currentNode.nameservers = currentNode.nameservers || [];
                     let mappedNameserverLinks = [];
                     for(const nameserver of nameservers){
-                        try{
+                        try{  
                             let nameserverDomain=splitDomain(nameserver.name);
                             let currentDomain = splitDomain(currentNode.name);
-                            let runSync = false;
-                            let sameDomain = false;
-                            let hasDomain =false;
-                            let sameTLD = false;
-                            let fetchLink = nameserver.link || "/nameservers/"+nameserver.name;
-                            // If node type is domain and the domains are different
-                            // Else if node type is is zone and zones are different
-                            if(nameserverDomain.domain!=null){
-                                hasDomain=true;
-                                if(nameserverDomain.domain.toUpperCase() == currentNode.name.toUpperCase()){
-                                    sameDomain = true;
-                                    sameTLD = true;
-                                }else{
-                                    fetchLink = "/domains/"+nameserverDomain.domain
+                            // Test if NS record is actually IPv4/6 record (ex. 127.0.0.1)
+                            const nsRecordIp = NodeList.prototype.ipRegExp.test(nameserver.name);
+                            // Test if nameserver is actually wildcard (ex. *.MAP.CAMBRIDGE.MA.US)
+                            const nsRecordWildcard = nameserver.name.charAt(0)==="*";
+                            // Test if nameserver is a root zone (ex. N)
+                            const nsRecordZone = nameserverDomain.domain==null;
+                            if(!nsRecordIp && !nsRecordWildcard && !nsRecordZone){ 
+                                let runSync = false;
+                                let sameDomain = false;
+                                let hasDomain =false;
+                                let sameTLD = false;
+                                let fetchLink = nameserver.link || "/nameservers/"+nameserver.name;
+                                // If node type is domain and the domains are different
+                                // Else if node type is is zone and zones are different
+                                if(nameserverDomain.domain!=null){
+                                    hasDomain=true;
+                                    if(nameserverDomain.domain.toUpperCase() == currentNode.name.toUpperCase()){
+                                        sameDomain = true;
+                                        sameTLD = true;
+                                    }else{
+                                        fetchLink = "/domains/"+nameserverDomain.domain
+                                    }
                                 }
-                            }
-                            if(nameserverDomain.tld!=null && currentDomain.tld!=null &&
-                            nameserverDomain.tld.toUpperCase() == currentDomain.tld.toUpperCase()){
-                                sameTLD = true;
-                            }else if(!hasDomain){
-                                fetchLink = "/zones/"+nameserverDomain.tld;
-                            }
-                            // If not same domain and fetch link hasnt been mapped, run synchronously
-                            if(!sameDomain && !mappedNameserverLinks.includes(fetchLink.toUpperCase())){
-                                runSync = true;
-                                mappedNameserverLinks.push(fetchLink.toUpperCase());
-                            }
-                            // If same domain process nameservers asynchronously
-                            if(sameDomain){
-                                if(currentNode.metadata.preload){
-                                    // If preload dont reresolve node
-                                    const nextNodeData = nodeData.newSublist();
-                                    nextNodeData.add(new Node("nameserver",nameserver.name,{"depth":depth+1,
-                                        "zone":nameserverDomain.tld}));
-                                    nextNodeData.rootElement.ips=[];
-                                    processNameserverResponse(nodeData,nextNodeData,currentNode);
+                                if(nameserverDomain.tld!=null && currentDomain.tld!=null &&
+                                nameserverDomain.tld.toUpperCase() == currentDomain.tld.toUpperCase()){
+                                    sameTLD = true;
+                                }else if(!hasDomain){
+                                    fetchLink = "/zones/"+nameserverDomain.tld;
+                                }
+                                // If not same domain and fetch link hasnt been mapped, run synchronously
+                                if(!sameDomain && !mappedNameserverLinks.includes(fetchLink.toUpperCase())){
+                                    runSync = true;
+                                    mappedNameserverLinks.push(fetchLink.toUpperCase());
+                                }
+                                // If same domain process nameservers asynchronously
+                                if(sameDomain){
+                                    if(currentNode.metadata.preload){
+                                        // If preload dont reresolve node
+                                        const nextNodeData = nodeData.newSublist();
+                                        nextNodeData.add(new Node("nameserver",nameserver.name,{"depth":depth+1,
+                                            "zone":nameserverDomain.tld}));
+                                        nextNodeData.rootElement.ips=[];
+                                        processNameserverResponse(nodeData,nextNodeData,currentNode);
+                                    }else{
+                                        // Merge nameserver data with current nodeList asynchronously
+                                        const nameserverPromise = resolveNode(fetchLink,depth+1,mappedLinks, nodeData)
+                                        .then((nextNodeData)=>{
+                                            processNameserverResponse(nodeData,nextNodeData,currentNode);
+                                        })
+                                        responsePromises.push(nameserverPromise);
+                                    }
+                                }else if(!runSync){
+                                    // Merge nameserver data with current nodeList asynchronously
+                                    // If doesnt have domain and not same tld process different tld
+                                    // Else process domain
+                                    if(!hasDomain && !sameTLD){
+                                        const zonePromise = resolveNode(fetchLink,depth+1,mappedLinks, nodeData)
+                                        .then((nextNodeData)=>{
+                                            nodeData.merge(currentNode,nextNodeData);   
+                                        })
+                                        responsePromises.push(zonePromise);
+                                    }else{
+                                        // Add each authorative nameserver as child of domain
+                                        const authNameserverNode = new Node("nameserver",nameserver.name,{"depth":depth+1,
+                                            "zone":{"name":nameserverDomain.tld},"domain":nameserverDomain.domain.toUpperCase()})
+                                        // Use seperate list to premerge nameserverData
+                                        const nameserverData = nodeData.newSublist();
+                                        nameserverData.add(authNameserverNode);
+                                        // Only map domain if domain is not preloaded
+                                        if(!currentNode.metadata.preload){    
+                                            responsePromises.push(mapNameserverDomain(nameserverData,nameserverDomain.domain,
+                                                nameserver).then(()=>{
+                                                    // Merge auth nameserverData
+                                                    nodeData.merge(currentNode,nameserverData);
+                                                }));
+                                        }else{
+                                            nodeData.merge(currentNode,nameserverData);
+                                        }
+                                    } 
                                 }else{
                                     // Merge nameserver data with current nodeList asynchronously
-                                    const nameserverPromise = resolveNode(fetchLink,depth+1,mappedLinks, nodeData)
-                                    .then((nextNodeData)=>{
-                                        processNameserverResponse(nodeData,nextNodeData,currentNode);
-                                    })
-                                    responsePromises.push(nameserverPromise);
-                                }
-                            }else if(!runSync){
-                                // Merge nameserver data with current nodeList asynchronously
-                                // If doesnt have domain and not same tld process different tld
-                                // Else process domain
-                                if(!hasDomain && !sameTLD){
-                                    const zonePromise = resolveNode(fetchLink,depth+1,mappedLinks, nodeData)
-                                    .then((nextNodeData)=>{
-                                        nodeData.merge(currentNode,nextNodeData);   
-                                    })
-                                    responsePromises.push(zonePromise);
-                                }else{
-                                    // Add each authorative nameserver as child of domain
-                                    const authNameserverNode = new Node("nameserver",nameserver.name,{"depth":depth+1,
-                                        "zone":{"name":nameserverDomain.tld},"domain":nameserverDomain.domain.toUpperCase()})
-                                    // Use seperate list to premerge nameserverData
-                                    const nameserverData = nodeData.newSublist();
-                                    nameserverData.add(authNameserverNode);
-                                    // Only map domain if domain is not preloaded
-                                    if(!currentNode.metadata.preload){    
-                                        responsePromises.push(mapNameserverDomain(nameserverData,nameserverDomain.domain,
-                                            nameserver).then(()=>{
-                                                // Merge auth nameserverData
-                                                nodeData.merge(currentNode,nameserverData);
-                                            }));
+                                    // If sameTLD process different domain
+                                    // Else process domain
+                                    if(!hasDomain && !sameTLD){
+                                        try{
+                                            nextNodeData = await resolveNode(fetchLink,depth+1,mappedLinks, nodeData);
+                                        }catch(e){
+                                            const fetchParts = fetchLink.split("/");
+                                            const fetchName = fetchParts[2];
+                                            const fetchType = fetchParts[1].substring(0,fetchParts[1].length-1);
+                                            nextNodeData = nodeData.newSublist();
+                                            // Create placeholder node if resolution fails
+                                            const altNode = new Node(fetchType,fetchName,{"depth":depth+1})
+                                            if(nameserverDomain.tld!=null){
+                                                altNode.metadata.zone = {"name":nameserverDomain.tld};
+                                            }
+                                            if(nameserverDomain.domain!=null){
+                                                altNode.metadata.domain = nameserverDomain.domain.toUpperCase();
+                                            }
+                                            nextNodeData.add(altNode);
+                                        }
+                                        nodeData.merge(currentNode,nextNodeData);
                                     }else{
+                                        // Add each authorative nameserver as child of domain
+                                        const authNameserverNode = new Node("nameserver",nameserver.name,{"depth":depth+1,
+                                            "zone":{"name":nameserverDomain.tld},"domain":nameserverDomain.domain.toUpperCase()})
+                                        // Use seperate list to premerge nameserverData
+                                        const nameserverData = nodeData.newSublist();
+                                        nameserverData.add(authNameserverNode);
+                                        // Only map domain if domain is not preloaded
+                                        if(!currentNode.metadata.preload){
+                                            await mapNameserverDomain(nameserverData,nameserverDomain.domain,nameserver);
+                                        }
                                         nodeData.merge(currentNode,nameserverData);
                                     }
-                                } 
-                            }else{
-                                // Merge nameserver data with current nodeList asynchronously
-                                // If sameTLD process different domain
-                                // Else process domain
-                                if(!hasDomain && !sameTLD){
-                                    const nextNodeData = await resolveNode(fetchLink,depth+1,mappedLinks, nodeData);
-                                    nodeData.merge(currentNode,nextNodeData);
-                                }else{
-                                    // Add each authorative nameserver as child of domain
-                                    const authNameserverNode = new Node("nameserver",nameserver.name,{"depth":depth+1,
-                                        "zone":{"name":nameserverDomain.tld},"domain":nameserverDomain.domain.toUpperCase()})
-                                    // Use seperate list to premerge nameserverData
-                                    const nameserverData = nodeData.newSublist();
-                                    nameserverData.add(authNameserverNode);
-                                    // Only map domain if domain is not preloaded
-                                    if(!currentNode.metadata.preload){
-                                        await mapNameserverDomain(nameserverData,nameserverDomain.domain,nameserver);
-                                    }
-                                    nodeData.merge(currentNode,nameserverData);
                                 }
-                            }
-                            // If nameserver root domain is different from current domain, trace root
-                            async function mapNameserverDomain(nameserverData,domainName, nameserver){
-                                const promise = new Promise(async (rootResolve,rootReject)=>{
-                                    const nameserverLink = nameserver.link || "/nameservers/"+nameserver.name;
-                                    const domainLink  ="/domains/"+domainName;
-                                    // Check if zone is mapped
-                                    const zoneData = mappedLinks["/API/ZONES"].data.zones;
-                                    const zone = (nameserverDomain.tld) ? {"name":nameserverDomain.tld} : null
-                                    const zoneMapped= zoneData.map(zone=>zone.zone.toUpperCase()).includes(zone.name.toUpperCase());
-                                    // Check if root domain is either domain or nameserver
-                                    let nameserverPromises = [];
-                                    // Only run zone lookup if zone is mapped
-                                    if(zoneMapped){
-                                        nameserverPromises.push(resolveNode(domainLink,
-                                        depth+1,mappedLinks, nameserverData).catch((error)=>{}));  
-                                    }
-                                    await Promise.allSettled(nameserverPromises).then((results)=>{
-                                        return new Promise(async (resolve,reject)=>{
-                                            let validUrl = false;
-                                            for(const promise of results){
-                                                // Merge the first viable promise
-                                                if(promise.status=="fulfilled" && promise.value){
-                                                    let rootDomainData = promise.value;
-                                                    resolve(rootDomainData);
-                                                    validUrl = true;
-                                                    break;
-                                                }
-                                            }
-                                            // If neither the nameserver or domain resolution works,
-                                            // then begin checking if invalid url
-                                            if(!validUrl && nameserverData.metadata.showUnmappedNodes){
-                                                // Preload mapped links with domain data to circumvent fetch;
-                                                let hazard = !zone;
-                                                let hazardMessage = "Invalid TLD";
-                                                // Check if zone is part of database, if it is store
-                                                // response and set hazard settings
-                                                if(zone!=null && zoneMapped){
-                                                    hazard = true;
-                                                    hazardMessage="Potentially available for registration";
-                                                }
-                                                let newMappedLinks = JSON.parse(JSON.stringify(mappedLinks));
-                                                newMappedLinks[("/api"+domainLink).toUpperCase()] = 
-                                                {
-                                                    "data":{
-                                                        "type":"domain",
-                                                        "link":domainLink,
-                                                        "mapped":false,
-                                                        "name":domainName.toUpperCase(),
-                                                        "zone":zone,
-                                                        "hazard":hazard,
-                                                        "hazardMessage": (hazard) ? hazardMessage : null,
-                                                        "nameservers":[{
-                                                            "type":"nameserver",
-                                                            "name":nameserver.name,
-                                                            "link":nameserverLink,
-                                                        }],
-                                                    },
-                                                    "preload":true
-                                                };
-                                                resolveNode(domainLink,depth+1,newMappedLinks,nameserverData)
-                                                .then((rootDomainData)=>{
-                                                    resolve(rootDomainData);
-                                                }).catch(error=>{
-                                                    reject(error);
-                                                });
-                                            }else if(!nameserverData.metadata.showUnmappedNodes){
-                                                reject(results[0].reason || "Invalid response");
-                                            }else{
-                                                reject("Invalid response")
-                                            }
-                                        });
-                                    }).then((rootDomainData)=>{
-                                        rootDomainData = rootDomainData || nameserverData.newSublist();
-                                        let checkBidirectional=false;
-                                        const authNameserverNode = nameserverData.rootElement;
-                                        // If authNameserver is in domain zone file then relationship is biDirectional
-                                        if(rootDomainData.nodes.map(node=>node.name).includes(authNameserverNode.name)){
-                                            checkBidirectional=true;
+                                // If nameserver root domain is different from current domain, trace root
+                                async function mapNameserverDomain(nameserverData,domainName, nameserver){
+                                    const promise = new Promise(async (rootResolve,rootReject)=>{
+                                        const nameserverLink = nameserver.link || "/nameservers/"+nameserver.name;
+                                        const domainLink  ="/domains/"+domainName;
+                                        // Check if zone is mapped
+                                        const zoneData = mappedLinks["/API/ZONES"].data.zones;
+                                        const zone = (nameserverDomain.tld) ? {"name":nameserverDomain.tld} : null
+                                        const zoneMapped= zoneData.map(zone=>zone.zone.toUpperCase()).includes(zone.name.toUpperCase());
+                                        // Check if root domain is either domain or nameserver
+                                        let nameserverPromises = [];
+                                        // Only run zone lookup if zone is mapped
+                                        if(zoneMapped){
+                                            nameserverPromises.push(resolveNode(domainLink,
+                                            depth+1,mappedLinks, nameserverData).catch((error)=>{}));  
                                         }
-                                        nameserverData.merge(authNameserverNode, rootDomainData,checkBidirectional);
-                                        rootResolve();
-                                    }).catch((error)=>{rootReject(error)});
-                                });
-                                return promise;
-                            }
-                            // Define nameserver data resolution process at domain level
-                            async function processNameserverResponse(nodeData,nextNodeData,currentNode){
-                                // Set nameserver archive status
-                                if(nameserver.archive){
-                                    nextNodeData.rootElement.metadata.archive = true;
+                                        await Promise.allSettled(nameserverPromises).then((results)=>{
+                                            return new Promise(async (resolve,reject)=>{
+                                                let validUrl = false;
+                                                for(const promise of results){
+                                                    // Merge the first viable promise
+                                                    if(promise.status=="fulfilled" && promise.value){
+                                                        let rootDomainData = promise.value;
+                                                        resolve(rootDomainData);
+                                                        validUrl = true;
+                                                        break;
+                                                    }
+                                                }
+                                                // If neither the nameserver or domain resolution works,
+                                                // then begin checking if invalid url
+                                                if(!validUrl && nameserverData.metadata.showUnmappedNodes){
+                                                    // Preload mapped links with domain data to circumvent fetch;
+                                                    let hazard = new MsgSet();
+                                                    // Check if zone is part of database, if it is store
+                                                    // response and set hazard settings
+                                                    if(zone!=null && zoneMapped){
+                                                        hazard.add(`0]Domain '${nameserverDomain.domain}' potentially available for registration`);
+                                                    }
+                                                    let newMappedLinks = JSON.parse(JSON.stringify(mappedLinks));
+                                                    newMappedLinks[("/api"+domainLink).toUpperCase()] = 
+                                                    {
+                                                        "data":{
+                                                            "type":"domain",
+                                                            "link":domainLink,
+                                                            "mapped":false,
+                                                            "name":domainName.toUpperCase(),
+                                                            "zone":zone,
+                                                            "hazard":hazard,
+                                                            "nameservers":[{
+                                                                "type":"nameserver",
+                                                                "name":nameserver.name,
+                                                                "link":nameserverLink,
+                                                            }],
+                                                        },
+                                                        "preload":true
+                                                    };
+                                                    resolveNode(domainLink,depth+1,newMappedLinks,nameserverData)
+                                                    .then((rootDomainData)=>{
+                                                        resolve(rootDomainData);
+                                                    }).catch(error=>{
+                                                        reject(error);
+                                                    });
+                                                }else if(!nameserverData.metadata.showUnmappedNodes){
+                                                    reject(results[0].reason || "Invalid response");
+                                                }else{
+                                                    reject("Invalid response")
+                                                }
+                                            });
+                                        }).then((rootDomainData)=>{
+                                            rootDomainData = rootDomainData || nameserverData.newSublist();
+                                            let checkBidirectional=false;
+                                            const authNameserverNode = nameserverData.rootElement;
+                                            // If authNameserver is in domain zone file then relationship is biDirectional
+                                            if(rootDomainData.nodes.map(node=>node.name).includes(authNameserverNode.name)){
+                                                checkBidirectional=true;
+                                            }
+                                            nameserverData.merge(authNameserverNode, rootDomainData,checkBidirectional);
+                                            rootResolve();
+                                        }).catch((error)=>{rootReject(error)});
+                                    });
+                                    return promise;
                                 }
-                                let nameserverDomain=splitDomain(nextNodeData.rootElement.name);
-                                // Set branch domain
-                                nextNodeData.rootElement.metadata.domain = nameserverDomain.domain.toUpperCase();
-                                for(const node of nextNodeData.rootElement.ips){
-                                    node.metadata.domain = nameserverDomain.domain.toUpperCase();
+                                // Define nameserver data resolution process at domain level
+                                async function processNameserverResponse(nodeData,nextNodeData,currentNode){
+                                    // Set nameserver archive status
+                                    if(nameserver.archive){
+                                        nextNodeData.rootElement.metadata.archive = true;
+                                    }
+                                    let nameserverDomain=splitDomain(nextNodeData.rootElement.name);
+                                    // Set branch domain
+                                    nextNodeData.rootElement.metadata.domain = nameserverDomain.domain.toUpperCase();
+                                    for(const node of nextNodeData.rootElement.ips){
+                                        node.metadata.domain = nameserverDomain.domain.toUpperCase();
+                                    }
+                                    currentNode.nameservers.push(nextNodeData.rootElement);
+                                    nodeData.merge(currentNode,nextNodeData);
                                 }
-                                currentNode.nameservers.push(nextNodeData.rootElement);
-                                nodeData.merge(currentNode,nextNodeData);
+                            }else{
+                                const warning = new MsgSet();
+                                if(nsRecordIp){
+                                    warning.add(`1]NS record '${nameserver.name}' with IPv4/6 address`);
+                                }
+                                if(nsRecordWildcard){
+                                    warning.add(`2]NS record '${nameserver.name}' has a wildcard domain`);
+                                }
+                                if(nsRecordZone){
+                                    warning.add(`3]NS record '${nameserver.name}' points to a potential TLD`);
+                                }
+                                const authNameserverNode = new Node("nameserver",nameserver.name,{
+                                    "depth":depth+1,
+                                    "zone":{"name":currentDomain.tld},
+                                    "domain":currentDomain.domain.toUpperCase(),
+                                    "warning":warning,
+                                })
+                                // Use seperate list to premerge nameserverData
+                                const nameserverData = nodeData.newSublist();
+                                nameserverData.add(authNameserverNode);
+                                nodeData.merge(currentNode,nameserverData);
                             }
                         }catch(error){
                             reject(error);
@@ -1220,8 +1349,26 @@ const DNSResolutionGrapher = {};
                     }
                     // Add nodes for IPv4 and IPv6
                     ipData.forEach((ip)=>{
+                        if(!ipaddr){
+                            throw Error("Dependency ipaddr.js not loaded");
+                        }
                         let ipNode = new Node(ip.type,ip.name,
                             {"depth":depth,"version":ip.version,"link":ip.link,"archive":ip.archive});
+                        // Regulate ip format
+                        const ipName = (ip.version==4) ? parseIPv4(ip.name) : ipaddr.parse(ip.name).toString().toLowerCase();
+                        // Test if ip is belongs to a public nameserver
+                        if(publicNameserverList.includes(ipName)){
+                            ipNode.metadata.warning.add(`4]IP '${ipNode.name}' belongs to a public nameserver`);
+                        }
+                        // Test if ip is in private address space
+                        const ipRange = ipaddr.parse(ipName).range();
+                        if(
+                            ipRange === "uniqueLocal" ||
+                            ipRange === "loopback" ||
+                            ipRange === "private"
+                        ){
+                            ipNode.metadata.warning.add(`5]${currentNode.name}'s IP '${ipNode.name}' is a part of private address space`);
+                        }
                         nodeData.nodes.push(ipNode);
                         currentNode.ips.push(ipNode);
                         let ipPromise = fetch("https://stat.ripe.net/data/network-info/data.json?resource="+ip.name)
@@ -1235,8 +1382,7 @@ const DNSResolutionGrapher = {};
                             let data = response_json.data;
                             ipNode.metadata.asns = data.asns;  
                             if(ipNode.metadata.asns.length==0){
-                                ipNode.metadata.hazard = true;
-                                ipNode.metadata.hazardMessage = `${currentNode.name}'s IP ${ipNode.name} does not have an AS`;
+                                ipNode.metadata.warning.add(`6]${currentNode.name}'s IP '${ipNode.name}' does not have an AS`);
                             } 
                             currentEdge = new Edge(currentNode,ipNode);
                             nodeData.edges.push(currentEdge);
@@ -1494,8 +1640,8 @@ const DNSResolutionGrapher = {};
                         "id":"n"+Node.id++,
                     });
                 }
-                // Add Triangle for hazards
-                if(node.metadata.hazard){
+                // Add Triangle for hazards and warnings
+                if(node.metadata.hazard.size>0 || node.metadata.warning.size>0){
                     // Multiplier for equilateral triangle with visual similarity to circle in area
                     const triangleWidth = nodeList.metadata.styleConfig.nodeFontSize/2*1.5*1.333*1.5;
                     const triangleHeight = nodeList.metadata.styleConfig.nodeFontSize*1.5*1.333*1.5/1.732;
@@ -1507,7 +1653,7 @@ const DNSResolutionGrapher = {};
                         // GraphML Shapes are top left aligned
                         "x":parseInt(node.metadata.x)-triangleWidth/2,
                         "y":parseInt(node.metadata.y)-triangleHeight/2,
-                        "fillColor":"#FF0000",
+                        "fillColor": (node.metadata.hazard.size>0) ? "#FF0000" : "#CA9E2A",
                         "borderColor":"#000000",
                         "borderWidth":"1.0",
                         "fontSize":node.metadata.fontSize,
@@ -1690,6 +1836,29 @@ const DNSResolutionGrapher = {};
             "domain":(parts.length>1) ? (`${parts[1]}.${parts[0]}`).toUpperCase() : null
         }
     }
+    // Handle ipv4 address correction
+    function parseIPv4(str){
+        // Split IPv4 address by '.'
+        const parts = str.split(".");
+        if(parts.length>4){
+            throw Error("Invalid IPv4 address");
+        }
+        // Fill in any missing octets with zeros
+        const spacer = [0,0,0,0];
+        spacer[3] = parts.pop();
+        parts.forEach((part,i)=>{spacer[i]=part});
+        // Convert ip address to int to address overflowing octets
+        let decimalIP = spacer.reverse().map((num,i)=>num*Math.pow(256,i))
+            .reduce((acc,num)=>acc+num);
+        // Convert int back to dotted decimal form
+        const ipv4 = [];
+        for(let i=3;i>=0;i--){
+            const octet = Math.floor(decimalIP/Math.pow(256,i));
+            decimalIP %= Math.pow(256,i);
+            ipv4.push(octet);
+        }
+        return ipv4.join(".");
+    }
     // Generates nodeList for a domain
     function nodeListFromDomain(domainInput, overrideMetadata={}, callback){
         const promise = new Promise(function(resolve,reject){
@@ -1794,19 +1963,33 @@ const DNSResolutionGrapher = {};
             key.append("div").style('font-weight',"bold").style("text-align","center")
             .style("margin","10px 0 0 5px").style("letter-spacing","1.5px").text("DOMAIN");
             // Create div for domain node and nameserver count
-            key.append("div").style("position","relative").style("display","inline")
+            const domainKey = key.append("div").style("position","relative").style("display","inline")
             .style("padding","5px 10px").style("border","solid 1px #000")
             .style("background-color","#75f581")
             .style("text-transform","uppercase").style("text-align","center")
-            .style("font-size","16px").style("font-family","Monaco, monospace").text("EXAMPLE.COM")
-            .append("div").style("width","24px").style("height","24px").style("border","solid 1px #000")
+            .style("font-size","16px").style("font-family","Monaco, monospace").text("EXAMPLE.COM");
+            domainKey.append("div").style("width","24px").style("height","24px").style("border","solid 1px #000")
             .style("border-radius","50%").style("position","absolute").style("right","calc(-24px / 2")
             .style("top","calc(-24px / 2").style("background-color","#FFFFFF").style("text-align","center")
             .text("2").append("div").style("position","relative").style("top","-24px")
             .style("right","-24px").style("width","25vw")
             .style("text-align","left").style("font-size","12px")
             .style("font-family","sans-serif")
-            .text("\u2190 Number of nameservers");;
+            .text("\u2190 Number of nameservers");
+            domainKey.append("div").style("width","0").style("height","0")
+            .style("position","absolute").style("left","-18px").style("color","#FFF")
+            .style("top","-34px").style("border","calc(27px * 0.666) solid transparent")
+            .style("border-bottom","27px solid #000").style("text-align","center")
+            domainKey.append("div").style("width","0").style("height","0")
+            .style("position","absolute").style("left","-16px").style("color","#FFF")
+            .style("top","-30px").style("border","calc(24px * 0.666) solid transparent")
+            .style("border-bottom","24px solid #CA9E2A").style("text-align","center")
+            .append("div").style("position","relative").style("left","-5px").style("top","2px").text("!")
+            .append("div").style("position","relative").style("top","-24px")
+            .style("left","calc(-4px - 25vw)").style("width","25vw")
+            .style("text-align","right").style("font-size","12px")
+            .style("font-family","sans-serif").style("color","#000")
+            .text("Misconfiguration \u2192");
             // Create heading for zone
             key.append("div").style('font-weight',"bold").style("text-align","center")
             .style("margin","20px 0 0 5px").style("letter-spacing","1.5px").text("ZONE");
@@ -1846,7 +2029,7 @@ const DNSResolutionGrapher = {};
             .style("left","calc(-4px - 25vw)").style("width","25vw")
             .style("text-align","right").style("font-size","12px")
             .style("font-family","sans-serif").style("color","#000")
-            .text("Domain is hazardous \u2192");
+            .text("Hazard \u2192");
             // Create heading for asn
             key.append("div").style('font-weight',"bold").style("text-align","center")
             .style("margin","20px 0 0 5px").style("letter-spacing","1.5px").text("AS (AUTONOMOUS SYSTEM)");
@@ -1966,8 +2149,8 @@ const DNSResolutionGrapher = {};
             .attr("width", (d)=>d.metadata.width)
             .attr("height", (d)=>d.metadata.height).text((d)=>d.name)
             .attr("fill",(d)=>d.metadata.textColor);
-            // Add danger symbol for hazardous nodes
-            const hazardWrapper = nodes.filter((d)=>d.metadata.hazard).append("g");
+            // Add danger symbol for hazardous nodes and warning
+            const hazardWrapper = nodes.filter((d)=>d.metadata.hazard.size>0 || d.metadata.warning.size>0).append("g");
             // Add circle for hazard symbol
             hazardWrapper.append("polygon")
             .attr("points", (d)=>{
@@ -1976,7 +2159,7 @@ const DNSResolutionGrapher = {};
                 const r = nodeList.metadata.styleConfig.nodeFontSize/2*1.5*1.333; /*Scale up by 33% to match tooltip*/
                 return `${cx} ${cy-r+0.166*r}, ${cx+0.877*r} ${cy+.5*r+0.166*r}, ${cx+-0.877*r} ${cy+.5*r+0.166*r}`;
             })
-            .style("fill","#FF0000")
+            .style("fill",(d)=>(d.metadata.hazard.size>0) ? "#FF0000" : "#CA9E2A")
             .style("stroke","#000")
             .style("stroke-width",(d)=>d.metadata.borderWidth);
             hazardWrapper.append("text")
@@ -2036,72 +2219,102 @@ const DNSResolutionGrapher = {};
             .attr("width", (d)=>d.metadata.width)
             .attr("height", (d)=>d.metadata.height)
             .text(d=>(d.metadata.preload) ? "?" : d.metadata.ipCount);
-            if(nodeList.metadata.accumulationNodes || nodeList.metadata.hiddenTargets){ 
-                function mouseover(d){
-                    // If tooltip node, use tooltip node for hover
-                    // Else use last tooltip node
-                    if(d.metadata!=null && d.metadata.tooltip!=null){
-                        tooltip.html(d.metadata.tooltip);
-                        tooltip.metadata = tooltip.metadata || {};
-                        tooltip.metadata.lastNode=d;
-                    }else{
-                        d=tooltip.metadata.lastNode;
-                    }
-                    tooltip.transition().duration(150)
-                    .ease(d3.easeLinear).style("opacity",1);
-                    // If node is not already being hovered on, reposition tooltip
-                    if(!d.metadata.mouseover){
-                        // Unset width and height to let content take max width
-                        tooltip.style("width","").style("height","").style("z-index",9999);
-                        const tooltipPos = tooltip.node().getElementsByTagName("div")[0].getBoundingClientRect();
-                        const tooltipWidth = tooltipPos.width+20; /*10px padding*/
-                        const tooltipHeight = tooltipPos.height+20; /*10px padding*/
-                        // Get scroll offset relative to document
-                        const scrollTop = window.scrollY || document.documentElement.scrollTop;
-                        const scrollLeft = window.scrollX || document.documentElement.scrollLeft;
-                        // Get wrapper position to adjust offset
-                        const wrapperPos = wrapper.node().getBoundingClientRect();
-                        const wrapperTopOffset = wrapperPos.top+scrollTop;
-                        const wrapperLeftOffset = wrapperPos.left+scrollLeft;
-                        tooltip.style("width",tooltipWidth+"px")
-                        .style("height",tooltipHeight+"px")
-                        .style("max-height",(containerNode.getBoundingClientRect().height*0.9)+"px")
-                        .style("top",(d3.event.pageY-wrapperTopOffset)+"px").style("left",(d3.event.pageX-wrapperLeftOffset)+"px");
-                        d.metadata.mouseover=true;
-                    }
-                    d.metadata.mouseoverDebounce=true;
+            function mouseover(d){
+                // If tooltip node, use tooltip node for hover
+                // Else use last tooltip node
+                if(d.metadata!=null && d.metadata.tooltip!=null){
+                    tooltip.html(d.metadata.tooltip);
+                    tooltip.metadata = tooltip.metadata || {};
+                    tooltip.metadata.lastNode=d;
+                }else{
+                    d=tooltip.metadata.lastNode;
                 }
-                function mouseout(d){
-                    // If tooltip node, use tooltip node for hover
-                    // Else use last tooltip node
-                    if(d.metadata && d.metadata.tooltip){
-                        tooltip.html(d.metadata.tooltip);
-                        tooltip.metadata = tooltip.metadata || {};
-                        tooltip.metadata.lastNode=d;
-                    }else{
-                        d=tooltip.metadata.lastNode;
-                    }
-                    tooltip.transition().duration(150)
-                    .ease(d3.easeLinear).style("opacity",0);
-                    d.metadata.mouseoverDebounce=false;
-                    // Wait 150 milliseconds before hiding tooltip
-                    setTimeout(()=>{
-                        if(!d.metadata.mouseoverDebounce){
-                            d.metadata.mouseover=false;
-                            tooltip.style("z-index",-1)
-                        }
-                    },150);
+                tooltip.transition().duration(150)
+                .ease(d3.easeLinear).style("opacity",1);
+                // If node is not already being hovered on, reposition tooltip
+                if(!d.metadata.mouseover){
+                    // Get scroll offset relative to document
+                    const scrollTop = window.scrollY || document.documentElement.scrollTop;
+                    const scrollLeft = window.scrollX || document.documentElement.scrollLeft;
+                    // Get wrapper parent position to adjust offset (parent is sized to the current view)
+                    const wrapperPos = wrapper.node().parentNode.getBoundingClientRect();
+                    const wrapperTopOffset = wrapperPos.top+scrollTop;
+                    const wrapperLeftOffset = wrapperPos.left+scrollLeft;
+                    // Mouse coordinates relative to container
+                    // Unset width and height to let content take max width
+                    tooltip.style("width","").style("height","").style("z-index",9999);
+                    const tooltipPos = tooltip.node().getElementsByTagName("div")[0].getBoundingClientRect();
+                    // 10px padding, cap at width of wrapper
+                    const tooltipWidth = Math.min(tooltipPos.width+20, wrapperPos.width);
+                    // 10px padding, cap at height of wrapper
+                    const tooltipHeight = Math.min(tooltipPos.height+20, wrapperPos.height); 
+                    
+                    const relMouseX = d3.event.pageX-wrapperLeftOffset;
+                    const relMouseY = d3.event.pageY-wrapperTopOffset;
+                    // If mouse is on left half of container, push tooltip to extend to the right
+                    // Else push tooltip to extend to the left
+                    let tooltipX = (relMouseX < wrapperPos.width / 2) ? relMouseX : relMouseX - tooltipWidth;
+                    // Adjust x coordinate to prevent overflow
+                    tooltipX = (tooltipX + tooltipWidth > wrapperPos.width) ? 
+                        wrapperPos.width-tooltipWidth :
+                        tooltipX;
+                    tooltipX = (tooltipX < 0) ? 0 : tooltipX
+                    // If mouse is on top half of container, push tooltip to extend down
+                    // Else push tooltip to extend up
+                    let tooltipY = (relMouseY < wrapperPos.height / 2) ? relMouseY : relMouseY - tooltipHeight;
+                    // Adjust y coordinate to prevent overflow
+                    tooltipY = (tooltipY + tooltipHeight > wrapperPos.height) ? 
+                        wrapperPos.height-height :
+                        tooltipY;
+                    tooltipY = (tooltipY < 0) ? 0 : tooltipY;
+                    tooltip.style("width",tooltipWidth+"px")
+                    .style("height",tooltipHeight+"px")
+                    .style("max-height",(containerNode.getBoundingClientRect().height*0.9)+"px")
+                    .style("top",(tooltipY)+"px").style("left",(tooltipX)+"px");
+                    d.metadata.mouseover=true;
                 }
-                // Add hoverbox for tooltip nodes
-                nodes.filter((d)=>d.metadata.tooltip).selectAll("rect")
-                .on("mouseover",mouseover).on("mouseout",mouseout);
-                nodes.filter((d)=>d.metadata.tooltip).selectAll("text")
-                .on("mouseover",mouseover).on("mouseout",mouseout);
-                nodes.filter((d)=>d.metadata.tooltip).selectAll("circle")
-                .on("mouseover",mouseover).on("mouseout",mouseout);
-                // Maintain hover on tooltip
-                tooltip.on("mouseover",()=>{mouseover(tooltip)}).on("mouseout",()=>{mouseout(tooltip)});
+                d.metadata.mouseoverDebounce=true;
             }
+            function mouseout(d){
+                // If tooltip node, use tooltip node for hover
+                // Else use last tooltip node
+                if(d.metadata && d.metadata.tooltip){
+                    tooltip.html(d.metadata.tooltip);
+                    tooltip.metadata = tooltip.metadata || {};
+                    tooltip.metadata.lastNode=d;
+                }else{
+                    d=tooltip.metadata.lastNode;
+                }
+                tooltip.transition().duration(150)
+                .ease(d3.easeLinear).style("opacity",0);
+                d.metadata.mouseoverDebounce=false;
+                // Wait 150 milliseconds before hiding tooltip
+                setTimeout(()=>{
+                    if(!d.metadata.mouseoverDebounce){
+                        d.metadata.mouseover=false;
+                        tooltip.style("z-index",-1)
+                    }
+                },150);
+            }
+            function click(d){
+                const baseURL = "https://dns.coffee";
+                const link = d.metadata.link;
+                if(link){
+                    window.location.href = baseURL+link;
+                }
+            }
+            // Add hoverbox for tooltip nodes
+            nodes.filter((d)=>d.metadata.tooltip).selectAll("rect")
+            .on("mouseover",mouseover).on("mouseout",mouseout);
+            nodes.filter((d)=>d.metadata.tooltip).selectAll("text")
+            .on("mouseover",mouseover).on("mouseout",mouseout);
+            nodes.filter((d)=>d.metadata.tooltip).selectAll("circle")
+            .on("mouseover",mouseover).on("mouseout",mouseout);
+            // Maintain hover on tooltip
+            tooltip.on("mouseover",()=>{mouseover(tooltip)}).on("mouseout",()=>{mouseout(tooltip)});
+            // Add link to node for dnscoffee page
+            nodes.filter((d)=>d.metadata.link).selectAll("rect").on("click", click);
+            nodes.filter((d)=>d.metadata.link).selectAll("text").on("click", click);
             // Create marker for arrows
             const edgeColors = {};
             Object.keys(nodeList.metadata.styleConfig.edgeStrokeColor).forEach((key)=>{
@@ -2135,8 +2348,12 @@ const DNSResolutionGrapher = {};
                     // Update text and rect posistions
                     // d.x, d.y are center coordinates for the rect, must be top-left based
                     nodes.selectAll("text")
-                    .attr("x",d=>d.x)
-                    .attr("y",d=>d.y)
+                    .attr("x",d=>{
+                        // Ensure nodes appear on screen in mesh mode
+                        d.x = (d.x < 0) ? 0 : d.x;
+                        d.y = (d.y < 0) ? 0 : d.y;
+                        return d.x
+                    }).attr("y",d=>d.y)
                     nodes.selectAll("rect")
                     .attr("x",d=>d.x - parseInt(d.metadata.width)/2)
                     .attr("y",d=>d.y - parseInt(d.metadata.height)/2)

@@ -7,28 +7,32 @@
         </button>
         <div class="collapse navbar-collapse" id="navbarResponsive">
             <ul class="navbar-nav">
-                <li class="nav-item">
-                    <a class="nav-link" href="/">Home</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="/domains">Domains</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="/nameservers">Nameservers</a>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#">Records<span
+                            class="caret"></span></a>
+                    <div class="dropdown-menu">
+                        <a class="dropdown-item" href="/domains">Domains</a>
+                        <a class="dropdown-item" href="/nameservers">Nameservers</a>
+                        <a class="dropdown-item" href="/ip">IPs</a>
+                    </div>
                 </li>
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#">Zones<span
                             class="caret"></span></a>
                     <div class="dropdown-menu">
-                        <a class="dropdown-item" href="/root/">ROOT</a>
+                        <a class="dropdown-item" href="/root">ROOT</a>
                         <a class="dropdown-item" href="/tlds">TLDs</a>
                         <a class="dropdown-item" href="/tlds/graveyard">TLD Graveyard</a>
                         <div class="dropdown-divider"></div>
                         <a class="dropdown-item" href="/zones">Imported</a>
                     </div>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="/ip">IPs</a>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#">Research<span
+                            class="caret"></span></a>
+                    <div class="dropdown-menu">
+                        <a class="dropdown-item" href="/research/trust-tree">Trust Tree</a>
+                    </div>
                 </li>
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="/search">Search<span
@@ -36,7 +40,7 @@
                     <div class="dropdown-menu">
                         <a class="dropdown-item" href="/search">Advanced Search</a>
                         <a class="dropdown-item" href="/search/prefix">Prefix</a>
-                        <a class="dropdown-item" href="/search/feed">Feeds</a>
+                        <a class="dropdown-item" href="/search/trends">Trends</a>
                     </div>
                 </li>
             </ul>
@@ -48,9 +52,6 @@
                         <button class="btn btn-secondary my-2 my-sm-0" type="submit">Search</button>
                     </form>
                 </li>
-                <!-- <li class="nav-item">
-                    <a class="nav-link" href="/feeds">Feeds</a>
-                </li> -->
                 <li class="nav-item navbar-right">
                     <a class="nav-link" href="/about">About</a>
                 </li>
