@@ -555,8 +555,8 @@ func (ds *DataStore) GetZoneImport(ctx context.Context, zone string) (*model.Zon
 	err := ds.db.QueryRow(ctx,
 		`SELECT
 			zones.zone,
-			import_zone_counts.domains,
-			import_zone_counts.records,
+			import_counts.domains,
+			import_counts.records,
 			zone_imports.first_import_date,
 			zone_imports.first_import_id,
 			zone_imports.last_import_date,
@@ -565,10 +565,10 @@ func (ds *DataStore) GetZoneImport(ctx context.Context, zone string) (*model.Zon
 		from
 			zones,
 			zone_imports,
-			import_zone_counts
+			import_counts
 		where
 			zones.id = zone_imports.zone_id
-			and zone_imports.last_import_id = import_zone_counts.import_id
+			and zone_imports.last_import_id = import_counts.import_id
 			and zones.zone = $1`,
 		zone).Scan(&r.Zone, &r.Domains, &r.Records, &r.FirstImportDate, &r.FirstImportID, &r.LastImportDate, &r.LastImportID, &r.Count)
 	if err != nil {
@@ -582,7 +582,7 @@ func (ds *DataStore) GetZoneImportResults(ctx context.Context) (*model.ZoneImpor
 	var zoneImportResults model.ZoneImportResults
 	zoneImportResults.Zones = make([]*model.ZoneImportResult, 0, 100)
 
-	rows, err := ds.db.Query(ctx, "select zones.zone, import_zone_counts.domains, import_zone_counts.records, zone_imports.first_import_date, zone_imports.first_import_id, zone_imports.last_import_date,zone_imports.last_import_id, zone_imports.count from zones, zone_imports, import_zone_counts where zones.id = zone_imports.zone_id and zone_imports.last_import_id = import_zone_counts.import_id order by zone asc")
+	rows, err := ds.db.Query(ctx, "select zones.zone, import_counts.domains, import_counts.records, zone_imports.first_import_date, zone_imports.first_import_id, zone_imports.last_import_date,zone_imports.last_import_id, zone_imports.count from zones, zone_imports, import_counts where zones.id = zone_imports.zone_id and zone_imports.last_import_id = import_counts.import_id order by zone asc")
 	if err != nil {
 		return nil, err
 	}
@@ -635,11 +635,11 @@ func (ds *DataStore) GetZoneHistoryCounts(ctx context.Context, zone string) (*mo
 		  (row_number() over (order by date desc) - 1) / 7 as seqnum, 
 		  date, 
 		  domains, 
-		  old, 
-		  moved, 
-		  new 
+		  feed_old, 
+		  feed_moved, 
+		  feed_new 
 		from 
-		  import_zone_counts, 
+		  import_counts, 
 		  zones 
 		where 
 		  zone_id = zones.id 
@@ -1155,8 +1155,8 @@ func (ds *DataStore) GetDeadTLDs(ctx context.Context) ([]*model.TLDLife, error) 
 		age(max(last_seen), min(first_seen))::text as age,
 		max(domains) as domains
 	from dead_zones, zones_nameservers
-	left join import_zone_counts
-		on import_zone_counts.zone_id = zones_nameservers.zone_id
+	left join import_counts
+		on import_counts.zone_id = zones_nameservers.zone_id
 	where
 		dead_zones.id = zones_nameservers.zone_id
 	group by zone
