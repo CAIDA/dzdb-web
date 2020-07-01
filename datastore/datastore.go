@@ -19,6 +19,9 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
+// format long SQL querises with
+// https://poorsql.com/
+
 // ErrNoResource a 404 for a resource
 var ErrNoResource = errors.New("the requested object does not exist")
 
@@ -148,12 +151,6 @@ func (ds *DataStore) GetZone(ctx context.Context, name string) (*model.Zone, err
 	}
 
 	// get num archive NS
-	err = ds.db.QueryRow(ctx, "SELECT count(*) FROM zones_nameservers WHERE zone_id = $1 AND last_seen IS NOT NULL", z.ID).Scan(&z.ArchiveNameServerCount)
-	if err != nil {
-		return nil, err
-	}
-
-	// get num domains
 	err = ds.db.QueryRow(ctx, "SELECT count(*) FROM zones_nameservers WHERE zone_id = $1 AND last_seen IS NOT NULL", z.ID).Scan(&z.ArchiveNameServerCount)
 	if err != nil {
 		return nil, err
