@@ -650,9 +650,9 @@ func (ds *DataStore) GetZoneHistoryCounts(ctx context.Context, zone string) (*mo
 	  select 
 		max(date) as date, 
 		floor(AVG(domains)) as domains, 
-		sum(old) as old, 
-		sum(moved) as moved, 
-		sum(new) as new 
+		sum(feed_old) as old, 
+		sum(feed_moved) as moved, 
+		sum(feed_new) as new 
 	  from 
 		g 
 	  group by 
