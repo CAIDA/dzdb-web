@@ -7,7 +7,7 @@ const errorCodes = [{
 {
     type:"warning",
     message:`NS record with IPv4/6 address`,
-    explanation:`RFC 1035 stIPulates that an NS record should point to an 
+    explanation:`RFC 1035 stipulates that an NS record should point to an 
     authoritative hostname.`
 },
 {
