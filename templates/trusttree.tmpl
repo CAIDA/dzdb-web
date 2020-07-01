@@ -118,15 +118,28 @@
     </div>
   </div>
 </div>
-<script>
-  if (typeof module === "undefined") {
-    window.module = { "exports": {} };
-  }
+<script type="text/javascript">
+    if(typeof module==="undefined"){
+        window.module = {
+            get exports(){
+                return {}
+            },
+            set exports(value){
+                if(value.name && !window[value.name]){
+                    window[value.name] = value;
+                }else{
+                    const script = [...document.getElementsByTagName("script")].pop();
+                    const filename = script.src.split("/").pop().split(".")[0];
+                    window[filename] = value  
+                }                 
+            }
+        };
+    }
 </script>
 <script src="https://d3js.org/d3.v5.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-<script type="text/javascript" src="https://wzrd.in/standalone/ipaddr.js@latest"></script>
-<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/axios-rate-limit@1.2.1/src/index.min.js"></script>
+<script src="https://unpkg.com/ipaddr.js@1.9.1/lib/ipaddr.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios-rate-limit@1.2.1/src/index.min.js"></script>
 <script type="text/javascript" src="/static/tree/axios-fetch.js"></script>
 <script type="text/javascript" src="/static/tree/priority-queue.js"></script>
 <script type="text/javascript" src="/static/tree/ac-colors.min.js"></script>

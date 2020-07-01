@@ -54,7 +54,6 @@
                     initNewGraph();
                     currentNodelist = currentNodelist.newListFromConfig(getOverrideMetadata(),updateOverview)
                     updateDisplay();
-                    console.log(currentNodelist);
                 }
             })
         })

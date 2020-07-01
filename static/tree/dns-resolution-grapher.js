@@ -12,7 +12,7 @@ const DNSResolutionGrapher = {};
     "195.46.39.40","66.187.76.168","147.135.76.183","147.135.76.183","216.146.35.35","216.146.36.36",
     "45.33.97.5","37.235.1.177","77.88.8.8","77.88.8.1","91.239.100.100","89.233.43.71",
     "74.82.42.42","109.69.8.51","156.154.70.5","156.154.71.5","45.77.165.194",
-    "45.32.36.36"].map((ns)=>ipaddr.js.parse(ns).toString().toLowerCase());
+    "45.32.36.36"].map((ns)=>ipaddr.parse(ns).toString().toLowerCase());
     // Definitions for MsgSet node, edge, nodelist
     class MsgSet extends Set{
         merge(iterable){
@@ -1355,13 +1355,13 @@ const DNSResolutionGrapher = {};
                         let ipNode = new Node(ip.type,ip.name,
                             {"depth":depth,"version":ip.version,"link":ip.link,"archive":ip.archive});
                         // Regulate ip format
-                        const ipName = (ip.version==4) ? parseIPv4(ip.name) : ipaddr.js.parse(ip.name).toString().toLowerCase();
+                        const ipName = (ip.version==4) ? parseIPv4(ip.name) : ipaddr.parse(ip.name).toString().toLowerCase();
                         // Test if ip is belongs to a public nameserver
                         if(publicNameserverList.includes(ipName)){
                             ipNode.metadata.warning.add(`4]IP '${ipNode.name}' belongs to a public nameserver`);
                         }
                         // Test if ip is in private address space
-                        const ipRange = ipaddr.js.parse(ipName).range();
+                        const ipRange = ipaddr.parse(ipName).range();
                         if(
                             ipRange === "uniqueLocal" ||
                             ipRange === "loopback" ||
@@ -2296,6 +2296,13 @@ const DNSResolutionGrapher = {};
                     }
                 },150);
             }
+            function click(d){
+                const baseURL = "https://dns.coffee";
+                const link = d.metadata.link;
+                if(link){
+                    window.location.href = baseURL+link;
+                }
+            }
             // Add hoverbox for tooltip nodes
             nodes.filter((d)=>d.metadata.tooltip).selectAll("rect")
             .on("mouseover",mouseover).on("mouseout",mouseout);
@@ -2305,6 +2312,9 @@ const DNSResolutionGrapher = {};
             .on("mouseover",mouseover).on("mouseout",mouseout);
             // Maintain hover on tooltip
             tooltip.on("mouseover",()=>{mouseover(tooltip)}).on("mouseout",()=>{mouseout(tooltip)});
+            // Add link to node for dnscoffee page
+            nodes.filter((d)=>d.metadata.link).selectAll("rect").on("click", click);
+            nodes.filter((d)=>d.metadata.link).selectAll("text").on("click", click);
             // Create marker for arrows
             const edgeColors = {};
             Object.keys(nodeList.metadata.styleConfig.edgeStrokeColor).forEach((key)=>{
