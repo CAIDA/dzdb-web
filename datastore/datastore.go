@@ -190,7 +190,7 @@ func (ds *DataStore) GetZone(ctx context.Context, name string) (*model.Zone, err
 
 	// get some root metadata
 	var root model.RootZone
-	err = ds.db.QueryRow(ctx, "select first_import_date, last_import_date from zones_imports, zones where zones.id = zones_imports.zone_id and zones.zone = ''").Scan(&root.FirstImport, &root.LastImport)
+	err = ds.db.QueryRow(ctx, "select first_import_date, last_import_date from zone_imports, zones where zones.id = zone_imports.zone_id and zones.zone = ''").Scan(&root.FirstImport, &root.LastImport)
 	if err != nil {
 		return nil, err
 	}
@@ -460,7 +460,7 @@ func (ds *DataStore) GetDomain(ctx context.Context, domain string) (*model.Domai
 	d.Name = domain
 
 	// zone queries
-	err = ds.db.QueryRow(ctx, "select zones.zone, zones_imports.first_import_date, zones_imports.last_import_date from zones, zones_imports where zones.id = zones_imports.zone_id and zones.id = $1 limit 1;", d.Zone.ID).Scan(&d.Zone.Name, &d.Zone.FirstSeen, &d.Zone.LastSeen)
+	err = ds.db.QueryRow(ctx, "select zones.zone, zone_imports.first_import_date, zone_imports.last_import_date from zones, zone_imports where zones.id = zone_imports.zone_id and zones.id = $1 limit 1;", d.Zone.ID).Scan(&d.Zone.Name, &d.Zone.FirstSeen, &d.Zone.LastSeen)
 	if err != nil {
 		return nil, err
 	}
@@ -557,18 +557,18 @@ func (ds *DataStore) GetZoneImport(ctx context.Context, zone string) (*model.Zon
 			zones.zone,
 			import_zone_counts.domains,
 			import_zone_counts.records,
-			zones_imports.first_import_date,
-			zones_imports.first_import_id,
-			zones_imports.last_import_date,
-			zones_imports.last_import_id,
-			zones_imports.count
+			zone_imports.first_import_date,
+			zone_imports.first_import_id,
+			zone_imports.last_import_date,
+			zone_imports.last_import_id,
+			zone_imports.count
 		from
 			zones,
-			zones_imports,
+			zone_imports,
 			import_zone_counts
 		where
-			zones.id = zones_imports.zone_id
-			and zones_imports.last_import_id = import_zone_counts.import_id
+			zones.id = zone_imports.zone_id
+			and zone_imports.last_import_id = import_zone_counts.import_id
 			and zones.zone = $1`,
 		zone).Scan(&r.Zone, &r.Domains, &r.Records, &r.FirstImportDate, &r.FirstImportID, &r.LastImportDate, &r.LastImportID, &r.Count)
 	if err != nil {
@@ -582,7 +582,7 @@ func (ds *DataStore) GetZoneImportResults(ctx context.Context) (*model.ZoneImpor
 	var zoneImportResults model.ZoneImportResults
 	zoneImportResults.Zones = make([]*model.ZoneImportResult, 0, 100)
 
-	rows, err := ds.db.Query(ctx, "select zones.zone, import_zone_counts.domains, import_zone_counts.records, zones_imports.first_import_date, zones_imports.first_import_id, zones_imports.last_import_date,zones_imports.last_import_id, zones_imports.count from zones, zones_imports, import_zone_counts where zones.id = zones_imports.zone_id and zones_imports.last_import_id = import_zone_counts.import_id order by zone asc")
+	rows, err := ds.db.Query(ctx, "select zones.zone, import_zone_counts.domains, import_zone_counts.records, zone_imports.first_import_date, zone_imports.first_import_id, zone_imports.last_import_date,zone_imports.last_import_id, zone_imports.count from zones, zone_imports, import_zone_counts where zones.id = zone_imports.zone_id and zone_imports.last_import_id = import_zone_counts.import_id order by zone asc")
 	if err != nil {
 		return nil, err
 	}
@@ -863,7 +863,7 @@ func (ds *DataStore) GetNameServer(ctx context.Context, domain string) (*model.N
 	// If we do not import the nameserver zone then
 	// we do not worry about populating the Zone fields
 	if z.ID != 0 {
-		err = ds.db.QueryRow(ctx, "select zones.zone, zones_imports.first_import_date, zones_imports.last_import_date from zones, zones_imports where zones.id = zones_imports.zone_id and zones.id = $1 limit 1", z.ID).Scan(&z.Name, &z.FirstSeen, &z.LastSeen)
+		err = ds.db.QueryRow(ctx, "select zones.zone, zone_imports.first_import_date, zone_imports.last_import_date from zones, zone_imports where zones.id = zone_imports.zone_id and zones.id = $1 limit 1", z.ID).Scan(&z.Name, &z.FirstSeen, &z.LastSeen)
 		if err != nil {
 			return nil, err
 		}
@@ -1062,16 +1062,16 @@ func (ds *DataStore) GetAvailablePrefixes(ctx context.Context, name string) (*mo
 				AND domains.domain LIKE $1 || '.%'
 		  )
 		  SELECT
-			 zones_imports.zone_id 
+			 zone_imports.zone_id 
 		  FROM
 		  	 zones,
-			 zones_imports 
+			 zone_imports 
 			 LEFT JOIN
 				taken 
-				ON taken.zone_id = zones_imports.zone_id 
+				ON taken.zone_id = zone_imports.zone_id 
 		  WHERE
 			 taken.zone_id IS NULL
-			 AND zones.id = zones_imports.zone_id
+			 AND zones.id = zone_imports.zone_id
 			 AND zones.zone != ''
 			 AND zones.zone != 'ARPA'
 	   )
