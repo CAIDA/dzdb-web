@@ -113,6 +113,26 @@
 .treeWrapper:not(.active){
     display: none;
 }
+.error-content:not(.hidden){
+  border-top: solid 1px #efefef;
+  margin-top: 2%;
+}
+.error-content:not(.hidden) .error-message{
+  display: flex;
+  padding: 5%;
+}
+.error-message .message-heading{
+  font-weight: bold;
+}
+.message-heading.hazard{
+  color: #FF0000;
+}
+.message-heading.warning{
+  color: #CA9E2A;
+}
+.error-message .message-explanation{
+  line-height: 2em;
+}
 /** SPINNER **/
 .spinner:not(.active){
     display: none;

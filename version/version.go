@@ -1,7 +1,9 @@
+// Package version contains build version information
 package version
 
 import "fmt"
 
+// Git version variables
 var (
 	GitDate   = "?"
 	GitHash   = "?"

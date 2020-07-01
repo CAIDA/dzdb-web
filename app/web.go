@@ -58,7 +58,7 @@ func Start(ds *datastore.DataStore, server *server.Server) {
 	server.Post("/search", app.searchHandler)
 	server.Get("/search", app.searchIndexHandler)
 	server.Get("/search/prefix", app.prefixIndexHandler)
-	server.Get("/search/feed", app.searchFeedHandler)
+	server.Get("/search/trends", app.searchTrendsHandler)
 	server.Get("/search/prefix/:type/:prefix", app.prefixHandler)
 
 	server.Get("/domains", app.domainIndexHandler)
@@ -73,8 +73,8 @@ func Start(ds *datastore.DataStore, server *server.Server) {
 	server.Get("/stats", app.statsHandler)
 
 	// research
-	server.Get("/research/ipnszonecount/:ip", app.ipNsZoneCountHandler)
 	server.Get("/research/trust-tree", app.trustTreeHandler)
+	server.Get("/research/ipnszonecount/:ip", app.ipNsZoneCountHandler)
 }
 
 func (app *appContext) searchIndexHandler(w http.ResponseWriter, r *http.Request) {
@@ -92,58 +92,61 @@ func (app *appContext) searchHandler(w http.ResponseWriter, r *http.Request) {
 	s.Type = r.FormValue("type")
 	var err error
 
-	// first handle when there is only a single result and single result type
-	switch s.Type {
-	case "zone":
-		_, err = app.ds.GetZoneID(r.Context(), s.Query)
-		if err == nil {
-			http.Redirect(w, r, "/zones/"+s.Query, http.StatusFound)
-			return
-		}
-	case "domain":
-		_, _, err = app.ds.GetDomainID(r.Context(), s.Query)
-		if err == nil {
-			http.Redirect(w, r, "/domains/"+s.Query, http.StatusFound)
-			return
-		}
-	case "nameserver":
-		_, err = app.ds.GetNameServerID(r.Context(), s.Query)
-		if err == nil {
-			http.Redirect(w, r, "/nameservers/"+s.Query, http.StatusFound)
-			return
-		}
-	case "ip":
-		_, _, err = app.ds.GetIPID(r.Context(), s.Query)
-		if err == nil {
-			http.Redirect(w, r, "/ip/"+s.Query, http.StatusFound)
-			return
-		}
-	default:
-		s.Results = make([]model.SearchResult, 0)
-		// now handle multiple results types
-		// this is a very poor exact match search... add prefix too?
-		if _, err = app.ds.GetZoneID(r.Context(), s.Query); err == nil {
-			s.Results = append(s.Results, model.SearchResult{Name: s.Query, Link: "/zones/" + s.Query, Type: "zone"})
-		}
-		if _, _, err = app.ds.GetDomainID(r.Context(), s.Query); err == nil {
-			s.Results = append(s.Results, model.SearchResult{Name: s.Query, Link: "/domains/" + s.Query, Type: "domain"})
-		}
-		if _, err = app.ds.GetNameServerID(r.Context(), s.Query); err == nil {
-			s.Results = append(s.Results, model.SearchResult{Name: s.Query, Link: "/nameservers/" + s.Query, Type: "nameserver"})
-		}
-		if _, _, err = app.ds.GetIPID(r.Context(), s.Query); err == nil {
-			s.Results = append(s.Results, model.SearchResult{Name: s.Query, Link: "/ip/" + s.Query, Type: "IP"})
-		}
+	// since the root zone is the empty string, this prevents empty searches from redirecting to the zones page
+	if len(s.Query) > 0 {
+		// first handle when there is only a single result and single result type
+		switch s.Type {
+		case "zone":
+			_, err = app.ds.GetZoneID(r.Context(), s.Query)
+			if err == nil {
+				http.Redirect(w, r, "/zones/"+s.Query, http.StatusFound)
+				return
+			}
+		case "domain":
+			_, _, err = app.ds.GetDomainID(r.Context(), s.Query)
+			if err == nil {
+				http.Redirect(w, r, "/domains/"+s.Query, http.StatusFound)
+				return
+			}
+		case "nameserver":
+			_, err = app.ds.GetNameServerID(r.Context(), s.Query)
+			if err == nil {
+				http.Redirect(w, r, "/nameservers/"+s.Query, http.StatusFound)
+				return
+			}
+		case "ip":
+			_, _, err = app.ds.GetIPID(r.Context(), s.Query)
+			if err == nil {
+				http.Redirect(w, r, "/ip/"+s.Query, http.StatusFound)
+				return
+			}
+		default:
+			s.Results = make([]model.SearchResult, 0)
+			// now handle multiple results types
+			// this is a very poor exact match search... add prefix too?
+			if _, err = app.ds.GetZoneID(r.Context(), s.Query); err == nil {
+				s.Results = append(s.Results, model.SearchResult{Name: s.Query, Link: "/zones/" + s.Query, Type: "zone"})
+			}
+			if _, _, err = app.ds.GetDomainID(r.Context(), s.Query); err == nil {
+				s.Results = append(s.Results, model.SearchResult{Name: s.Query, Link: "/domains/" + s.Query, Type: "domain"})
+			}
+			if _, err = app.ds.GetNameServerID(r.Context(), s.Query); err == nil {
+				s.Results = append(s.Results, model.SearchResult{Name: s.Query, Link: "/nameservers/" + s.Query, Type: "nameserver"})
+			}
+			if _, _, err = app.ds.GetIPID(r.Context(), s.Query); err == nil {
+				s.Results = append(s.Results, model.SearchResult{Name: s.Query, Link: "/ip/" + s.Query, Type: "IP"})
+			}
 
-		// still want to redirect if only one type is found
-		if len(s.Results) == 1 {
-			http.Redirect(w, r, s.Results[0].Link, http.StatusFound)
-			return
+			// still want to redirect if only one type is found
+			if len(s.Results) == 1 {
+				http.Redirect(w, r, s.Results[0].Link, http.StatusFound)
+				return
+			}
 		}
 	}
 
 	// render search page
-	p := Page{"Search", "", s}
+	p := Page{"Search", "Search", s}
 	err = app.templates.ExecuteTemplate(w, "search.tmpl", p)
 	if err != nil {
 		panic(err)
@@ -156,7 +159,7 @@ func (app *appContext) statsHandler(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	p := Page{"Stats", "Stats", data}
+	p := Page{"Stats", "", data}
 	err = app.templates.ExecuteTemplate(w, "stats.tmpl", p)
 	if err != nil {
 		panic(err)
@@ -237,8 +240,6 @@ func (app *appContext) zoneHandler(w http.ResponseWriter, r *http.Request) {
 			panic(err)
 		}
 		data.Domains = &domains
-	} else {
-		// TODO add first_date field for zones I don't import
 	}
 
 	p := Page{name, "Zones", data}
@@ -261,7 +262,7 @@ func (app *appContext) nameserverHandler(w http.ResponseWriter, r *http.Request)
 		panic(err)
 	}
 
-	p := Page{name, "Nameservers", data}
+	p := Page{name, "Records", data}
 	err = app.templates.ExecuteTemplate(w, "nameserver.tmpl", p)
 	if err != nil {
 		panic(err)
@@ -282,7 +283,7 @@ func (app *appContext) domainHandler(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	p := Page{domain, "Domains", data}
+	p := Page{domain, "Records", data}
 	err = app.templates.ExecuteTemplate(w, "domain.tmpl", p)
 	if err != nil {
 		panic(err)
@@ -303,7 +304,7 @@ func (app *appContext) ipHandler(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	p := Page{name, "IPs", data}
+	p := Page{name, "Records", data}
 	err = app.templates.ExecuteTemplate(w, "ip.tmpl", p)
 	if err != nil {
 		panic(err)
@@ -320,11 +321,11 @@ func (app *appContext) prefixIndexHandler(w http.ResponseWriter, r *http.Request
 	}
 }
 
-// searchFeedHandler shows the feed search page
-func (app *appContext) searchFeedHandler(w http.ResponseWriter, r *http.Request) {
+// searchTrendsHandler shows the trend search page
+func (app *appContext) searchTrendsHandler(w http.ResponseWriter, r *http.Request) {
 	var data model.PrefixList
-	p := Page{"Feed", "Search", data}
-	err := app.templates.ExecuteTemplate(w, "feed_search.tmpl", p)
+	p := Page{"Trends", "Search", data}
+	err := app.templates.ExecuteTemplate(w, "trends_search.tmpl", p)
 	if err != nil {
 		panic(err)
 	}
@@ -375,7 +376,7 @@ func (app *appContext) AboutHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *appContext) IndexHandler(w http.ResponseWriter, r *http.Request) {
-	p := Page{"Home", "Home", nil}
+	p := Page{"Home", "", nil}
 	err := app.templates.ExecuteTemplate(w, "home.tmpl", p)
 	if err != nil {
 		panic(err)
@@ -383,7 +384,7 @@ func (app *appContext) IndexHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *appContext) domainIndexHandler(w http.ResponseWriter, r *http.Request) {
-	p := Page{"Domains", "Domains", nil}
+	p := Page{"Domains", "Records", nil}
 	err := app.templates.ExecuteTemplate(w, "domains.tmpl", p)
 	if err != nil {
 		panic(err)
@@ -391,7 +392,7 @@ func (app *appContext) domainIndexHandler(w http.ResponseWriter, r *http.Request
 }
 
 func (app *appContext) nameserverIndexHandler(w http.ResponseWriter, r *http.Request) {
-	p := Page{"Name Servers", "Nameservers", nil}
+	p := Page{"Name Servers", "Records", nil}
 	err := app.templates.ExecuteTemplate(w, "nameservers.tmpl", p)
 	if err != nil {
 		panic(err)
@@ -399,7 +400,7 @@ func (app *appContext) nameserverIndexHandler(w http.ResponseWriter, r *http.Req
 }
 
 func (app *appContext) ipIndexHandler(w http.ResponseWriter, r *http.Request) {
-	p := Page{"IPs", "IPs", nil}
+	p := Page{"IPs", "Records", nil}
 	err := app.templates.ExecuteTemplate(w, "ips.tmpl", p)
 	if err != nil {
 		panic(err)
@@ -420,7 +421,7 @@ func (app *appContext) ipNsZoneCountHandler(w http.ResponseWriter, r *http.Reque
 		panic(err)
 	}
 
-	p := Page{"IP NS Zone Count", "IP NS Zone Count", data}
+	p := Page{"IP NS Zone Count", "Research", data}
 	err = app.templates.ExecuteTemplate(w, "ipnszonecount.tmpl", p)
 	if err != nil {
 		panic(err)
@@ -428,7 +429,7 @@ func (app *appContext) ipNsZoneCountHandler(w http.ResponseWriter, r *http.Reque
 }
 
 func (app *appContext) trustTreeHandler(w http.ResponseWriter, r *http.Request) {
-	p := Page{"Trust Tree", "Trust Tree", nil}
+	p := Page{"Trust Tree", "Research", nil}
 	err := app.templates.ExecuteTemplate(w, "trusttree.tmpl", p)
 	if err != nil {
 		panic(err)

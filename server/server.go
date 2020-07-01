@@ -30,9 +30,9 @@ type APIConfig struct {
 
 var DefaultAPIConfig = APIConfig{
 	APITimeout:           60,
-	APIRequestsPerMinute: 4 * 60,
+	APIRequestsPerMinute: 5 * 60,
 	APIMaxRequestHistory: 16384,
-	APIRequestsBurst:     5,
+	APIRequestsBurst:     10,
 }
 
 // handler for catching a panic
@@ -100,7 +100,7 @@ func makeThrottleHandler(perMin, burst, storeSize int) func(http.Handler) http.H
 	}
 	quota := throttled.RateQuota{
 		MaxRate:  throttled.PerMin(perMin),
-		MaxBurst: 5,
+		MaxBurst: burst,
 	}
 	rateLimiter, err := throttled.NewGCRARateLimiter(store, quota)
 	if err != nil {

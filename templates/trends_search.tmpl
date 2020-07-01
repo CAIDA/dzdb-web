@@ -1,0 +1,129 @@
+{{template "top" $}}
+
+<div class="row">
+  <div class="col-md-6">
+    <div class="card mb-3">
+      <h3 class="card-header">Trends Search</h3>
+      <form onsubmit="TrendsSearch(); return false">
+        <div class="card-body">
+          <div class="form-group">
+            <input class="form-control form-control-lg" type="text" name="query" placeholder="example" id="search"
+              value="">
+          </div>
+          <div class="form-group">
+            <button type="submit" class="btn btn-primary">Search</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card text-white bg-secondary mb-3">
+      <div class="card-header">Info</div>
+      <div class="card-body">
+        <h4 class="card-title">Trends Search</h4>
+        <p class="card-text">Search feeds of old, moved, and new domain names for substring matches in the last year.</p>
+        <p class="card-text">Queries must be at least 4 characters long and contain only valid domain characters.</p>
+        <p class="card-text">Multiple terms can be plotted together by separating terms with a space.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="graph_row" class="row" style="display:none">
+  <div class="col-md-12">
+    <div class="card">
+      <a href="#trendschart" id="trendschart"
+        class="list-group-item d-flex justify-content-between align-items-center active">
+        Trends Graph
+      </a>
+      <div id="spinner1" class="spinner">
+        <div class="bounce1"></div>
+        <div class="bounce2"></div>
+        <div class="bounce3"></div>
+      </div>
+      <div id="trendDiv"></div>
+    </div>
+  </div>
+</div>
+
+<script type="text/javascript">
+  var searchInput = document.getElementById("search");
+  var min_len = 4;
+  function TrendsSearch() {
+    var term = searchInput.value;
+    if (term.length < min_len) {
+      // TODO show error
+      return;
+    }
+
+    // set url hash
+    window.location.hash = "#" + encodeURIComponent(term);
+
+    $("#graph_row").show()
+    $("#spinner1").show()
+    $("#trendDiv").hide()
+
+    // api calls to run for each query
+    var plots = ["new", "moved", "old"];
+    // function to make a promise for each api call
+    var makePromise = function(p, q) {
+      return fetch("/api/feeds/" + p + "/search/" + encodeURIComponent(q)).then(response => response.json());
+    };
+
+    // build list of promises
+    //var actions = plots.map(fn);
+    var actions = [];
+    term.split(" ").forEach(function (q) {
+      q = q.trim();
+      if (q.length < min_len) {
+        return;
+      }
+      plots.forEach(function (p) {
+        actions.push(makePromise(p, q))
+      });
+    });
+
+    Promise.all(actions).then((trendsData) => {
+      var data = [];
+
+      trendsData.forEach(function (t) {
+        var dates = [];
+        var domains = [];
+        t.data.counts.forEach(function (e) {
+          dates.push(e.date);
+          domains.push(e.count);
+        });
+        data.push({
+          x: dates,
+          y: domains,
+          type: 'scatter',
+          mode: "lines",
+          name: `${t.data.search} ${t.data.type}`,
+        })
+
+      });
+
+      var layout = {
+        autosize: true,
+        showlegend: true,
+        automargin: true,
+      };
+
+      var config = {
+        displaylogo: false,
+        responsive: true
+      };
+
+      $("#trendDiv").show();
+      Plotly.newPlot('trendDiv', data, layout, config).then(function () { $("#spinner1").hide() });
+
+    });
+  }
+  if (document.location.hash != "") {
+    searchInput.value = decodeURIComponent(window.location.hash.substring(1));
+    TrendsSearch();
+  }
+</script>
+
+{{template "bottom" $}}
