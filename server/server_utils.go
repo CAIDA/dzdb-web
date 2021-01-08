@@ -11,6 +11,18 @@ import (
 	"gopkg.in/throttled/throttled.v2/store/memstore"
 )
 
+// SetProxyURLHost
+// should be called AFTER handlers.ProxyHeaders
+// this fixes a bug with the proxy headers not setting the correct host
+// https://github.com/gorilla/handlers/pull/178
+func SetProxyURLHost(next http.Handler) http.Handler {
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		r.URL.Host = r.Host
+		next.ServeHTTP(w, r)
+	}
+	return http.HandlerFunc(fn)
+}
+
 func neuterDirectoryListing(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasSuffix(r.URL.Path, "/") {
