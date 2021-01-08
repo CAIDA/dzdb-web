@@ -12,7 +12,7 @@ import (
 	"dnscoffee/server"
 	"dnscoffee/version"
 
-	"github.com/julienschmidt/httprouter"
+	"github.com/gorilla/mux"
 	"golang.org/x/net/idna"
 )
 
@@ -59,14 +59,14 @@ func Start(ds *datastore.DataStore, server *server.Server) {
 	server.Get("/search", app.searchIndexHandler)
 	server.Get("/search/prefix", app.prefixIndexHandler)
 	server.Get("/search/trends", app.searchTrendsHandler)
-	server.Get("/search/prefix/:type/:prefix", app.prefixHandler)
+	server.Get("/search/prefix/{type}/{prefix}", app.prefixHandler)
 
 	server.Get("/domains", app.domainIndexHandler)
-	server.Get("/domains/:domain", app.domainHandler)
-	server.Get("/ip/:ip", app.ipHandler)
-	server.Get("/nameservers/:nameserver", app.nameserverHandler)
+	server.Get("/domains/{domain}", app.domainHandler)
+	server.Get("/ip/{ip}", app.ipHandler)
+	server.Get("/nameservers/{nameserver}", app.nameserverHandler)
 	server.Get("/root/", app.rootHandler)
-	server.Get("/zones/:zone", app.zoneHandler)
+	server.Get("/zones/{zone}", app.zoneHandler)
 	server.Get("/zones", app.zoneIndexHandler)
 	server.Get("/tlds", app.tldIndexHandler)
 	server.Get("/tlds/graveyard", app.tldGraveyardIndexHandler)
@@ -74,7 +74,7 @@ func Start(ds *datastore.DataStore, server *server.Server) {
 
 	// research
 	server.Get("/research/trust-tree", app.trustTreeHandler)
-	server.Get("/research/ipnszonecount/:ip", app.ipNsZoneCountHandler)
+	server.Get("/research/ipnszonecount/{ip}", app.ipNsZoneCountHandler)
 }
 
 func (app *appContext) searchIndexHandler(w http.ResponseWriter, r *http.Request) {
@@ -218,8 +218,8 @@ func (app *appContext) rootHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *appContext) zoneHandler(w http.ResponseWriter, r *http.Request) {
-	params := httprouter.ParamsFromContext(r.Context())
-	name := cleanDomain(params.ByName("zone"))
+	params := mux.Vars(r)
+	name := cleanDomain(params["zone"])
 	data, err := app.ds.GetZone(r.Context(), name)
 	if err != nil {
 		if err == datastore.ErrNoResource {
@@ -250,8 +250,8 @@ func (app *appContext) zoneHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *appContext) nameserverHandler(w http.ResponseWriter, r *http.Request) {
-	params := httprouter.ParamsFromContext(r.Context())
-	name := cleanDomain(params.ByName("nameserver"))
+	params := mux.Vars(r)
+	name := cleanDomain(params["nameserver"])
 	data, err := app.ds.GetNameServer(r.Context(), name)
 	if err != nil {
 		if err == datastore.ErrNoResource {
@@ -271,8 +271,8 @@ func (app *appContext) nameserverHandler(w http.ResponseWriter, r *http.Request)
 
 // domainHandler returns domain object for the queried domain
 func (app *appContext) domainHandler(w http.ResponseWriter, r *http.Request) {
-	params := httprouter.ParamsFromContext(r.Context())
-	domain := cleanDomain(params.ByName("domain"))
+	params := mux.Vars(r)
+	domain := cleanDomain(params["domain"])
 	data, err := app.ds.GetDomain(r.Context(), domain)
 	if err != nil {
 		if err == datastore.ErrNoResource {
@@ -292,8 +292,8 @@ func (app *appContext) domainHandler(w http.ResponseWriter, r *http.Request) {
 
 // ipHandler returns ip object for the queried domain
 func (app *appContext) ipHandler(w http.ResponseWriter, r *http.Request) {
-	params := httprouter.ParamsFromContext(r.Context())
-	name := cleanDomain(params.ByName("ip"))
+	params := mux.Vars(r)
+	name := cleanDomain(params["ip"])
 	data, err := app.ds.GetIP(r.Context(), name)
 	if err != nil {
 		if err == datastore.ErrNoResource {
@@ -335,9 +335,9 @@ func (app *appContext) searchTrendsHandler(w http.ResponseWriter, r *http.Reques
 func (app *appContext) prefixHandler(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var data *model.PrefixList
-	params := httprouter.ParamsFromContext(r.Context())
-	prefixType := strings.ToLower(params.ByName("type"))
-	name := cleanDomain(params.ByName("prefix"))
+	params := mux.Vars(r)
+	prefixType := strings.ToLower(params["type"])
+	name := cleanDomain(params["prefix"])
 	if prefixType == "active" {
 		data, err = app.ds.GetTakenPrefixes(r.Context(), name)
 
@@ -409,8 +409,8 @@ func (app *appContext) ipIndexHandler(w http.ResponseWriter, r *http.Request) {
 
 // research
 func (app *appContext) ipNsZoneCountHandler(w http.ResponseWriter, r *http.Request) {
-	params := httprouter.ParamsFromContext(r.Context())
-	ip := cleanDomain(params.ByName("ip"))
+	params := mux.Vars(r)
+	ip := cleanDomain(params["ip"])
 
 	data, err := app.ds.GetIPNsZoneCount(r.Context(), ip)
 	if err != nil {

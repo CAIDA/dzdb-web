@@ -6,12 +6,12 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/julienschmidt/httprouter"
+	"github.com/gorilla/mux"
 )
 
 func (app *appContext) apiIPNsZoneCount(w http.ResponseWriter, r *http.Request) {
-	params := httprouter.ParamsFromContext(r.Context())
-	ip := cleanDomain(params.ByName("ip"))
+	params := mux.Vars(r)
+	ip := cleanDomain(params["ip"])
 
 	data, err := app.ds.GetIPNsZoneCount(r.Context(), ip)
 	if err != nil {
@@ -27,8 +27,8 @@ func (app *appContext) apiIPNsZoneCount(w http.ResponseWriter, r *http.Request) 
 
 // apiActiveIPs exposes GetActiveIPs as an API
 func (app *appContext) apiActiveIPs(w http.ResponseWriter, r *http.Request) {
-	params := httprouter.ParamsFromContext(r.Context())
-	date, err := time.Parse("2006-01-02", params.ByName("date"))
+	params := mux.Vars(r)
+	date, err := time.Parse("2006-01-02", params["date"])
 	if err != nil {
 		panic(err)
 	}
