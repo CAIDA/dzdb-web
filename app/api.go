@@ -440,6 +440,7 @@ func (app *appContext) apiNameserverHandler(w http.ResponseWriter, r *http.Reque
 // API Index handler
 // Displays the map of the API methods available
 func (app *appContext) apiIndex(w http.ResponseWriter, req *http.Request) {
+	// TODO change to use mux.Get API documentation functions
 	w.Header().Set("Content-Type", "application/json")
 	err := json.NewEncoder(w).Encode(app.api)
 	if err != nil && err != http.ErrHandlerTimeout {
