@@ -163,7 +163,7 @@
       <div id="domainHistoryDiv"></div>
     </div>
     <script>
-      fetch("/api/counts/")
+      fetch("/api/counts")
         .then(response => response.json())
         .then(api_response => {
           dates = [];
