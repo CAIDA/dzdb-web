@@ -65,7 +65,7 @@ func Start(ds *datastore.DataStore, server *server.Server) {
 	server.Get("/domains/{domain}", app.domainHandler)
 	server.Get("/ip/{ip}", app.ipHandler)
 	server.Get("/nameservers/{nameserver}", app.nameserverHandler)
-	server.Get("/root/", app.rootHandler)
+	server.Get("/root", app.rootHandler)
 	server.Get("/zones/{zone}", app.zoneHandler)
 	server.Get("/zones", app.zoneIndexHandler)
 	server.Get("/tlds", app.tldIndexHandler)

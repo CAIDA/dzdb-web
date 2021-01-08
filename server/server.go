@@ -105,7 +105,7 @@ func New(listenAddr string, apiConfig APIConfig) (*Server, error) {
 	server := &Server{
 		listenAddr: listenAddr,
 		apiConfig:  apiConfig,
-		router:     mux.NewRouter(), //.StrictSlash(true),
+		router:     mux.NewRouter().StrictSlash(true),
 	}
 
 	// serve static content
@@ -129,7 +129,6 @@ func New(listenAddr string, apiConfig APIConfig) (*Server, error) {
 	// 	server.apiConfig.APIRequestsBurst,
 	// 	server.apiConfig.APIMaxRequestHistory,
 	// ))
-
 }
 
 // Get registers a HTTP GET to the router & handler

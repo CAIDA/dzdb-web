@@ -39,14 +39,14 @@ func APIStart(app *appContext, coffeeServer *server.Server) {
 	addAPI("/imports/{year}/{month}/{day}/{zone}", "import_day_view_zone", nil)
 
 	// counts
-	addAPI("/counts/", "zone_counts", app.apiInternetHistoryCountsHandler)
+	addAPI("/counts", "zone_counts", app.apiInternetHistoryCountsHandler)
 	addAPI("/counts/zone/{zone}", "internet_counts", app.apiZoneHistoryCountsHandler)
-	addAPI("/counts/root/", "internet_counts", app.apiZoneHistoryCountsHandler)
-	addAPI("/counts/all/", "all_zone_counts", app.apiAllZoneHistoryCountsHandler)
-	//addAPI("/counts/top/", "top_zone_counts", app.apiTopZonesHandler)
+	addAPI("/counts/root", "internet_counts", app.apiZoneHistoryCountsHandler)
+	addAPI("/counts/all", "all_zone_counts", app.apiAllZoneHistoryCountsHandler)
+	//addAPI("/counts/top", "top_zone_counts", app.apiTopZonesHandler)
 
 	// zones
-	addAPI("/root/", "zone_view", app.apiZoneHandler)
+	addAPI("/root", "zone_view", app.apiZoneHandler)
 	addAPI("/zones", "zones", app.apiLatestZonesHandler)
 	addAPI("/zones/{zone}", "zone_view", app.apiZoneHandler)
 	addAPI("/zones/{zone}/import", "zone_import", app.apiZoneImportHandler)
@@ -121,7 +121,7 @@ func APIStart(app *appContext, coffeeServer *server.Server) {
 	addAPI("/research/active_ips/{date}", "active_ips", app.apiActiveIPs)
 
 	// API index
-	coffeeServer.Get("/api/", app.apiIndex)
+	coffeeServer.Get("/api", app.apiIndex)
 }
 
 func (app *appContext) apiImportStatusHandler(w http.ResponseWriter, r *http.Request) {
