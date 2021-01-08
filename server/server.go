@@ -63,6 +63,9 @@ func New(listenAddr string, apiConfig APIConfig) (*Server, error) {
 // Get registers a HTTP GET to the router & handler
 func (s *Server) Get(path string, fn http.HandlerFunc) {
 	s.router.Handle(path, fn).Methods(http.MethodGet)
+	s.router.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+	}).Methods(http.MethodHead)
 }
 
 // Post registers a HTTP POST to the router & handler
