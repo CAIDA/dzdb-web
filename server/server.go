@@ -105,7 +105,7 @@ func New(listenAddr string, apiConfig APIConfig) (*Server, error) {
 	server := &Server{
 		listenAddr: listenAddr,
 		apiConfig:  apiConfig,
-		router:     mux.NewRouter().StrictSlash(true),
+		router:     mux.NewRouter(), //.StrictSlash(true),
 	}
 
 	// serve static content
@@ -115,6 +115,10 @@ func New(listenAddr string, apiConfig APIConfig) (*Server, error) {
 	// setup robots.txt
 	server.router.HandleFunc("/robots.txt", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "static/robots.txt")
+	}).Methods(http.MethodGet)
+	// favicon
+	server.router.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "static/favicon.ico")
 	}).Methods(http.MethodGet)
 
 	return server, nil
