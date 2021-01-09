@@ -90,7 +90,6 @@ func (s *Server) Start() error {
 
 	// rate limiting
 	// TODO add rate limiting after static handler and possible the main page
-	// TODO use IP set by proxyheaders!
 	throttleHandler := makeThrottleHandler(
 		s.apiConfig.APIRequestsPerMinute,
 		s.apiConfig.APIRequestsBurst,
