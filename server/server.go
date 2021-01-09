@@ -78,7 +78,7 @@ func (s *Server) Start() error {
 	timeoutDuration := time.Duration(s.apiConfig.APITimeout) * time.Second
 	// prep proxy handler
 	h := handlers.ProxyHeaders(s.router)
-	h = SetProxyURLHost(h)
+	h = setProxyURLHost(h)
 	// setup logging
 	h = handlers.LoggingHandler(os.Stdout, h)
 	// add recovery
