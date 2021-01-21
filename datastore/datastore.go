@@ -1174,7 +1174,22 @@ func (ds *DataStore) GetDeadTLDs(ctx context.Context) ([]*model.TLDLife, error) 
 // useing a zoneId is fast
 func (ds *DataStore) GetDomainsInZoneID(ctx context.Context, zoneID int64) ([]model.Domain, error) {
 	out := make([]model.Domain, 0, 50)
-	rows, err := ds.db.Query(ctx, "with dupes as (select domain, last_seen from domains, domains_nameservers, zones where domains.id = domains_nameservers.domain_id and domains_nameservers.zone_id = zones.id and zones.id = $1 order by last_Seen desc limit 150) select domain, max(last_seen) last_seen from dupes group by domain limit 50", zoneID)
+	rows, err := ds.db.Query(ctx, `WITH dupes
+	AS (
+		SELECT domain
+			,last_seen
+		FROM domains
+			,domains_nameservers
+			,zones
+		WHERE domains.id = domains_nameservers.domain_id
+			AND domains_nameservers.zone_id = zones.id
+			AND zones.id = $1
+		ORDER BY last_Seen DESC limit 150
+		)
+	SELECT  distinct on (domain) domain
+		,last_seen
+	FROM dupes
+	ORDER BY domain, last_seen NULLS FIRST limit 50`, zoneID)
 	if err != nil {
 		return out, err
 	}
