@@ -80,28 +80,20 @@ func (ds *DataStore) GetIPID(ctx context.Context, ipStr string) (int64, int, err
 	var id int64
 	var version int
 	var err error
-	var ip pgtype.Inet
-	err = ip.DecodeText(nil, []byte(ipStr))
-	if err != nil {
-		return -1, 0, err
-	}
-	if ip.IPNet.IP.To4() != nil {
-		version = 4
-		err = ds.db.QueryRow(ctx, "SELECT id FROM a WHERE ip = $1", ip).Scan(&id)
-		if err == pgx.ErrNoRows {
-			err = ErrNoResource
-		}
-		return id, version, err
-	}
-	if ip.IPNet.IP.To16() != nil {
+	if strings.Contains(ipStr, ":") {
 		version = 6
-		err = ds.db.QueryRow(ctx, "SELECT id FROM aaaa WHERE ip = $1", ip).Scan(&id)
+		err = ds.db.QueryRow(ctx, "SELECT id FROM aaaa WHERE ip = $1", ipStr).Scan(&id)
 		if err == pgx.ErrNoRows {
 			err = ErrNoResource
 		}
 		return id, version, err
 	}
-	return -1, 0, ErrNoResource
+	version = 4
+	err = ds.db.QueryRow(ctx, "SELECT id FROM a WHERE ip = $1", ipStr).Scan(&id)
+	if err == pgx.ErrNoRows {
+		err = ErrNoResource
+	}
+	return id, version, err
 }
 
 // GetZoneID gets the zoneID with the given name

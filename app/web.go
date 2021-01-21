@@ -304,7 +304,7 @@ func (app *appContext) ipHandler(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	p := Page{name, "Records", data}
+	p := Page{data.Name, "Records", data}
 	err = app.templates.ExecuteTemplate(w, "ip.tmpl", p)
 	if err != nil {
 		panic(err)
