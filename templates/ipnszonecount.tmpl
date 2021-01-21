@@ -48,7 +48,7 @@
       <div id="pieDiv"></div>
     </div>
     <script>
-      fetch("/api/research/ipnszonecount/{{$.Data.IP}}")
+      fetch("/api/research/ipnszonecount/" + encodeURIComponent("{{$.Data.IP}}"))
         .then(response => response.json())
         .then(api_response => {
           values = [];

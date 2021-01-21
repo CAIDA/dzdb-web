@@ -39,7 +39,7 @@
       <div id="timelineDiv"></div>
     </div>
     <script>
-      fetch("/api/zones/{{$.Data.Name}}")
+      fetch("/api/zones/"+encodeURIComponent("{{$.Data.Name}}"))
         .then(response => response.json())
         .then(api_response => {
 
@@ -143,7 +143,7 @@
       <div id="historyDiv"></div>
     </div>
     <script>
-      fetch("/api/counts/zone/{{$.Data.Name}}")
+      fetch("/api/counts/zone/" + encodeURIComponent("{{$.Data.Name}}"))
         .then(response => response.json())
         .then(api_response => {
           dates = [];

@@ -47,7 +47,7 @@
       <div id="timelineDiv"></div>
     </div>
     <script>
-      fetch("/api/domains/{{$.Data.Name}}")
+      fetch("/api/domains/" + encodeURIComponent("{{$.Data.Name}}"))
         .then(response => response.json())
         .then(api_response => {
 
