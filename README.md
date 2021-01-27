@@ -65,3 +65,6 @@ services:
             timeout: 10s
             retries: 3
 ```
+### Wiki
+
+The API endpoints and their corresponding frontend links are listed [here](https://github.com/CAIDA/dzdb-web/wiki/DNS-Coffee-API-and-Frontend-Links).
