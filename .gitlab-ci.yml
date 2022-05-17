@@ -1,0 +1,409 @@
+stages:
+  - build
+  - test
+  - pre-deploy
+  - deploy
+  - stop
+
+# GitLab Security Suite
+include:
+  - template: Code-Quality.gitlab-ci.yml
+  - template: Security/SAST.gitlab-ci.yml
+  - template: Security/Dependency-Scanning.gitlab-ci.yml
+  - template: Security/Container-Scanning.gitlab-ci.yml
+  - template: Security/Secret-Detection.gitlab-ci.yml
+
+variables: 
+  CONTAINER_IMAGE_LATEST: ${CI_REGISTRY_IMAGE}/${CI_COMMIT_REF_NAME}:latest
+
+build-dev:
+  stage: build
+  image: 
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  variables:
+    CONTAINER_IMAGE_DEV: ${CI_REGISTRY_IMAGE}/${CI_COMMIT_REF_NAME}:${CI_COMMIT_SHORT_SHA}
+  tags:
+    - gordon
+  script:
+    - mkdir -p /kaniko/.docker
+    - echo "{\"auths\":{\"${CI_REGISTRY}\":{\"auth\":\"$(printf "%s:%s" "${CI_REGISTRY_USER}" "${CI_REGISTRY_PASSWORD}" | base64 | tr -d '\n')\"}}}" > /kaniko/.docker/config.json
+    - >-
+      /kaniko/executor
+      --context "${CI_PROJECT_DIR}"
+      --dockerfile "${CI_PROJECT_DIR}/Dockerfile"
+      --destination "${CONTAINER_IMAGE_LATEST}"
+      --destination "${CONTAINER_IMAGE_DEV}"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master"
+
+build-mr:
+  stage: build
+  image: 
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  variables:
+    CONTAINER_IMAGE_DEV: ${CI_REGISTRY_IMAGE}/${CI_COMMIT_REF_NAME}:${CI_COMMIT_SHORT_SHA}
+  tags:
+    - gordon
+  script:
+    - mkdir -p /kaniko/.docker
+    - echo "{\"auths\":{\"${CI_REGISTRY}\":{\"auth\":\"$(printf "%s:%s" "${CI_REGISTRY_USER}" "${CI_REGISTRY_PASSWORD}" | base64 | tr -d '\n')\"}}}" > /kaniko/.docker/config.json
+    - >-
+      /kaniko/executor
+      --context "${CI_PROJECT_DIR}"
+      --dockerfile "${CI_PROJECT_DIR}/Dockerfile"
+      --destination "${CONTAINER_IMAGE_LATEST}"
+      --destination "${CONTAINER_IMAGE_DEV}"
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event' && $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME != 'master' && $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME != 'production'
+
+build-prod:
+  stage: build
+  image: 
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  tags:
+    - gordon
+  script:
+    - mkdir -p /kaniko/.docker
+    - echo "{\"auths\":{\"${CI_REGISTRY}\":{\"auth\":\"$(printf "%s:%s" "${CI_REGISTRY_USER}" "${CI_REGISTRY_PASSWORD}" | base64 | tr -d '\n')\"}}}" > /kaniko/.docker/config.json
+    - export VERSION=${CI_COMMIT_SHORT_SHA}
+    - export CONTAINER_IMAGE_PROD=${CI_REGISTRY_IMAGE}/${CI_COMMIT_REF_NAME}:${VERSION}
+    - >-
+      /kaniko/executor
+      --context "${CI_PROJECT_DIR}"
+      --dockerfile "${CI_PROJECT_DIR}/Dockerfile"
+      --destination "${CONTAINER_IMAGE_LATEST}"
+      --destination "${CONTAINER_IMAGE_PROD}"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "production"
+
+container_scanning:
+  needs:
+    - job: build-dev
+      optional: true
+    - job: build-mr
+      optional: true
+    - job: build-prod
+      optional: true
+  variables:
+    GIT_STRATEGY: fetch
+    DOCKER_USER: ${CI_REGISTRY_USER}
+    DOCKER_PASSWORD: ${CI_REGISTRY_PASSWORD}
+    DOCKER_IMAGE: "${CI_REGISTRY_IMAGE}/${CI_COMMIT_REF_NAME}:${CI_COMMIT_SHORT_SHA}"
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event' || $CI_COMMIT_REF_NAME == 'master' || $CI_COMMIT_REF_NAME == 'production'
+
+deploy_mr_dns_record:
+  stage: pre-deploy
+  needs:
+    - build-mr
+  variables: 
+    GIT_STRATEGY: none
+  image: 
+    name: gitlab.caida.org:5050/caida/devops/ci-container-images/ubuntu/focal:nsupdate
+    entrypoint: ["/bin/bash"]
+  secrets:
+    DNS_KEY:
+      vault: ${VAULT_PROJECT_ROOT_DIR}/${APP_TYPE}/${DEV_SUFFIX}/DNS_KEY@kv2
+      file: false
+  tags:
+    - gordon
+  script:
+    - mkdir -p /root/.private
+    - echo "${DNS_KEY}" > /root/.private/${DEV_ENDPOINT}.key
+    - |
+        nsupdate -k /root/.private/${DEV_ENDPOINT}.key <<EOF
+        update add ${CI_MERGE_REQUEST_SOURCE_BRANCH_NAME}.${DEV_ENDPOINT} 60 A ${LOAD_BALANCER_IP}
+        send
+        EOF
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event' && $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME != 'master' && $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME != 'production'
+
+update_mr_manifests:
+  stage: pre-deploy
+  needs:
+  - build-mr
+  variables:
+    GIT_STRATEGY: none
+  image: 
+      name: gitlab.caida.org:5050/caida/devops/ci-container-images/ubuntu/focal:base
+      entrypoint: ["/bin/bash"]
+  secrets:
+    DEPLOY_ACCESS_TOKEN:
+      vault: ${VAULT_PROJECT_ROOT_DIR}/access-tokens/${DEPLOY_REPO_NAME}-access-token@kv2
+      file: false
+  tags:
+    - gordon
+  script:
+    - apt-get update
+    - apt-get install -y -qq --no-install-recommends git
+    - export CONTAINER_IMAGE_TAG=${CI_COMMIT_SHORT_SHA}
+    # clone deploy repo
+    - git config --global user.name ${CI_PROJECT_NAME}
+    - git config --global user.email "${CI_PROJECT_NAME}@gitlab.caida.org"
+    - git clone --single-branch --branch ${DEPLOY_BRANCH_NAME} https://gitlab-deploy-token:${DEPLOY_ACCESS_TOKEN}@gitlab.caida.org/CAIDA/${PROJECT_SUBGROUP_NAME}/${DEPLOY_REPO_NAME}
+    - cd ${DEPLOY_REPO_NAME}
+    - mkdir -p ${CI_PROJECT_NAME}/overlays/${CI_MERGE_REQUEST_SOURCE_BRANCH_NAME}
+    - cp -r ${CI_PROJECT_NAME}/overlays/${DEV_SUFFIX}/* ${CI_PROJECT_NAME}/overlays/${CI_MERGE_REQUEST_SOURCE_BRANCH_NAME}/
+    # uupdate resource names in manifest files
+    - 'find ${CI_PROJECT_NAME}/overlays/${CI_MERGE_REQUEST_SOURCE_BRANCH_NAME}/* -name "*.deploy.*.yaml" -type f -exec sed -i "s%gitlab.caida.org:5050/caida/${PROJECT_SUBGROUP_NAME}/${CI_PROJECT_NAME}/.*:latest%gitlab.caida.org:5050/caida/${PROJECT_SUBGROUP_NAME}/${CI_PROJECT_NAME}/${CI_MERGE_REQUEST_SOURCE_BRANCH_NAME}:latest%g" {} \;'
+    - 'find ${CI_PROJECT_NAME}/overlays/${CI_MERGE_REQUEST_SOURCE_BRANCH_NAME}/* -name "kustomization.yaml" -type f -exec sed -i "s%gitlab.caida.org:5050/caida/${PROJECT_SUBGROUP_NAME}/${CI_PROJECT_NAME}/.*%gitlab.caida.org:5050/caida/${PROJECT_SUBGROUP_NAME}/${CI_PROJECT_NAME}/${CI_MERGE_REQUEST_SOURCE_BRANCH_NAME}%g" {} \;'
+    # update ingress dns record
+    - 'find ${CI_PROJECT_NAME}/overlays/${CI_MERGE_REQUEST_SOURCE_BRANCH_NAME}/* -name "*.ingress.*.yaml" -type f -exec sed -i "s%${DEV_ENDPOINT}%${CI_MERGE_REQUEST_SOURCE_BRANCH_NAME}.${DEV_ENDPOINT}%g" {} \;'
+    - 'find ${CI_PROJECT_NAME}/overlays/${CI_MERGE_REQUEST_SOURCE_BRANCH_NAME}/* -name "*.deploy.*.yaml" -type f -exec sed -i "s%${DEV_ENDPOINT}%${CI_MERGE_REQUEST_SOURCE_BRANCH_NAME}.${DEV_ENDPOINT}%g" {} \;'
+    - git add .
+    - git commit -am "Updated manifest files (${CI_MERGE_REQUEST_SOURCE_BRANCH_NAME})" || true
+    # update tag in the kustomization file
+    - sed -i "s%newTag:\ .*%newTag:\ "${CONTAINER_IMAGE_TAG}"%g" ${CI_PROJECT_NAME}/overlays/${CI_MERGE_REQUEST_SOURCE_BRANCH_NAME}/kustomization.yaml
+    - git add ${CI_PROJECT_NAME}/overlays/${CI_MERGE_REQUEST_SOURCE_BRANCH_NAME}/kustomization.yaml
+    - git commit -am "Updated newTag to ${CONTAINER_IMAGE_TAG} (${CI_MERGE_REQUEST_SOURCE_BRANCH_NAME})" || true
+    - git push origin ${DEPLOY_BRANCH_NAME} || true
+  environment:
+    name: review/${CI_MERGE_REQUEST_SOURCE_BRANCH_NAME}
+    url: https://${CI_MERGE_REQUEST_SOURCE_BRANCH_NAME}.${DEV_ENDPOINT}
+    on_stop: stop_review
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event' && $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME != 'master' && $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME != 'production'
+
+stop_review:
+  stage: stop
+  variables:
+    GIT_STRATEGY: none
+    ARGOCD_APP_NAME: "${CI_PROJECT_NAME}-${CI_MERGE_REQUEST_SOURCE_BRANCH_NAME}"
+  allow_failure: true
+  image: 
+      name: gitlab.caida.org:5050/caida/devops/ci-container-images/ubuntu/focal:nsupdate
+      entrypoint: ["/bin/bash"]
+  secrets:
+    DNS_KEY:
+      vault: ${VAULT_PROJECT_ROOT_DIR}/${APP_TYPE}/${DEV_SUFFIX}/DNS_KEY@kv2
+      file: false
+    DEPLOY_ACCESS_TOKEN:
+      vault: ${VAULT_PROJECT_ROOT_DIR}/access-tokens/${DEPLOY_REPO_NAME}-access-token@kv2
+      file: false
+    ARGOCD_AUTH_TOKEN:
+      vault: gitlab-runner/argocd-auth-token@kv2
+      file: false
+  tags:
+    - gordon
+  environment:
+    name: review/${CI_MERGE_REQUEST_SOURCE_BRANCH_NAME}
+    action: stop
+  script:
+    - apt-get update
+    - apt-get install -y -qq --no-install-recommends git openssh-client
+    - curl -sSL -o /usr/local/bin/argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+    - chmod +x /usr/local/bin/argocd
+    # Delete DNS Record
+    - mkdir -p /root/.private
+    - echo "${DNS_KEY}" > /root/.private/${DEV_ENDPOINT}.key
+    - |
+        nsupdate -k /root/.private/${DEV_ENDPOINT}.key <<EOF
+        update delete ${CI_MERGE_REQUEST_SOURCE_BRANCH_NAME}.${DEV_ENDPOINT} 60 A ${LOAD_BALANCER_IP}
+        send
+        EOF
+    # kill argocd app
+    - >
+      argocd app delete ${ARGOCD_APP_NAME}
+      --server ${ARGOCD_SERVER}
+      --auth-token ${ARGOCD_AUTH_TOKEN}
+      --grpc-web
+    # clone deploy repo
+    - git config --global user.name ${CI_PROJECT_NAME}
+    - git config --global user.email "${CI_PROJECT_NAME}@gitlab.caida.org"
+    - git clone --single-branch --branch ${DEPLOY_BRANCH_NAME} https://gitlab-deploy-token:${DEPLOY_ACCESS_TOKEN}@gitlab.caida.org/CAIDA/${PROJECT_SUBGROUP_NAME}/${DEPLOY_REPO_NAME}
+    - cd ${DEPLOY_REPO_NAME}
+    - rm -r ${CI_PROJECT_NAME}/overlays/${CI_MERGE_REQUEST_SOURCE_BRANCH_NAME}
+    - git add .
+    - git commit -am "Removed ${CI_MERGE_REQUEST_SOURCE_BRANCH_NAME} manifests" || true
+    - git push origin ${DEPLOY_BRANCH_NAME} || true
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event' && $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME != 'master' && $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME != 'production'
+      when: manual
+
+update_dev_manifests:
+  stage: pre-deploy
+  needs:
+  - build-dev
+  image: 
+      name: gitlab.caida.org:5050/caida/devops/ci-container-images/ubuntu/focal:base
+      entrypoint: ["/bin/bash"]
+  secrets:
+    DEPLOY_ACCESS_TOKEN:
+      vault: ${VAULT_PROJECT_ROOT_DIR}/access-tokens/${DEPLOY_REPO_NAME}-access-token@kv2
+      file: false
+  tags:
+    - gordon
+  script:
+    - apt-get update
+    - apt-get install -y -qq --no-install-recommends git
+    - export CONTAINER_IMAGE_TAG=${CI_COMMIT_SHORT_SHA}
+    # clone deploy repo
+    - git config --global user.name ${CI_PROJECT_NAME}
+    - git config --global user.email "${CI_PROJECT_NAME}@gitlab.caida.org"
+    - git clone --single-branch --branch ${DEPLOY_BRANCH_NAME} https://gitlab-deploy-token:${DEPLOY_ACCESS_TOKEN}@gitlab.caida.org/CAIDA/${PROJECT_SUBGROUP_NAME}/${DEPLOY_REPO_NAME}
+    - cd ${DEPLOY_REPO_NAME}
+    # update tag in the kustomization file
+    - sed -i "s%newTag:\ .*%newTag:\ "${CONTAINER_IMAGE_TAG}"%g" ${CI_PROJECT_NAME}/overlays/${DEV_SUFFIX}/kustomization.yaml
+    - git add ${CI_PROJECT_NAME}/overlays/${DEV_SUFFIX}/kustomization.yaml
+    - git commit -am "Updated newTag to ${CONTAINER_IMAGE_TAG} (${DEV_BRANCH_NAME})" || true
+    - git push origin ${DEPLOY_BRANCH_NAME} || true
+  environment:
+    name: ${DEV_BRANCH_NAME}
+    url: https://${DEV_ENDPOINT}
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master"
+
+update_prod_manifests:
+  stage: pre-deploy
+  needs:
+    - build-prod
+  image: 
+      name: gitlab.caida.org:5050/caida/devops/ci-container-images/ubuntu/focal:base
+      entrypoint: ["/bin/bash"]
+  secrets:
+    DEPLOY_ACCESS_TOKEN:
+      vault: ${VAULT_PROJECT_ROOT_DIR}/access-tokens/${DEPLOY_REPO_NAME}-access-token@kv2
+      file: false
+  tags:
+    - gordon
+  script:
+    - apt-get update
+    - apt-get install -y -qq --no-install-recommends git
+    # - export CONTAINER_IMAGE_TAG=$(cat version.txt)
+    - export CONTAINER_IMAGE_TAG=${CI_COMMIT_SHORT_SHA}
+    # clone deploy repo
+    - git config --global user.name ${CI_PROJECT_NAME}
+    - git config --global user.email "${CI_PROJECT_NAME}@gitlab.caida.org"
+    - git clone --single-branch --branch ${DEPLOY_BRANCH_NAME} https://gitlab-deploy-token:${DEPLOY_ACCESS_TOKEN}@gitlab.caida.org/CAIDA/${PROJECT_SUBGROUP_NAME}/${DEPLOY_REPO_NAME}
+    - cd ${DEPLOY_REPO_NAME}
+    # update tag in the kustomization file
+    - sed -i "s%newTag:\ .*%newTag:\ "${CONTAINER_IMAGE_TAG}"%g" ${CI_PROJECT_NAME}/overlays/${PROD_SUFFIX}/kustomization.yaml
+    - git add ${CI_PROJECT_NAME}/overlays/${PROD_SUFFIX}/kustomization.yaml
+    - git commit -am "Updated newTag to ${CONTAINER_IMAGE_TAG} (${PROD_BRANCH_NAME})" || true
+    - git push origin ${DEPLOY_BRANCH_NAME} || true
+  environment:
+    name: ${PROD_BRANCH_NAME}
+    url: https://${PROD_ENDPOINT}
+  rules:
+    - if: $CI_COMMIT_BRANCH == "production"
+
+deploy_dev_to_k8s:
+  stage: deploy
+  needs:
+    - update_dev_manifests
+  variables:
+    GIT_STRATEGY: none
+    ARGOCD_APP_NAME: "${CI_PROJECT_NAME}-${DEV_SUFFIX}"
+    ARGOCD_APP_NAMESPACE: "${CI_PROJECT_NAME}-${DEV_SUFFIX}"
+    ARGOCD_APP_SOURCE_PATH: "${CI_PROJECT_NAME}/overlays/${DEV_SUFFIX}"
+    ARGOCD_APP_SOURCE_REPO_URL: "https://gitlab.caida.org/CAIDA/${PROJECT_SUBGROUP_NAME}/${DEPLOY_REPO_NAME}.git"
+    ARGOCD_APP_SOURCE_TARGET_REVISION: "HEAD"
+  image: 
+      name: gitlab.caida.org:5050/caida/devops/ci-container-images/ubuntu/focal:argocd
+      entrypoint: ["/bin/bash"]
+  secrets:
+    ARGOCD_AUTH_TOKEN:
+      vault: gitlab-runner/argocd-auth-token@kv2
+      file: false
+  tags:
+    - gordon
+  script:
+    - >
+      argocd app create ${ARGOCD_APP_NAME}
+      --server ${ARGOCD_SERVER}
+      --auth-token ${ARGOCD_AUTH_TOKEN}
+      --grpc-web
+      --project "${ARGOCD_PROJECT_NAME}"
+      --repo "${ARGOCD_APP_SOURCE_REPO_URL}"
+      --path "${ARGOCD_APP_SOURCE_PATH}"
+      --dest-namespace "${ARGOCD_APP_NAMESPACE}"
+      --dest-server "https://192.172.226.70:6443"
+      --self-heal
+      --sync-policy auto
+      --sync-option CreateNamespace=true
+      --config-management-plugin argocd-vault-plugin-kustomize
+      --upsert
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master"
+
+deploy_mr_to_k8s:
+  stage: deploy
+  needs:
+    - update_mr_manifests
+    - deploy_mr_dns_record
+  variables:
+    GIT_STRATEGY: none
+    ARGOCD_APP_NAME: "${CI_PROJECT_NAME}-${CI_MERGE_REQUEST_SOURCE_BRANCH_NAME}"
+    ARGOCD_APP_NAMESPACE: "${CI_PROJECT_NAME}-${CI_MERGE_REQUEST_SOURCE_BRANCH_NAME}"
+    ARGOCD_APP_SOURCE_PATH: "${CI_PROJECT_NAME}/overlays/${CI_MERGE_REQUEST_SOURCE_BRANCH_NAME}"
+    ARGOCD_APP_SOURCE_REPO_URL: "https://gitlab.caida.org/CAIDA/${PROJECT_SUBGROUP_NAME}/${DEPLOY_REPO_NAME}.git"
+    ARGOCD_APP_SOURCE_TARGET_REVISION: "HEAD"
+  image: 
+      name: gitlab.caida.org:5050/caida/devops/ci-container-images/ubuntu/focal:argocd
+      entrypoint: ["/bin/bash"]
+  secrets:
+    ARGOCD_AUTH_TOKEN:
+      vault: gitlab-runner/argocd-auth-token@kv2
+      file: false
+  tags:
+    - gordon
+  script:
+    - >
+      argocd app create ${ARGOCD_APP_NAME}
+      --server ${ARGOCD_SERVER}
+      --auth-token ${ARGOCD_AUTH_TOKEN}
+      --grpc-web
+      --project "${ARGOCD_PROJECT_NAME}"
+      --repo "${ARGOCD_APP_SOURCE_REPO_URL}"
+      --path "${ARGOCD_APP_SOURCE_PATH}"
+      --dest-namespace "${ARGOCD_APP_NAMESPACE}"
+      --dest-server "https://192.172.226.70:6443"
+      --self-heal
+      --sync-policy auto
+      --sync-option CreateNamespace=true
+      --config-management-plugin argocd-vault-plugin-kustomize
+      --upsert
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event' && $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME != 'master' && $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME != 'production'
+
+deploy_prod_to_k8s:
+  stage: deploy
+  needs:
+    - update_prod_manifests
+  variables:
+    GIT_STRATEGY: none
+    ARGOCD_APP_NAME: "${CI_PROJECT_NAME}-${PROD_SUFFIX}"
+    ARGOCD_APP_NAMESPACE: "${CI_PROJECT_NAME}-${PROD_SUFFIX}"
+    ARGOCD_APP_SOURCE_PATH: "${CI_PROJECT_NAME}/overlays/${PROD_SUFFIX}"
+    ARGOCD_APP_SOURCE_REPO_URL: "https://gitlab.caida.org/CAIDA/${PROJECT_SUBGROUP_NAME}/${DEPLOY_REPO_NAME}.git"
+    ARGOCD_APP_SOURCE_TARGET_REVISION: "HEAD"
+  image: 
+      name: gitlab.caida.org:5050/caida/devops/ci-container-images/ubuntu/focal:argocd
+      entrypoint: ["/bin/bash"]
+  secrets:
+    ARGOCD_AUTH_TOKEN:
+      vault: gitlab-runner/argocd-auth-token@kv2
+      file: false
+  tags:
+    - gordon
+  script:
+    - >
+      argocd app create ${ARGOCD_APP_NAME}
+      --server ${ARGOCD_SERVER}
+      --auth-token ${ARGOCD_AUTH_TOKEN}
+      --grpc-web
+      --project "${ARGOCD_PROJECT_NAME}"
+      --repo "${ARGOCD_APP_SOURCE_REPO_URL}"
+      --path "${ARGOCD_APP_SOURCE_PATH}"
+      --dest-namespace "${ARGOCD_APP_NAMESPACE}"
+      --dest-server "https://192.172.226.70:6443"
+      --self-heal
+      --sync-policy auto
+      --sync-option CreateNamespace=true
+      --config-management-plugin argocd-vault-plugin-kustomize
+      --upsert
+  rules:
+    - if: $CI_COMMIT_BRANCH == "production"
