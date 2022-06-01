@@ -320,7 +320,7 @@ deploy_dev_to_k8s:
       --repo "${ARGOCD_APP_SOURCE_REPO_URL}"
       --path "${ARGOCD_APP_SOURCE_PATH}"
       --dest-namespace "${ARGOCD_APP_NAMESPACE}"
-      --dest-server "https://192.172.226.70:6443"
+      --dest-server "https://${LOAD_BALANCER_IP}:6443"
       --self-heal
       --sync-policy auto
       --sync-option CreateNamespace=true
@@ -360,7 +360,7 @@ deploy_mr_to_k8s:
       --repo "${ARGOCD_APP_SOURCE_REPO_URL}"
       --path "${ARGOCD_APP_SOURCE_PATH}"
       --dest-namespace "${ARGOCD_APP_NAMESPACE}"
-      --dest-server "https://192.172.226.70:6443"
+      --dest-server "https://${LOAD_BALANCER_IP}:6443"
       --self-heal
       --sync-policy auto
       --sync-option CreateNamespace=true
@@ -399,7 +399,7 @@ deploy_prod_to_k8s:
       --repo "${ARGOCD_APP_SOURCE_REPO_URL}"
       --path "${ARGOCD_APP_SOURCE_PATH}"
       --dest-namespace "${ARGOCD_APP_NAMESPACE}"
-      --dest-server "https://192.172.226.70:6443"
+      --dest-server "https://${LOAD_BALANCER_IP}:6443"
       --self-heal
       --sync-policy auto
       --sync-option CreateNamespace=true
