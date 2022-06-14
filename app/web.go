@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -120,7 +121,7 @@ func (app *appContext) searchHandler(w http.ResponseWriter, r *http.Request) {
 				http.Redirect(w, r, "/ip/"+s.Query, http.StatusFound)
 				return
 			}
-		default:
+		case "_":
 			s.Results = make([]model.SearchResult, 0)
 			// now handle multiple results types
 			// this is a very poor exact match search... add prefix too?
@@ -142,6 +143,8 @@ func (app *appContext) searchHandler(w http.ResponseWriter, r *http.Request) {
 				http.Redirect(w, r, s.Results[0].Link, http.StatusFound)
 				return
 			}
+		default:
+			http.Redirect(w, r, app.findObjectLinkByName(r.Context(), s.Query), http.StatusFound)
 		}
 	}
 
@@ -151,6 +154,23 @@ func (app *appContext) searchHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+// used for the search redirect
+func (app *appContext) findObjectLinkByName(ctx context.Context, s string) string {
+	if _, err := app.ds.GetZoneID(ctx, s); err == nil {
+		return "/zones/" + s
+	}
+	if _, _, err := app.ds.GetDomainID(ctx, s); err == nil {
+		return "/domains/" + s
+	}
+	if _, err := app.ds.GetNameServerID(ctx, s); err == nil {
+		return "/nameservers/" + s
+	}
+	if _, _, err := app.ds.GetIPID(ctx, s); err == nil {
+		return "/ip/" + s
+	}
+	return ""
 }
 
 func (app *appContext) statsHandler(w http.ResponseWriter, r *http.Request) {
@@ -304,7 +324,7 @@ func (app *appContext) ipHandler(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	p := Page{name, "Records", data}
+	p := Page{data.Name, "Records", data}
 	err = app.templates.ExecuteTemplate(w, "ip.tmpl", p)
 	if err != nil {
 		panic(err)

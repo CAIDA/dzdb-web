@@ -30,7 +30,7 @@
       <div id="IPtimelineDiv"></div>
     </div>
     <script>
-      fetch("/api/nameservers/{{$.Data.Name}}")
+      fetch("/api/nameservers/" + encodeURIComponent("{{$.Data.Name}}"))
         .then(response => response.json())
         .then(api_response => {
 

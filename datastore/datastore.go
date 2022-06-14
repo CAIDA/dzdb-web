@@ -80,28 +80,20 @@ func (ds *DataStore) GetIPID(ctx context.Context, ipStr string) (int64, int, err
 	var id int64
 	var version int
 	var err error
-	var ip pgtype.Inet
-	err = ip.DecodeText(nil, []byte(ipStr))
-	if err != nil {
-		return -1, 0, err
-	}
-	if ip.IPNet.IP.To4() != nil {
-		version = 4
-		err = ds.db.QueryRow(ctx, "SELECT id FROM a WHERE ip = $1", ip).Scan(&id)
-		if err == pgx.ErrNoRows {
-			err = ErrNoResource
-		}
-		return id, version, err
-	}
-	if ip.IPNet.IP.To16() != nil {
+	if strings.Contains(ipStr, ":") {
 		version = 6
-		err = ds.db.QueryRow(ctx, "SELECT id FROM aaaa WHERE ip = $1", ip).Scan(&id)
+		err = ds.db.QueryRow(ctx, "SELECT id FROM aaaa WHERE ip = $1", ipStr).Scan(&id)
 		if err == pgx.ErrNoRows {
 			err = ErrNoResource
 		}
 		return id, version, err
 	}
-	return -1, 0, ErrNoResource
+	version = 4
+	err = ds.db.QueryRow(ctx, "SELECT id FROM a WHERE ip = $1", ipStr).Scan(&id)
+	if err == pgx.ErrNoRows {
+		err = ErrNoResource
+	}
+	return id, version, err
 }
 
 // GetZoneID gets the zoneID with the given name
@@ -1182,7 +1174,22 @@ func (ds *DataStore) GetDeadTLDs(ctx context.Context) ([]*model.TLDLife, error) 
 // useing a zoneId is fast
 func (ds *DataStore) GetDomainsInZoneID(ctx context.Context, zoneID int64) ([]model.Domain, error) {
 	out := make([]model.Domain, 0, 50)
-	rows, err := ds.db.Query(ctx, "with dupes as (select domain, last_seen from domains, domains_nameservers, zones where domains.id = domains_nameservers.domain_id and domains_nameservers.zone_id = zones.id and zones.id = $1 order by last_Seen desc limit 150) select domain, max(last_seen) last_seen from dupes group by domain limit 50", zoneID)
+	rows, err := ds.db.Query(ctx, `WITH dupes
+	AS (
+		SELECT domain
+			,last_seen
+		FROM domains
+			,domains_nameservers
+			,zones
+		WHERE domains.id = domains_nameservers.domain_id
+			AND domains_nameservers.zone_id = zones.id
+			AND zones.id = $1
+		ORDER BY last_Seen DESC limit 150
+		)
+	SELECT  distinct on (domain) domain
+		,last_seen
+	FROM dupes
+	ORDER BY domain, last_seen NULLS FIRST limit 50`, zoneID)
 	if err != nil {
 		return out, err
 	}

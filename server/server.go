@@ -78,7 +78,7 @@ func (s *Server) Start() error {
 	timeoutDuration := time.Duration(s.apiConfig.APITimeout) * time.Second
 	// prep proxy handler
 	h := handlers.ProxyHeaders(s.router)
-	h = SetProxyURLHost(h)
+	h = setProxyURLHost(h)
 	// setup logging
 	h = handlers.LoggingHandler(os.Stdout, h)
 	// add recovery
@@ -90,7 +90,6 @@ func (s *Server) Start() error {
 
 	// rate limiting
 	// TODO add rate limiting after static handler and possible the main page
-	// TODO use IP set by proxyheaders!
 	throttleHandler := makeThrottleHandler(
 		s.apiConfig.APIRequestsPerMinute,
 		s.apiConfig.APIRequestsBurst,
