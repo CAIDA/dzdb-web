@@ -3,7 +3,7 @@
 <div class="row">
   <div class="col-lg-8">
     <div class="card border-primary mb-3">
-      <h3 class="card-header">{{$.Data.Name}}</h3>
+      <h3 class="card-header">{{toUnicode $.Data.Name}}</h3>
       <div class="card-body">
         <p class="card-text">
           {{date $.Data.FirstSeen}}
@@ -144,7 +144,7 @@
         <tbody>
           {{ range $key, $value := $.Data.Domains }}
           <tr>
-            <td><a href="/domains/{{$value.Name}}">{{$value.Name}}</a></td>
+            <td><a href="/domains/{{$value.Name}}">{{toUnicode $value.Name}}</a></td>
             <td>{{date $value.FirstSeen}}</td>
           </tr>
           {{ end }}
@@ -171,7 +171,7 @@
         <tbody>
           {{ range $key, $value := $.Data.ArchiveDomains }}
           <tr>
-            <td><a href="/domains/{{$value.Name}}">{{$value.Name}}</a></td>
+            <td><a href="/domains/{{$value.Name}}">{{toUnicode $value.Name}}</a></td>
             <td>{{date $value.FirstSeen}}</td>
             <td>{{date $value.LastSeen}}</td>
           </tr>

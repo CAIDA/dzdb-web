@@ -50,7 +50,7 @@
         <tbody>
           {{ range $key, $value := $.Data.Results }}
           <tr>
-            <td><a href="{{$value.Link}}">{{$value.Name}}</a></td>
+            <td><a href="{{$value.Link}}">{{toUnicode $value.Name}}</a></td>
             <td>{{$value.Type}}</td>
           </tr>
           {{ end }}

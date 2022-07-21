@@ -23,7 +23,7 @@
         <tbody>
           {{ range $key, $value := $.Data.ZoneNSCounts}}
           <tr>
-            <td><a href="/zones/{{$value.Zone}}">{{$value.Zone}}</a></td>
+            <td><a href="/zones/{{$value.Zone}}">{{toUnicode $value.Zone}}</a></td>
             <td class="perc">
               <span>{{$value.Count}}</span>
               <div style="width:{{$value.Percent}}%">&nbsp;</div>
