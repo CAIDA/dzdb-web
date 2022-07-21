@@ -71,7 +71,7 @@
         <tbody>
           {{ range $key, $value := $.Data.Zones }}
           <tr>
-            <td>{{if $value.Zone}}<a href="/zones/{{$value.Zone}}">{{$value.Zone}}</a>{{else}}<a href="/root/">ROOT zone</a>{{end}}</td>
+            <td>{{if $value.Zone}}<a href="/zones/{{$value.Zone}}">{{toUnicode $value.Zone}}</a>{{else}}<a href="/root/">ROOT zone</a>{{end}}</td>
             <td>{{$value.Domains}}</td>
             <td>{{$value.Records}}</td>
             <td>{{$value.Count}}</td>
