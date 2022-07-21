@@ -4,9 +4,11 @@ package temfun
 import (
 	"html/template"
 	"time"
+	"strings"
 
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
+	"golang.org/x/net/idna"
 )
 
 // Funcs is a global FuncMap for all templates to include
@@ -18,6 +20,7 @@ func init() {
 	Funcs["nfmt"] = nfmt
 	Funcs["date"] = date
 	Funcs["drefInt"] = defrefInt
+	Funcs["toUnicode"] = toUnicode
 }
 
 func count(count int, totalCount *int64) string {
@@ -40,4 +43,14 @@ func date(date *time.Time) string {
 
 func defrefInt(i *int64) int64 {
 	return *i
+}
+
+func toUnicode(s string) string {
+	lcStr := strings.ToLower(s)
+	uniStr, _ := idna.ToUnicode(lcStr)
+	if uniStr == lcStr {
+		return lcStr
+	} else {
+		return fmt.Sprintf("%v (%v)", lcStr, uniStr)
+	}
 }

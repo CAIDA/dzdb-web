@@ -92,7 +92,7 @@
               ns.y.push(yCounter, yCounter, yCounter);
               ns.text.push("", "", "");
             }
-            ns.text[1] = name;
+            ns.text[1] = name.toLowerCase();
             timeline.push(ns);
           }
 
@@ -246,7 +246,7 @@
         <tbody>
           {{ range $key, $value := $.Data.NameServers }}
           <tr>
-            <td><a href="/nameservers/{{$value.Name}}">{{$value.Name}}</a></td>
+            <td><a href="/nameservers/{{$value.Name}}">{{toUnicode $value.Name}}</a></td>
             <td>{{date $value.FirstSeen}}</td>
           </tr>
           {{ end }}
@@ -273,7 +273,7 @@
         <tbody>
           {{ range $key, $value := $.Data.ArchiveNameServers }}
           <tr>
-            <td><a href="/nameservers/{{$value.Name}}">{{$value.Name}}</a></td>
+            <td><a href="/nameservers/{{$value.Name}}">{{toUnicode $value.Name}}</a></td>
             <td>{{date $value.FirstSeen}}</td>
             <td>{{date $value.LastSeen}}</td>
           </tr>
