@@ -8,6 +8,7 @@ import (
 	"html/template"
 	"net/http"
 	"strings"
+	"unicode"
 
 	"dnscoffee/app/temfun"
 	"dnscoffee/datastore"
@@ -472,45 +473,15 @@ func cleanDomain(domain string) string {
 		domain = strings.ToUpper(domain)
 		return domain
 	}
-	// convert to utf8 if needed
-	if !utf8.ValidString(domain) {
-		domain = toUTF8(domain)
-	}
-	// only lowercase ASCII
+	// for non ASCII domains, only lowercase ASCII portions
 	domain = asciiLower(domain)
 	// convert unicode to ascii via puny code
 	punycode, err := punyCode.ToASCII(domain)
 	if err != nil {
 		panic(fmt.Errorf("idna parse error on (%q -> %q) %w", domain, punycode, err))
 	}
-	// double check only ascii left
-	checkASCII(punycode)
 	punycode = strings.ToUpper(punycode)
 	return punycode
-}
-
-func toUTF8(s string) string {
-	b := []byte(s)
-	enc, _, _ := charset.DetermineEncoding(b, "")
-	// it might be nice to save the encoder state here so that we don't need to
-	// determine the encoding for every string it does not appear to have a
-	// negative performance hit for now since so few records need it so leaving
-	// as is enc, encName, cert := charset.DetermineEncoding(b, "")
-	//log.Printf("enc %q, %t", encName, cert)
-	s2, err := enc.NewDecoder().String(s)
-	if err != nil {
-		err := fmt.Errorf("toUTF8: %w", err)
-		panic(err)
-	}
-	//log.Printf("decoded %q -> %q", s, s2)
-	return s2
-}
-
-func checkASCII(value string) {
-	if !isASCII(value) {
-		err := fmt.Errorf("non-ASCII value in rr value %q", value)
-		panic(err)
-	}
 }
 
 func isASCII(s string) bool {
