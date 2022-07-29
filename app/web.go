@@ -3,8 +3,6 @@ package app
 import (
 	"context"
 	"fmt"
-	"unicode"
-	"unicode/utf8"
 	"html/template"
 	"net/http"
 	"strings"
@@ -17,7 +15,6 @@ import (
 	"dnscoffee/version"
 
 	"github.com/gorilla/mux"
-	"golang.org/x/net/html/charset"
 	"golang.org/x/net/idna"
 )
 
