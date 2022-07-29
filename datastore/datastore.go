@@ -547,8 +547,8 @@ func (ds *DataStore) GetZoneImport(ctx context.Context, zone string) (*model.Zon
 	err := ds.db.QueryRow(ctx,
 		`SELECT
 			zones.zone,
-			import_counts.domains,
-			import_counts.records,
+			import_info.domains,
+			import_info.records,
 			zone_imports.first_import_date,
 			zone_imports.first_import_id,
 			zone_imports.last_import_date,
@@ -557,10 +557,10 @@ func (ds *DataStore) GetZoneImport(ctx context.Context, zone string) (*model.Zon
 		from
 			zones,
 			zone_imports,
-			import_counts
+			import_info
 		where
 			zones.id = zone_imports.zone_id
-			and zone_imports.last_import_id = import_counts.import_id
+			and zone_imports.last_import_id = import_info.import_id
 			and zones.zone = $1`,
 		zone).Scan(&r.Zone, &r.Domains, &r.Records, &r.FirstImportDate, &r.FirstImportID, &r.LastImportDate, &r.LastImportID, &r.Count)
 	if err != nil {
@@ -574,7 +574,7 @@ func (ds *DataStore) GetZoneImportResults(ctx context.Context) (*model.ZoneImpor
 	var zoneImportResults model.ZoneImportResults
 	zoneImportResults.Zones = make([]*model.ZoneImportResult, 0, 100)
 
-	rows, err := ds.db.Query(ctx, "select zones.zone, import_counts.domains, import_counts.records, zone_imports.first_import_date, zone_imports.first_import_id, zone_imports.last_import_date,zone_imports.last_import_id, zone_imports.count from zones, zone_imports, import_counts where zones.id = zone_imports.zone_id and zone_imports.last_import_id = import_counts.import_id order by zone asc")
+	rows, err := ds.db.Query(ctx, "select zones.zone, import_info.domains, import_info.records, zone_imports.first_import_date, zone_imports.first_import_id, zone_imports.last_import_date,zone_imports.last_import_id, zone_imports.count from zones, zone_imports, import_info where zones.id = zone_imports.zone_id and zone_imports.last_import_id = import_info.import_id order by zone asc")
 	if err != nil {
 		return nil, err
 	}
@@ -631,7 +631,7 @@ func (ds *DataStore) GetZoneHistoryCounts(ctx context.Context, zone string) (*mo
 		  feed_moved, 
 		  feed_new 
 		from 
-		  import_counts, 
+		import_info, 
 		  zones 
 		where 
 		  zone_id = zones.id 
@@ -697,6 +697,7 @@ func (ds *DataStore) GetAllZoneHistoryCounts(ctx context.Context) (*model.AllZon
 }
 
 // GetImportProgress gets information on the progress of unimported zones
+// TODO move this function to the import database admin interface
 func (ds *DataStore) GetImportProgress(ctx context.Context) (*model.ImportProgress, error) {
 	history := 60
 	var ip model.ImportProgress
@@ -712,7 +713,7 @@ func (ds *DataStore) GetImportProgress(ctx context.Context) (*model.ImportProgre
 		count(id)
 	  from
 		imports,
-		import_progress m1
+		db_import_progress m1
 	  where
 		m1.import_id = id
 		and imported = false
@@ -722,7 +723,7 @@ func (ds *DataStore) GetImportProgress(ctx context.Context) (*model.ImportProgre
 		return nil, err
 	}
 
-	rows, err := ds.db.Query(ctx, "select date, sum(coalesce(diff_duration, '0'::interval)) took_diff, sum(coalesce(import_duration,'0'::interval)) took_import, count(CASE WHEN imports.imported THEN 1 END) from imports, import_progress where imports.id = import_progress.import_id group by date order by date desc limit $1", history)
+	rows, err := ds.db.Query(ctx, "select date, sum(coalesce(diff_duration, '0'::interval)) took_diff, sum(coalesce(import_duration,'0'::interval)) took_import, count(CASE WHEN imports.imported THEN 1 END) from imports, db_import_progress where imports.id = db_import_progress.import_id group by date order by date desc limit $1", history)
 	if err != nil {
 		return nil, err
 	}
@@ -1147,8 +1148,8 @@ func (ds *DataStore) GetDeadTLDs(ctx context.Context) ([]*model.TLDLife, error) 
 		age(max(last_seen), min(first_seen))::text as age,
 		max(domains) as domains
 	from dead_zones, zones_nameservers
-	left join import_counts
-		on import_counts.zone_id = zones_nameservers.zone_id
+	left join import_info
+		on import_info.zone_id = zones_nameservers.zone_id
 	where
 		dead_zones.id = zones_nameservers.zone_id
 	group by zone
