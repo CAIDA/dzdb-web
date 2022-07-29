@@ -1,10 +1,12 @@
 package app
 
 import (
+	"context"
 	"fmt"
 	"html/template"
 	"net/http"
 	"strings"
+	"unicode"
 
 	"dnscoffee/app/temfun"
 	"dnscoffee/datastore"
@@ -120,7 +122,7 @@ func (app *appContext) searchHandler(w http.ResponseWriter, r *http.Request) {
 				http.Redirect(w, r, "/ip/"+s.Query, http.StatusFound)
 				return
 			}
-		default:
+		case "_":
 			s.Results = make([]model.SearchResult, 0)
 			// now handle multiple results types
 			// this is a very poor exact match search... add prefix too?
@@ -142,6 +144,8 @@ func (app *appContext) searchHandler(w http.ResponseWriter, r *http.Request) {
 				http.Redirect(w, r, s.Results[0].Link, http.StatusFound)
 				return
 			}
+		default:
+			http.Redirect(w, r, app.findObjectLinkByName(r.Context(), s.Query), http.StatusFound)
 		}
 	}
 
@@ -151,6 +155,23 @@ func (app *appContext) searchHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+// used for the search redirect
+func (app *appContext) findObjectLinkByName(ctx context.Context, s string) string {
+	if _, err := app.ds.GetZoneID(ctx, s); err == nil {
+		return "/zones/" + s
+	}
+	if _, _, err := app.ds.GetDomainID(ctx, s); err == nil {
+		return "/domains/" + s
+	}
+	if _, err := app.ds.GetNameServerID(ctx, s); err == nil {
+		return "/nameservers/" + s
+	}
+	if _, _, err := app.ds.GetIPID(ctx, s); err == nil {
+		return "/ip/" + s
+	}
+	return ""
 }
 
 func (app *appContext) statsHandler(w http.ResponseWriter, r *http.Request) {
@@ -304,7 +325,7 @@ func (app *appContext) ipHandler(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	p := Page{name, "Records", data}
+	p := Page{data.Name, "Records", data}
 	err = app.templates.ExecuteTemplate(w, "ip.tmpl", p)
 	if err != nil {
 		panic(err)
@@ -436,15 +457,49 @@ func (app *appContext) trustTreeHandler(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
-// helper
+// From zonetools/parser/clean.go
+var punyCode = idna.Registration
+
+// cleanDomain lowercases all inputs and converts to punycode if necessary
+// assumes input domain to be unicode, if it is not, we will guess the encoding
+// and convert to UTF-8 return value should always be ASCII
 func cleanDomain(domain string) string {
 	domain = strings.TrimSpace(domain)
-	domain, err := idna.ToASCII(domain)
-	if err != nil {
-		panic(err)
+	// if ASCII just lowercase
+	if isASCII(domain) {
+		domain = strings.ToUpper(domain)
+		return domain
 	}
-	domain = strings.ToUpper(domain)
-	return domain
+	// for non ASCII domains, only lowercase ASCII portions
+	domain = asciiLower(domain)
+	// convert unicode to ascii via puny code
+	punycode, err := punyCode.ToASCII(domain)
+	if err != nil {
+		panic(fmt.Errorf("idna parse error on (%q -> %q) %w", domain, punycode, err))
+	}
+	punycode = strings.ToUpper(punycode)
+	return punycode
+}
+
+func isASCII(s string) bool {
+	for i := 0; i < len(s); i++ {
+		if s[i] > unicode.MaxASCII {
+			return false
+		}
+	}
+	return true
+}
+
+// asciiLower only lowercases ASCII chars
+func asciiLower(s string) string {
+	out := make([]rune, 0, len(s))
+	for _, char := range s {
+		if char <= unicode.MaxASCII {
+			char = unicode.ToLower(char)
+		}
+		out = append(out, char)
+	}
+	return string(out)
 }
 
 func (app *appContext) tldGraveyardIndexHandler(w http.ResponseWriter, r *http.Request) {

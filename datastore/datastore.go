@@ -80,28 +80,20 @@ func (ds *DataStore) GetIPID(ctx context.Context, ipStr string) (int64, int, err
 	var id int64
 	var version int
 	var err error
-	var ip pgtype.Inet
-	err = ip.DecodeText(nil, []byte(ipStr))
-	if err != nil {
-		return -1, 0, err
-	}
-	if ip.IPNet.IP.To4() != nil {
-		version = 4
-		err = ds.db.QueryRow(ctx, "SELECT id FROM a WHERE ip = $1", ip).Scan(&id)
-		if err == pgx.ErrNoRows {
-			err = ErrNoResource
-		}
-		return id, version, err
-	}
-	if ip.IPNet.IP.To16() != nil {
+	if strings.Contains(ipStr, ":") {
 		version = 6
-		err = ds.db.QueryRow(ctx, "SELECT id FROM aaaa WHERE ip = $1", ip).Scan(&id)
+		err = ds.db.QueryRow(ctx, "SELECT id FROM aaaa WHERE ip = $1", ipStr).Scan(&id)
 		if err == pgx.ErrNoRows {
 			err = ErrNoResource
 		}
 		return id, version, err
 	}
-	return -1, 0, ErrNoResource
+	version = 4
+	err = ds.db.QueryRow(ctx, "SELECT id FROM a WHERE ip = $1", ipStr).Scan(&id)
+	if err == pgx.ErrNoRows {
+		err = ErrNoResource
+	}
+	return id, version, err
 }
 
 // GetZoneID gets the zoneID with the given name
@@ -555,8 +547,8 @@ func (ds *DataStore) GetZoneImport(ctx context.Context, zone string) (*model.Zon
 	err := ds.db.QueryRow(ctx,
 		`SELECT
 			zones.zone,
-			import_counts.domains,
-			import_counts.records,
+			import_info.domains,
+			import_info.records,
 			zone_imports.first_import_date,
 			zone_imports.first_import_id,
 			zone_imports.last_import_date,
@@ -565,10 +557,10 @@ func (ds *DataStore) GetZoneImport(ctx context.Context, zone string) (*model.Zon
 		from
 			zones,
 			zone_imports,
-			import_counts
+			import_info
 		where
 			zones.id = zone_imports.zone_id
-			and zone_imports.last_import_id = import_counts.import_id
+			and zone_imports.last_import_id = import_info.import_id
 			and zones.zone = $1`,
 		zone).Scan(&r.Zone, &r.Domains, &r.Records, &r.FirstImportDate, &r.FirstImportID, &r.LastImportDate, &r.LastImportID, &r.Count)
 	if err != nil {
@@ -582,7 +574,7 @@ func (ds *DataStore) GetZoneImportResults(ctx context.Context) (*model.ZoneImpor
 	var zoneImportResults model.ZoneImportResults
 	zoneImportResults.Zones = make([]*model.ZoneImportResult, 0, 100)
 
-	rows, err := ds.db.Query(ctx, "select zones.zone, import_counts.domains, import_counts.records, zone_imports.first_import_date, zone_imports.first_import_id, zone_imports.last_import_date,zone_imports.last_import_id, zone_imports.count from zones, zone_imports, import_counts where zones.id = zone_imports.zone_id and zone_imports.last_import_id = import_counts.import_id order by zone asc")
+	rows, err := ds.db.Query(ctx, "select zones.zone, import_info.domains, import_info.records, zone_imports.first_import_date, zone_imports.first_import_id, zone_imports.last_import_date,zone_imports.last_import_id, zone_imports.count from zones, zone_imports, import_info where zones.id = zone_imports.zone_id and zone_imports.last_import_id = import_info.import_id order by zone asc")
 	if err != nil {
 		return nil, err
 	}
@@ -639,7 +631,7 @@ func (ds *DataStore) GetZoneHistoryCounts(ctx context.Context, zone string) (*mo
 		  feed_moved, 
 		  feed_new 
 		from 
-		  import_counts, 
+		import_info, 
 		  zones 
 		where 
 		  zone_id = zones.id 
@@ -705,6 +697,7 @@ func (ds *DataStore) GetAllZoneHistoryCounts(ctx context.Context) (*model.AllZon
 }
 
 // GetImportProgress gets information on the progress of unimported zones
+// TODO move this function to the import database admin interface
 func (ds *DataStore) GetImportProgress(ctx context.Context) (*model.ImportProgress, error) {
 	history := 60
 	var ip model.ImportProgress
@@ -720,7 +713,7 @@ func (ds *DataStore) GetImportProgress(ctx context.Context) (*model.ImportProgre
 		count(id)
 	  from
 		imports,
-		import_progress m1
+		db_import_progress m1
 	  where
 		m1.import_id = id
 		and imported = false
@@ -730,7 +723,7 @@ func (ds *DataStore) GetImportProgress(ctx context.Context) (*model.ImportProgre
 		return nil, err
 	}
 
-	rows, err := ds.db.Query(ctx, "select date, sum(coalesce(diff_duration, '0'::interval)) took_diff, sum(coalesce(import_duration,'0'::interval)) took_import, count(CASE WHEN imports.imported THEN 1 END) from imports, import_progress where imports.id = import_progress.import_id group by date order by date desc limit $1", history)
+	rows, err := ds.db.Query(ctx, "select date, sum(coalesce(diff_duration, '0'::interval)) took_diff, sum(coalesce(import_duration,'0'::interval)) took_import, count(CASE WHEN imports.imported THEN 1 END) from imports, db_import_progress where imports.id = db_import_progress.import_id group by date order by date desc limit $1", history)
 	if err != nil {
 		return nil, err
 	}
@@ -1155,8 +1148,8 @@ func (ds *DataStore) GetDeadTLDs(ctx context.Context) ([]*model.TLDLife, error) 
 		age(max(last_seen), min(first_seen))::text as age,
 		max(domains) as domains
 	from dead_zones, zones_nameservers
-	left join import_counts
-		on import_counts.zone_id = zones_nameservers.zone_id
+	left join import_info
+		on import_info.zone_id = zones_nameservers.zone_id
 	where
 		dead_zones.id = zones_nameservers.zone_id
 	group by zone
@@ -1182,7 +1175,22 @@ func (ds *DataStore) GetDeadTLDs(ctx context.Context) ([]*model.TLDLife, error) 
 // useing a zoneId is fast
 func (ds *DataStore) GetDomainsInZoneID(ctx context.Context, zoneID int64) ([]model.Domain, error) {
 	out := make([]model.Domain, 0, 50)
-	rows, err := ds.db.Query(ctx, "with dupes as (select domain, last_seen from domains, domains_nameservers, zones where domains.id = domains_nameservers.domain_id and domains_nameservers.zone_id = zones.id and zones.id = $1 order by last_Seen desc limit 150) select domain, max(last_seen) last_seen from dupes group by domain limit 50", zoneID)
+	rows, err := ds.db.Query(ctx, `WITH dupes
+	AS (
+		SELECT domain
+			,last_seen
+		FROM domains
+			,domains_nameservers
+			,zones
+		WHERE domains.id = domains_nameservers.domain_id
+			AND domains_nameservers.zone_id = zones.id
+			AND zones.id = $1
+		ORDER BY last_Seen DESC limit 150
+		)
+	SELECT  distinct on (domain) domain
+		,last_seen
+	FROM dupes
+	ORDER BY domain, last_seen NULLS FIRST limit 50`, zoneID)
 	if err != nil {
 		return out, err
 	}

@@ -3,7 +3,7 @@
 <div class="row">
   <div class="col-lg-8">
     <div class="card border-primary mb-3">
-      <h3 class="card-header">{{$.Data.Name}}</h3>
+      <h3 class="card-header">{{toUnicode $.Data.Name}}</h3>
       <div class="card-body">
         <p class="card-text">
           {{date $.Data.FirstSeen}}
@@ -21,7 +21,7 @@
     <div class="card border-secondary mb-3">
       <div class="card-header">Zone</div>
       <div class="card-body">
-        <h4 class="card-title"><a href="/zones/{{$.Data.Zone.Name}}">{{$.Data.Zone.Name}}</a></h4>
+        <h4 class="card-title"><a href="/zones/{{$.Data.Zone.Name}}">{{toUnicode $.Data.Zone.Name}}</a></h4>
         <p class="card-text">
           First Updated: {{date $.Data.Zone.FirstSeen}} <br />
           Last Updated: {{date $.Data.Zone.LastSeen}}
@@ -47,7 +47,7 @@
       <div id="timelineDiv"></div>
     </div>
     <script>
-      fetch("/api/domains/{{$.Data.Name}}")
+      fetch("/api/domains/" + encodeURIComponent("{{$.Data.Name}}"))
         .then(response => response.json())
         .then(api_response => {
 
@@ -96,7 +96,7 @@
               ns.y.push(yCounter, yCounter, yCounter);
               ns.text.push("", "", "");
             }
-            ns.text[1] = name;
+            ns.text[1] = name.toLowerCase();
             timeline.push(ns);
           }
 
@@ -150,7 +150,7 @@
         <tbody>
           {{ range $key, $value := $.Data.NameServers }}
           <tr>
-            <td><a href="/nameservers/{{$value.Name}}">{{$value.Name}}</a></td>
+            <td><a href="/nameservers/{{$value.Name}}">{{toUnicode $value.Name}}</a></td>
             <td>{{date $value.FirstSeen}}</td>
           </tr>
           {{ end }}
@@ -177,7 +177,7 @@
         <tbody>
           {{ range $key, $value := $.Data.ArchiveNameServers }}
           <tr>
-            <td><a href="/nameservers/{{$value.Name}}">{{$value.Name}}</a></td>
+            <td><a href="/nameservers/{{$value.Name}}">{{toUnicode $value.Name}}</a></td>
             <td>{{date $value.FirstSeen}}</td>
             <td>{{date $value.LastSeen}}</td>
           </tr>

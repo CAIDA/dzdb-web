@@ -34,7 +34,7 @@
         <tbody>
           {{ range $key, $value := $.Data.NameServers }}
           <tr>
-            <td><a href="/nameservers/{{$value.Name}}">{{$value.Name}}</a></td>
+            <td><a href="/nameservers/{{$value.Name}}">{{toUnicode $value.Name}}</a></td>
             <td>{{date $value.FirstSeen}}</td>
           </tr>
           {{ end }}
@@ -61,7 +61,7 @@
         <tbody>
           {{ range $key, $value := $.Data.ArchiveNameServers }}
           <tr>
-            <td><a href="/nameservers/{{$value.Name}}">{{$value.Name}}</a></td>
+            <td><a href="/nameservers/{{$value.Name}}">{{toUnicode $value.Name}}</a></td>
             <td>{{date $value.FirstSeen}}</td>
             <td>{{date $value.LastSeen}}</td>
           </tr>

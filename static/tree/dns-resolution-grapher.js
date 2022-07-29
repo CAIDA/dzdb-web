@@ -2297,7 +2297,7 @@ const DNSResolutionGrapher = {};
                 },150);
             }
             function click(d){
-                const baseURL = "https://dns.coffee";
+                const baseURL = "https://dzdb.caida.org";
                 const link = d.metadata.link;
                 if(link){
                     window.location.href = baseURL+link;

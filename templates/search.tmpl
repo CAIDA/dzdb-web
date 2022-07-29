@@ -14,7 +14,7 @@
             <label class="control-label">Record Type</label>
             <div class="form-group">
               <select name="type" class="custom-select">
-                <option value="">Any</option>
+                <option value="_">Any</option>
                 <option value="domain" {{if eq $.Data.Type "domain"}}selected="" {{end}}>Domain</option>
                 <option value="nameserver" {{if eq $.Data.Type "nameserver"}}selected="" {{end}}>Nameserver</option>
                 <option value="ip" {{if eq $.Data.Type "ip"}}selected="" {{end}}>IP</option>
@@ -50,7 +50,7 @@
         <tbody>
           {{ range $key, $value := $.Data.Results }}
           <tr>
-            <td><a href="{{$value.Link}}">{{$value.Name}}</a></td>
+            <td><a href="{{$value.Link}}">{{toUnicode $value.Name}}</a></td>
             <td>{{$value.Type}}</td>
           </tr>
           {{ end }}

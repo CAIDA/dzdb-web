@@ -31,7 +31,7 @@
         <tbody>
           {{ range $key, $value := $.Data }}
           <tr>
-            <td><a href="/zones/{{$value.Zone}}">{{$value.Zone}}</a></td>
+            <td><a href="/zones/{{$value.Zone}}">{{toUnicode $value.Zone}}</a></td>
             <td>{{date $value.Created}}</td>
             <td>{{date $value.Removed}}</td>
             <td>{{if $value.Age}}{{$value.Age}}{{end}}</td>
