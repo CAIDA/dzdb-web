@@ -397,8 +397,15 @@ func (app *appContext) AboutHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *appContext) IndexHandler(w http.ResponseWriter, r *http.Request) {
-	p := Page{"Home", "", nil}
-	err := app.templates.ExecuteTemplate(w, "home.tmpl", p)
+	var data model.Dataset
+	var err error
+	data.TopNameServers, err = app.ds.GetTopNameservers(r.Context(), 20)
+	if err != nil {
+		panic(err)
+	}
+
+	p := Page{"Home", "", data}
+	err = app.templates.ExecuteTemplate(w, "home.tmpl", p)
 	if err != nil {
 		panic(err)
 	}
