@@ -76,18 +76,6 @@ func (s *Server) Post(path string, fn http.HandlerFunc) {
 // Start Starts the server, blocking function
 func (s *Server) Start() error {
 	timeoutDuration := time.Duration(s.apiConfig.APITimeout) * time.Second
-	// prep proxy handler
-	h := handlers.ProxyHeaders(s.router)
-	h = setProxyURLHost(h)
-	// setup logging
-	h = handlers.LoggingHandler(os.Stdout, h)
-	// add recovery
-	h = handlers.RecoveryHandler(handlers.PrintRecoveryStack(true))(h)
-	// timeouts
-	h = http.TimeoutHandler(h, timeoutDuration, ErrTimeout.Error())
-	// cors
-	h = handlers.CORS(handlers.AllowedOrigins([]string{"http://127.0.0.1:5353"}))(h)
-
 	// rate limiting
 	// TODO add rate limiting after static handler and possible the main page
 	throttleHandler := makeThrottleHandler(
@@ -95,7 +83,18 @@ func (s *Server) Start() error {
 		s.apiConfig.APIRequestsBurst,
 		s.apiConfig.APIMaxRequestHistory,
 	)
-	h = throttleHandler(h)
+	h := throttleHandler(s.router)
+	// prep proxy handler
+	h = handlers.ProxyHeaders(h)
+	h = setProxyURLHost(h)
+	// cors
+	h = handlers.CORS(handlers.AllowedOrigins([]string{"http://127.0.0.1:5353"}))(h)
+	// timeouts
+	h = http.TimeoutHandler(h, timeoutDuration, ErrTimeout.Error())
+	// add recovery
+	h = handlers.RecoveryHandler(handlers.PrintRecoveryStack(true))(h)
+	// setup logging
+	h = handlers.LoggingHandler(os.Stdout, h)
 
 	// run server
 	srv := &http.Server{
