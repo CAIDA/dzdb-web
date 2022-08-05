@@ -18,7 +18,7 @@ BIN := dnscoffee
 all: $(BIN)
 
 docker: Dockerfile
-	docker build -t="lanrat/dnscoffee" .
+	docker build --network host -t="lanrat/dnscoffee" .
 
 $(BIN): $(SOURCES) $(MODULE_SOURCES) go.mod go.sum
 	$(CC) -o $@ $(SOURCES)
