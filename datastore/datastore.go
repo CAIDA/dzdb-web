@@ -1204,3 +1204,29 @@ func (ds *DataStore) GetDomainsInZoneID(ctx context.Context, zoneID int64) ([]mo
 	}
 	return out, nil
 }
+
+// GetTopNameservers returns the topN nameservers sorted by number of
+// domains
+func (ds *DataStore) GetTopNameservers(ctx context.Context, topN int) ([]*model.NameServer, error) {
+	out := make([]*model.NameServer, 0, topN)
+
+	rows, err := ds.db.Query(ctx,
+		`select domain, domains_count, first_seen, last_seen
+		from nameserver_metadata, nameservers
+		where nameserver_id = id
+		order by domains_count desc nulls last limit $1`, topN)
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		var ns model.NameServer
+		err = rows.Scan(&ns.Name, &ns.DomainCount, &ns.FirstSeen, &ns.LastSeen)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, &ns)
+	}
+
+	return out, nil
+}

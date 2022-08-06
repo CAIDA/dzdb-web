@@ -66,6 +66,11 @@ func (err JSONError) Error() string {
 	return err.Detail
 }
 
+// Dataset holds information about entire dataset
+type Dataset struct {
+	TopNameServers            []*NameServer     `json:"topnameservers,omitempty"`
+}
+
 // ImportProgress Import Progress
 type ImportProgress struct {
 	Metadata
