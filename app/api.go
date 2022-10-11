@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strings"
 	"time"
+	"net"
 
 	"github.com/gorilla/mux"
 )
@@ -85,7 +86,7 @@ func APIStart(app *appContext, coffeeServer *server.Server) {
 	addAPI("/nameservers/{domain}/ip/6/archive/page/{page}", "nameserver_ipv6_archive_paged", nil)
 
 	// ipv4 & ipv6
-	addAPI("/ip", "ip", nil)
+	addAPI("/ip", "ip", app.apiIPListHandler)
 	addAPI("/ip/{ip}", "ip_view", app.apiIPHandler)
 	addAPI("/ip/{ip}/nameservers", "ip_nameservers", nil)
 	addAPI("/ip/{ip}/nameservers/current", "ip_nameservers_current", nil)
@@ -346,6 +347,24 @@ func (app *appContext) apiIPHandler(w http.ResponseWriter, r *http.Request) {
 
 	server.WriteJSON(w, data)
 }
+
+func (app *appContext) apiIPListHandler(w http.ResponseWriter, r *http.Request) {
+	queryVars := r.URL.Query()
+	_, ipPrefix, err := net.ParseCIDR(queryVars.Get("ipprefix"))
+
+	data, err := app.ds.GetIPs(r.Context(), ipPrefix)
+	if err != nil {
+		if err == datastore.ErrNoResource {
+			server.WriteJSONError(w, server.ErrResourceNotFound)
+			return
+		}
+
+		panic(err)
+	}
+
+	server.WriteJSON(w, data)
+}
+
 
 func (app *appContext) apiZoneHandler(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)

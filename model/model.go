@@ -14,6 +14,7 @@ var (
 	feedNsType            = "feed_ns"
 	nameServerType        = "nameserver"
 	ipType                = "ip"
+	ipListType            = "ips"
 	importProgressType    = "import_progress"
 	zoneImportResultType  = "zone_import_result"
 	zoneImportResultsType = "zone_import_results"
@@ -371,6 +372,23 @@ func (ip *IP) GenerateMetaData() {
 	for _, ns := range ip.ArchiveNameServers {
 		if ns.Type == nil {
 			ns.GenerateMetaData()
+		}
+	}
+}
+
+// IPList is a list of IPs
+type IPList struct {
+	Metadata
+	IPs            []*IP `json:"ips,omitempty"`
+}
+
+// GenerateMetaData generates metadata recursively of member models
+func (ipl *IPList) GenerateMetaData() {
+	ipl.Type = &ipListType
+	ipl.Link = fmt.Sprintf("/ip")
+	for _, ip := range ipl.IPs {
+		if ip.Type == nil {
+			ip.GenerateMetaData()
 		}
 	}
 }
