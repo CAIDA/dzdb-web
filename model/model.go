@@ -68,7 +68,7 @@ func (err JSONError) Error() string {
 
 // Dataset holds information about entire dataset
 type Dataset struct {
-	TopNameServers            []*NameServer     `json:"topnameservers,omitempty"`
+	TopNameServers []*NameServer `json:"topnameservers,omitempty"`
 }
 
 // ImportProgress Import Progress

@@ -72,7 +72,6 @@ func Start(ds *datastore.DataStore, server *server.Server) {
 	server.Get("/zones", app.zoneIndexHandler)
 	server.Get("/tlds", app.tldIndexHandler)
 	server.Get("/tlds/graveyard", app.tldGraveyardIndexHandler)
-	server.Get("/stats", app.statsHandler)
 
 	// research
 	server.Get("/research/trust-tree", app.trustTreeHandler)
@@ -172,19 +171,6 @@ func (app *appContext) findObjectLinkByName(ctx context.Context, s string) strin
 		return "/ip/" + s
 	}
 	return ""
-}
-
-func (app *appContext) statsHandler(w http.ResponseWriter, r *http.Request) {
-	data, err := app.ds.GetImportProgress(r.Context())
-	if err != nil {
-		panic(err)
-	}
-
-	p := Page{"Stats", "", data}
-	err = app.templates.ExecuteTemplate(w, "stats.tmpl", p)
-	if err != nil {
-		panic(err)
-	}
 }
 
 func (app *appContext) zoneIndexHandler(w http.ResponseWriter, r *http.Request) {

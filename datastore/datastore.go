@@ -696,63 +696,6 @@ func (ds *DataStore) GetAllZoneHistoryCounts(ctx context.Context) (*model.AllZon
 	return &all, nil
 }
 
-// GetImportProgress gets information on the progress of unimported zones
-// TODO move this function to the import database admin interface
-func (ds *DataStore) GetImportProgress(ctx context.Context) (*model.ImportProgress, error) {
-	history := 60
-	var ip model.ImportProgress
-	err := ds.db.QueryRow(ctx, "select count(*), count(distinct date) from imports where imported = false").Scan(&ip.Imports, &ip.Days)
-	if err != nil {
-		return nil, err
-	}
-
-	// get diffs remaining
-	// this only gets forward counting diffs
-	err = ds.db.QueryRow(ctx,
-		`select
-		count(id)
-	  from
-		imports,
-		db_import_progress m1
-	  where
-		m1.import_id = id
-		and imported = false
-		and m1.zonediff_path is null
-		and m1.zonefile_path is not null`).Scan(&ip.Diffs)
-	if err != nil {
-		return nil, err
-	}
-
-	rows, err := ds.db.Query(ctx, "select date, sum(coalesce(diff_duration, '0'::interval)) took_diff, sum(coalesce(import_duration,'0'::interval)) took_import, count(CASE WHEN imports.imported THEN 1 END) from imports, db_import_progress where imports.id = db_import_progress.import_id group by date order by date desc limit $1", history)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var diffDuration, importDuration pgtype.Interval
-	ip.Dates = make([]model.ImportDate, 0, history)
-
-	for rows.Next() {
-		var ipd model.ImportDate
-		err = rows.Scan(&ipd.Date, &diffDuration, &importDuration, &ipd.Count)
-		if err != nil {
-			return nil, err
-		}
-		err = diffDuration.AssignTo(&ipd.DiffDuration)
-		if err != nil {
-			return nil, err
-		}
-		err = importDuration.AssignTo(&ipd.ImportDuration)
-		if err != nil {
-			return nil, err
-		}
-		ipd.DiffDuration = ipd.DiffDuration.Round(time.Second)
-		ipd.ImportDuration = ipd.ImportDuration.Round(time.Second)
-		ip.Dates = append(ip.Dates, ipd)
-	}
-
-	return &ip, nil
-}
-
 // GetNameServer gets information for the provided nameserver
 func (ds *DataStore) GetNameServer(ctx context.Context, domain string) (*model.NameServer, error) {
 	var ns model.NameServer
