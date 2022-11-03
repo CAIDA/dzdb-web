@@ -3,12 +3,12 @@ package temfun
 
 import (
 	"html/template"
-	"time"
 	"strings"
+	"time"
 
+	"golang.org/x/net/idna"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
-	"golang.org/x/net/idna"
 )
 
 // Funcs is a global FuncMap for all templates to include

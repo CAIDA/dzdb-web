@@ -72,7 +72,6 @@ func Start(ds *datastore.DataStore, server *server.Server) {
 	server.Get("/zones", app.zoneIndexHandler)
 	server.Get("/tlds", app.tldIndexHandler)
 	server.Get("/tlds/graveyard", app.tldGraveyardIndexHandler)
-	server.Get("/stats", app.statsHandler)
 
 	// research
 	server.Get("/research/trust-tree", app.trustTreeHandler)
@@ -172,19 +171,6 @@ func (app *appContext) findObjectLinkByName(ctx context.Context, s string) strin
 		return "/ip/" + s
 	}
 	return ""
-}
-
-func (app *appContext) statsHandler(w http.ResponseWriter, r *http.Request) {
-	data, err := app.ds.GetImportProgress(r.Context())
-	if err != nil {
-		panic(err)
-	}
-
-	p := Page{"Stats", "", data}
-	err = app.templates.ExecuteTemplate(w, "stats.tmpl", p)
-	if err != nil {
-		panic(err)
-	}
 }
 
 func (app *appContext) zoneIndexHandler(w http.ResponseWriter, r *http.Request) {
@@ -397,8 +383,15 @@ func (app *appContext) AboutHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *appContext) IndexHandler(w http.ResponseWriter, r *http.Request) {
-	p := Page{"Home", "", nil}
-	err := app.templates.ExecuteTemplate(w, "home.tmpl", p)
+	var data model.Dataset
+	var err error
+	data.TopNameServers, err = app.ds.GetTopNameservers(r.Context(), 20)
+	if err != nil {
+		panic(err)
+	}
+
+	p := Page{"Home", "", data}
+	err = app.templates.ExecuteTemplate(w, "home.tmpl", p)
 	if err != nil {
 		panic(err)
 	}
