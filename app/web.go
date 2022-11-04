@@ -460,7 +460,7 @@ func cleanDomain(domain string) string {
 	domain = strings.TrimSpace(domain)
 	// if ASCII just lowercase
 	if isASCII(domain) {
-		domain = strings.ToUpper(domain)
+		domain = strings.ToLower(domain)
 		return domain
 	}
 	// for non ASCII domains, only lowercase ASCII portions
@@ -470,7 +470,7 @@ func cleanDomain(domain string) string {
 	if err != nil {
 		panic(fmt.Errorf("idna parse error on (%q -> %q) %w", domain, punycode, err))
 	}
-	punycode = strings.ToUpper(punycode)
+	punycode = strings.ToLower(punycode)
 	return punycode
 }
 
