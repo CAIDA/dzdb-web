@@ -337,18 +337,16 @@ func (ds *DataStore) GetMovedFeedCount(ctx context.Context, search string) (*mod
 
 func (ds *DataStore) getFeedCount(ctx context.Context, table, search string) (*model.FeedCountList, error) {
 	var fc model.FeedCountList
-	fc.Search = search
+	fc.Search = strings.ToLower(search)
 	var err error
 
 	if len(search) < 4 {
 		return nil, fmt.Errorf("search term must be at least %d long", 4)
 	}
 
-	search = strings.ToUpper(search)
-
 	// TODO add index here for like substring search
 	query := fmt.Sprintf("SELECT date, count(domain) FROM %s where domain like '%%' || $1 || '%%' group by date order by date desc", table)
-	rows, err := ds.db.Query(ctx, query, search)
+	rows, err := ds.db.Query(ctx, query, fc.Search)
 	if err != nil {
 		return nil, err
 	}
