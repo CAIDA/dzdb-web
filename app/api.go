@@ -38,7 +38,6 @@ func APIStart(app *appContext, coffeeServer *server.Server) {
 	}
 
 	// imports
-	addAPI("/stats/imports", nil, "imports", app.apiImportStatusHandler)
 	addAPI("/imports/{year}/{month}/{day}", nil, "import_day_view", nil)
 	addAPI("/imports/{year}/{month}/{day}/{zone}", nil, "import_day_view_zone", nil)
 
