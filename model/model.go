@@ -69,16 +69,7 @@ func (err JSONError) Error() string {
 
 // Dataset holds information about entire dataset
 type Dataset struct {
-	TopNameServers            []*NameServer     `json:"topnameservers,omitempty"`
-}
-
-// ImportProgress Import Progress
-type ImportProgress struct {
-	Metadata
-	Imports int64        `json:"imports_left"`
-	Diffs   int64        `json:"diffs_left"`
-	Days    int          `json:"days_left"`
-	Dates   []ImportDate `json:"dates"` // gets last n days
+	TopNameServers []*NameServer `json:"topnameservers,omitempty"`
 }
 
 // ImportDate import date data
@@ -88,13 +79,6 @@ type ImportDate struct {
 	DiffDuration   time.Duration `json:"diff_duration"`
 	ImportDuration time.Duration `json:"import_duration"`
 	Count          uint64        `json:"count"`
-}
-
-// GenerateMetaData generates metadata recursively of member models
-func (ip *ImportProgress) GenerateMetaData() {
-	ip.Type = &importProgressType
-	//ip.Link = "/imports/status"
-	ip.Link = "/imports"
 }
 
 // ZoneImportResults results for imports

@@ -38,6 +38,7 @@ func APIStart(app *appContext, coffeeServer *server.Server) {
 	}
 
 	// imports
+
 	addAPI("/imports/{year}/{month}/{day}", nil, "import_day_view", nil)
 	addAPI("/imports/{year}/{month}/{day}/{zone}", nil, "import_day_view_zone", nil)
 
@@ -125,15 +126,6 @@ func APIStart(app *appContext, coffeeServer *server.Server) {
 
 	// API index
 	coffeeServer.Get("/api", app.apiIndex)
-}
-
-func (app *appContext) apiImportStatusHandler(w http.ResponseWriter, r *http.Request) {
-	ip, err := app.ds.GetImportProgress(r.Context())
-	if err != nil {
-		panic(err)
-	}
-
-	server.WriteJSON(w, ip)
 }
 
 func (app *appContext) apiLatestZonesHandler(w http.ResponseWriter, r *http.Request) {
