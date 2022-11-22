@@ -989,6 +989,60 @@ func (ds *DataStore) GetIP(ctx context.Context, name string) (*model.IP, error) 
 	return &ip, nil
 }
 
+// GetIPs gets multiple IPs that fit query parameters
+func (ds *DataStore) GetIPs(ctx context.Context, ipPrefix *net.IPNet) (*model.IPList, error) {
+	if ipPrefix == nil { // Return nothing if no prefix query
+		return nil, ErrNoResource
+	}
+
+	topN := 100
+	var query string
+	var ipl model.IPList
+	// Limit results if mask length is too short
+	addLimit := false
+	masklen, bytes := ipPrefix.Mask.Size()
+	if bytes == 32 {
+		query = "SELECT ip FROM a"
+		if masklen < 24 {
+			addLimit = true
+		}
+	} else if bytes == 128 {
+		query = "SELECT ip FROM aaaa"
+		if masklen < 48 {
+			addLimit = true
+		}
+	} else {
+		return nil, errors.New("IP conversion failure")
+	}
+	query += fmt.Sprintf(" WHERE ip << inet '%v'", ipPrefix)
+	if addLimit {
+		query += fmt.Sprintf(" LIMIT %v", topN)
+	}
+
+	rows, err := ds.db.Query(ctx, query)
+	if err == pgx.ErrNoRows {
+		err = ErrNoResource
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		var ip net.IP
+		err = rows.Scan(&ip)
+		if err != nil {
+			return nil, err
+		}
+		filledIP, err := ds.GetIP(ctx, ip.String())
+		if err != nil {
+			return nil, err
+		}
+		ipl.IPs = append(ipl.IPs, filledIP)
+	}
+
+	return &ipl, nil
+}
+
 // GetAvailablePrefixes returns available prefixes for the queried prefix
 func (ds *DataStore) GetAvailablePrefixes(ctx context.Context, name string) (*model.PrefixList, error) {
 	var prefixes model.PrefixList
