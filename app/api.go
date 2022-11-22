@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strings"
 	"time"
+	"net"
 
 	"github.com/gorilla/mux"
 )
@@ -21,7 +22,7 @@ func APIStart(app *appContext, coffeeServer *server.Server) {
 
 	// Adds a method to the router's GET handler but also adds it to the API index map
 	// description is the API function description
-	addAPI := func(path, description string, fn http.HandlerFunc) {
+	addAPI := func(path string, params []string, description string, fn http.HandlerFunc) {
 		re := regexp.MustCompile(":[a-zA-Z0-9_]*")
 		paramPath := re.ReplaceAllStringFunc(path, func(s string) string { return fmt.Sprintf("{%s}", s[1:]) })
 		if fn == nil { // hide WIP
@@ -29,95 +30,99 @@ func APIStart(app *appContext, coffeeServer *server.Server) {
 			//fn = server.HandlerNotImplemented
 			//description = fmt.Sprintf("[WIP] %s", description)
 		}
+		if params != nil {
+			paramPath += "?" + strings.Join(params, "&")
+		}
 		app.api[description] = paramPath
 		coffeeServer.Get("/api"+path, fn)
 	}
 
 	// imports
-	addAPI("/imports/{year}/{month}/{day}", "import_day_view", nil)
-	addAPI("/imports/{year}/{month}/{day}/{zone}", "import_day_view_zone", nil)
+
+	addAPI("/imports/{year}/{month}/{day}", nil, "import_day_view", nil)
+	addAPI("/imports/{year}/{month}/{day}/{zone}", nil, "import_day_view_zone", nil)
 
 	// counts
-	addAPI("/counts", "zone_counts", app.apiInternetHistoryCountsHandler)
-	addAPI("/counts/zone/{zone}", "internet_counts", app.apiZoneHistoryCountsHandler)
-	addAPI("/counts/root", "internet_counts", app.apiZoneHistoryCountsHandler)
-	addAPI("/counts/all", "all_zone_counts", app.apiAllZoneHistoryCountsHandler)
-	//addAPI("/counts/top", "top_zone_counts", app.apiTopZonesHandler)
+	addAPI("/counts", nil, "zone_counts", app.apiInternetHistoryCountsHandler)
+	addAPI("/counts/zone/{zone}", nil, "internet_counts", app.apiZoneHistoryCountsHandler)
+	addAPI("/counts/root", nil, "internet_counts", app.apiZoneHistoryCountsHandler)
+	addAPI("/counts/all", nil, "all_zone_counts", app.apiAllZoneHistoryCountsHandler)
+	//addAPI("/counts/top", nil, "top_zone_counts", app.apiTopZonesHandler)
 
 	// zones
-	addAPI("/root", "zone_view", app.apiZoneHandler)
-	addAPI("/zones", "zones", app.apiLatestZonesHandler)
-	addAPI("/zones/{zone}", "zone_view", app.apiZoneHandler)
-	addAPI("/zones/{zone}/import", "zone_import", app.apiZoneImportHandler)
-	addAPI("/zones/{zone}/nameservers", "zone_nameservers", nil)
-	addAPI("/zones/{zone}/nameservers/current", "zone_nameservers_current", nil)
-	addAPI("/zones/{zone}/nameservers/archive", "zone_nameservers_archive", nil)
-	addAPI("/zones/{zone}/nameservers/archive/page/{page}", "zone_nameservers_archive_paged", nil)
+	addAPI("/root", nil, "zone_view", app.apiZoneHandler)
+	addAPI("/zones", nil, "zones", app.apiLatestZonesHandler)
+	addAPI("/zones/{zone}", nil, "zone_view", app.apiZoneHandler)
+	addAPI("/zones/{zone}/import", nil, "zone_import", app.apiZoneImportHandler)
+	addAPI("/zones/{zone}/nameservers", nil, "zone_nameservers", nil)
+	addAPI("/zones/{zone}/nameservers/current", nil, "zone_nameservers_current", nil)
+	addAPI("/zones/{zone}/nameservers/archive", nil, "zone_nameservers_archive", nil)
+	addAPI("/zones/{zone}/nameservers/archive/page/{page}", nil, "zone_nameservers_archive_paged", nil)
 
 	// domains
-	addAPI("/random", "random_domain", app.apiRandomDomainHandler)
-	addAPI("/domains/{domain}", "domain", app.apiDomainHandler)
-	addAPI("/domains/{domain}/nameservers", "domain_nameservers", nil)
-	addAPI("/domains/{domain}/nameservers/current", "domain_current_nameservers", nil)
-	addAPI("/domains/{domain}/nameservers/current/page/{page}", "domain_current_nameservers_paged", nil)
-	addAPI("/domains/{domain}/nameservers/archive", "domain_archive_nameservers", nil)
-	addAPI("/domains/{domain}/nameservers/archive/page/{page}", "domain_archive_nameservers_paged", nil)
+	addAPI("/random", nil, "random_domain", app.apiRandomDomainHandler)
+	addAPI("/domains/{domain}", nil, "domain", app.apiDomainHandler)
+	addAPI("/domains/{domain}/nameservers", nil, "domain_nameservers", nil)
+	addAPI("/domains/{domain}/nameservers/current", nil, "domain_current_nameservers", nil)
+	addAPI("/domains/{domain}/nameservers/current/page/{page}", nil, "domain_current_nameservers_paged", nil)
+	addAPI("/domains/{domain}/nameservers/archive", nil, "domain_archive_nameservers", nil)
+	addAPI("/domains/{domain}/nameservers/archive/page/{page}", nil, "domain_archive_nameservers_paged", nil)
 
 	// nameservers
-	addAPI("/nameservers/{domain}", "nameserver", app.apiNameserverHandler)
-	addAPI("/nameservers/{domain}/domains", "nameserver_domains", nil)
-	addAPI("/nameservers/{domain}/domains/current", "nameserver_current_domains", nil)
-	addAPI("/nameservers/{domain}/domains/current/page/{page}", "nameserver_current_domains_paged", nil)
-	addAPI("/nameservers/{domain}/domains/archive", "nameserver_archive_domains", nil)
-	addAPI("/nameservers/{domain}/domains/archive/page/{page}", "nameserver_archive_domains_paged", nil)
+	addAPI("/nameservers/{domain}", nil, "nameserver", app.apiNameserverHandler)
+	addAPI("/nameservers/{domain}/domains", nil, "nameserver_domains", nil)
+	addAPI("/nameservers/{domain}/domains/current", nil, "nameserver_current_domains", nil)
+	addAPI("/nameservers/{domain}/domains/current/page/{page}", nil, "nameserver_current_domains_paged", nil)
+	addAPI("/nameservers/{domain}/domains/archive", nil, "nameserver_archive_domains", nil)
+	addAPI("/nameservers/{domain}/domains/archive/page/{page}", nil, "nameserver_archive_domains_paged", nil)
 
-	addAPI("/nameservers/{domain}/ip", "nameserver_ips", nil)
-	addAPI("/nameservers/{domain}/ip/4", "nameserver_ipv4", nil)
-	addAPI("/nameservers/{domain}/ip/4/current", "nameserver_ipv4_current", nil)
-	addAPI("/nameservers/{domain}/ip/4/current/page/{page}", "nameserver_ipv4_current_paged", nil)
-	addAPI("/nameservers/{domain}/ip/4/archive", "nameserver_ipv4_archive", nil)
-	addAPI("/nameservers/{domain}/ip/4/archive/page/{page}", "nameserver_ipv4_archive_paged", nil)
-	addAPI("/nameservers/{domain}/ip/6", "nameserver_ipv6", nil)
-	addAPI("/nameservers/{domain}/ip/6/current", "nameserver_ipv6_current", nil)
-	addAPI("/nameservers/{domain}/ip/6/current/page/{page}", "nameserver_ipv6_current_paged", nil)
-	addAPI("/nameservers/{domain}/ip/6/archive", "nameserver_ipv6_archive", nil)
-	addAPI("/nameservers/{domain}/ip/6/archive/page/{page}", "nameserver_ipv6_archive_paged", nil)
+	addAPI("/nameservers/{domain}/ip", nil, "nameserver_ips", nil)
+	addAPI("/nameservers/{domain}/ip/4", nil, "nameserver_ipv4", nil)
+	addAPI("/nameservers/{domain}/ip/4/current", nil, "nameserver_ipv4_current", nil)
+	addAPI("/nameservers/{domain}/ip/4/current/page/{page}", nil, "nameserver_ipv4_current_paged", nil)
+	addAPI("/nameservers/{domain}/ip/4/archive", nil, "nameserver_ipv4_archive", nil)
+	addAPI("/nameservers/{domain}/ip/4/archive/page/{page}", nil, "nameserver_ipv4_archive_paged", nil)
+	addAPI("/nameservers/{domain}/ip/6", nil, "nameserver_ipv6", nil)
+	addAPI("/nameservers/{domain}/ip/6/current", nil, "nameserver_ipv6_current", nil)
+	addAPI("/nameservers/{domain}/ip/6/current/page/{page}", nil, "nameserver_ipv6_current_paged", nil)
+	addAPI("/nameservers/{domain}/ip/6/archive", nil, "nameserver_ipv6_archive", nil)
+	addAPI("/nameservers/{domain}/ip/6/archive/page/{page}", nil, "nameserver_ipv6_archive_paged", nil)
 
 	// ipv4 & ipv6
-	addAPI("/ip", "ip", nil)
-	addAPI("/ip/{ip}", "ip_view", app.apiIPHandler)
-	addAPI("/ip/{ip}/nameservers", "ip_nameservers", nil)
-	addAPI("/ip/{ip}/nameservers/current", "ip_nameservers_current", nil)
-	addAPI("/ip/{ip}/nameservers/archive", "ip_nameservers_archive", nil)
+	addAPI("/ip", []string{"ipprefix={prefix_to_search}"}, "ip", app.apiIPListHandler)
+	addAPI("/ip/{ip}", nil, "ip_view", app.apiIPHandler)
+	addAPI("/ip/{ip}/nameservers", nil, "ip_nameservers", nil)
+	addAPI("/ip/{ip}/nameservers/current", nil, "ip_nameservers_current", nil)
+	addAPI("/ip/{ip}/nameservers/archive", nil, "ip_nameservers_archive", nil)
 
 	// feeds
-	addAPI("/feeds/new", "feeds_new", nil)
-	addAPI("/feeds/new/search/{search}", "feeds_new_search", app.apiFeedsSearchNewHandler)
-	addAPI("/feeds/new/date/{date}", "feeds_new_date", app.apiFeedsNewHandler)
-	addAPI("/feeds/ns/new/date/{date}", "feeds_ns_new_date", app.apiFeedsNsNewHandler)
-	//addAPI("/feeds/new/page/{page}", "feeds_new_paged", nil)
-	//addAPI("/feeds/new/{year}/{month}/{day}", "feeds_new_date", app.apiFeedsNewHandler)
-	//addAPI("/feeds/new/{year}/{month}/{day}/page/{page}", "feeds_new_date_paged", nil)
+	addAPI("/feeds/new", nil, "feeds_new", nil)
+	addAPI("/feeds/new/search/{search}", nil, "feeds_new_search", app.apiFeedsSearchNewHandler)
+	addAPI("/feeds/new/date/{date}", nil, "feeds_new_date", app.apiFeedsNewHandler)
+	addAPI("/feeds/ns/new/date/{date}", nil, "feeds_ns_new_date", app.apiFeedsNsNewHandler)
+	//addAPI("/feeds/new/page/{page}", nil, "feeds_new_paged", nil)
+	//addAPI("/feeds/new/{year}/{month}/{day}", nil, "feeds_new_date", app.apiFeedsNewHandler)
+	//addAPI("/feeds/new/{year}/{month}/{day}/page/{page}", nil, "feeds_new_date_paged", nil)
 
-	addAPI("/feeds/old", "feeds_old", nil)
-	addAPI("/feeds/old/search/{search}", "feeds_old_search", app.apiFeedsSearchOldHandler)
-	addAPI("/feeds/old/date/{date}", "feeds_old_date", app.apiFeedsOldHandler)
-	addAPI("/feeds/ns/old/date/{date}", "feeds_ns_old_date", app.apiFeedsNsOldHandler)
-	//addAPI("/feeds/old/page/{page}", "feeds_old_paged", nil)
-	//addAPI("/feeds/old/{year}/{month}/{day}", "feeds_old_date", nil)
-	//addAPI("/feeds/old/{year}/{month}/{day}/page/{page}", "feeds_old_date_paged", nil)
+	addAPI("/feeds/old", nil, "feeds_old", nil)
+	addAPI("/feeds/old/search/{search}", nil, "feeds_old_search", app.apiFeedsSearchOldHandler)
+	addAPI("/feeds/old/date/{date}", nil, "feeds_old_date", app.apiFeedsOldHandler)
+	addAPI("/feeds/ns/old/date/{date}", nil, "feeds_ns_old_date", app.apiFeedsNsOldHandler)
+	//addAPI("/feeds/old/page/{page}", nil, "feeds_old_paged", nil)
+	//addAPI("/feeds/old/{year}/{month}/{day}", nil, "feeds_old_date", nil)
+	//addAPI("/feeds/old/{year}/{month}/{day}/page/{page}", nil, "feeds_old_date_paged", nil)
 
-	addAPI("/feeds/moved", "feeds_moved", nil)
-	addAPI("/feeds/moved/search/{search}", "feeds_moved_search", app.apiFeedsSearchMovedHandler)
-	addAPI("/feeds/moved/date/{date}", "feeds_moved_date", app.apiFeedsMovedHandler)
-	addAPI("/feeds/ns/moved/date/{date}", "feeds_ns_moved_date", app.apiFeedsNsMovedHandler)
-	//addAPI("/feeds/moved/page/{page}", "feeds_moved_paged", nil)
-	//addAPI("/feeds/moved/{year}/{month}/{day}", "feeds_moved_date", nil)
-	//addAPI("/feeds/moved/{year}/{month}/{day}/page/{page}", "feeds_moved_date_paged", nil)
+	addAPI("/feeds/moved", nil, "feeds_moved", nil)
+	addAPI("/feeds/moved/search/{search}", nil, "feeds_moved_search", app.apiFeedsSearchMovedHandler)
+	addAPI("/feeds/moved/date/{date}", nil, "feeds_moved_date", app.apiFeedsMovedHandler)
+	addAPI("/feeds/ns/moved/date/{date}", nil, "feeds_ns_moved_date", app.apiFeedsNsMovedHandler)
+	//addAPI("/feeds/moved/page/{page}", nil, "feeds_moved_paged", nil)
+	//addAPI("/feeds/moved/{year}/{month}/{day}", nil, "feeds_moved_date", nil)
+	//addAPI("/feeds/moved/{year}/{month}/{day}/page/{page}", nil, "feeds_moved_date_paged", nil)
 
 	// research
-	addAPI("/research/ipnszonecount/{ip}", "ip_ns_zone_count", app.apiIPNsZoneCount)
-	addAPI("/research/active_ips/{date}", "active_ips", app.apiActiveIPs)
+	addAPI("/research/ipnszonecount/{ip}", nil, "ip_ns_zone_count", app.apiIPNsZoneCount)
+	addAPI("/research/active_ips/{date}", nil, "active_ips", app.apiActiveIPs)
 
 	// API index
 	coffeeServer.Get("/api", app.apiIndex)
@@ -336,6 +341,24 @@ func (app *appContext) apiIPHandler(w http.ResponseWriter, r *http.Request) {
 
 	server.WriteJSON(w, data)
 }
+
+func (app *appContext) apiIPListHandler(w http.ResponseWriter, r *http.Request) {
+	queryVars := r.URL.Query()
+	_, ipPrefix, err := net.ParseCIDR(queryVars.Get("ipprefix"))
+
+	data, err := app.ds.GetIPs(r.Context(), ipPrefix)
+	if err != nil {
+		if err == datastore.ErrNoResource {
+			server.WriteJSONError(w, server.ErrResourceNotFound)
+			return
+		}
+
+		panic(err)
+	}
+
+	server.WriteJSON(w, data)
+}
+
 
 func (app *appContext) apiZoneHandler(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
