@@ -5,6 +5,7 @@ import (
 	"dnscoffee/model"
 	"strings"
 	"time"
+	"net"
 )
 
 // GetActiveIPs returns the active IP addresses (IPv4 and IPv6) for a given date
@@ -22,12 +23,12 @@ func (ds *DataStore) GetActiveIPs(ctx context.Context, date time.Time) (*model.A
 
 	aip.IPv4IPs = make([]string, 0)
 	for rows.Next() {
-		var ipv4 string
+		var ipv4 net.IP
 		err = rows.Scan(&ipv4)
 		if err != nil {
 			return nil, err
 		}
-		aip.IPv4IPs = append(aip.IPv4IPs, ipv4)
+		aip.IPv4IPs = append(aip.IPv4IPs, ipv4.String())
 	}
 
 	query = "select distinct aaaa.ip from aaaa_nameservers, aaaa where aaaa_nameservers.aaaa_id = aaaa.id and first_seen <= $1 and (last_seen >= $1 or last_seen is NULL)"
@@ -39,12 +40,12 @@ func (ds *DataStore) GetActiveIPs(ctx context.Context, date time.Time) (*model.A
 
 	aip.IPv6IPs = make([]string, 0)
 	for rows.Next() {
-		var ipv6 string
+		var ipv6 net.IP
 		err = rows.Scan(&ipv6)
 		if err != nil {
 			return nil, err
 		}
-		aip.IPv6IPs = append(aip.IPv6IPs, ipv6)
+		aip.IPv6IPs = append(aip.IPv6IPs, ipv6.String())
 	}
 
 	return &aip, nil
