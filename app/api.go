@@ -125,7 +125,7 @@ func APIStart(app *appContext, coffeeServer *server.Server) {
 	addAPI("/research/active_ips/{date}", nil, "active_ips", app.apiActiveIPs)
 
 	// API index
-	coffeeServer.Get("/api", app.apiIndex)
+//	coffeeServer.Get("/api", app.apiIndex)
 }
 
 func (app *appContext) apiLatestZonesHandler(w http.ResponseWriter, r *http.Request) {

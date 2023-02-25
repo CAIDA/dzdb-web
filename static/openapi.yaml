@@ -1,0 +1,341 @@
+openapi: 3.0.1
+info:
+  title: DZDB API Documentation
+  description: |-
+    This API allows querying the zone file collection maintained by DZDB.
+  contact:
+    email: dzdb@caida.org
+  version: 0.1.0
+servers:
+  - url: /api
+paths:
+  /root:
+    get:
+      tags:
+        - zones
+      summary: Info for the root zone
+      responses:
+        '200':
+          description: root zone information
+  /zones:
+    get:
+      tags:
+        - zones
+      summary: Info for all zones
+      responses:
+        '200':
+          description: all zone information
+  /zones/{zone}:
+    get:
+      tags:
+        - zones
+      summary: Info for the specified zone
+      parameters:
+        - name: zone
+          in: path
+          description: the requested zone
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: single zone information
+  /zones/{zone}/import:
+    get:
+      tags:
+        - zones
+      summary: Just the import info for the specified zone
+      parameters:
+        - name: zone
+          in: path
+          description: the requested zone
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: list of nameservers
+  /counts:
+    get:
+      tags:
+        - counts
+      summary: Domain info for all zones (collectively), grouped weekly
+      responses:
+        "200":
+          description: list of time periods with domain counts
+  /counts/all:
+    get:
+      tags:
+        - counts
+      summary: Domain info for all zones (separated by zone), grouped weekly
+      responses:
+        "200":
+          description: list of zones, each with list of time periods with domain counts
+  /counts/root:
+    get:
+      tags:
+        - counts
+      summary: Domain info for root zones, grouped weekly
+      responses:
+        "200":
+          description: list of time periods with domain counts
+  /counts/zone/{zone}:
+    get:
+      tags:
+        - counts
+      summary: Domain info for specified zone, grouped weekly
+      parameters:
+        - name: zone
+          in: path
+          description: the requested zone
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: list of time periods with domain counts
+  /random:
+    get:
+      tags:
+        - domains
+      summary: Random active domain
+      responses:
+        '200':
+          description: single domain name
+  /domains/{domain}:
+    get:
+      tags:
+        - domains
+      summary: Info for specified domain
+      description: Returns the current status of the provided domain if found.
+      parameters:
+        - name: domain
+          in: path
+          description: the requested domain
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: single domain information
+  /ip:
+    get:
+      tags:
+        - ip
+      summary: List of IP addresses that match specified prefix
+      parameters:
+      - name: ipprefix
+        in: query
+        description: the requested IP prefix
+        required: true
+        style: form
+        explode: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: list of information for IP addresses
+  /ip/{ip}:
+    get:
+      tags:
+        - ip
+      summary: Info for specified IP address
+      parameters:
+        - name: ip
+          in: path
+          description: |-
+            the IP
+            example 192.0.2.0
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: single IP information
+  /nameservers/{nameserver}:
+    get:
+      tags:
+        - nameservers
+      summary: Info for specified nameserver
+      parameters:
+        - name: nameserver
+          in: path
+          description: the requested nameserver
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: nameserver information
+  /feeds/new/date/{date}:
+    get:
+      tags:
+        - feeds
+      summary: List of domains added on the specified date
+      parameters:
+        - name: date
+          in: path
+          description: date query
+          required: true
+          schema:
+            pattern: ^\d\d\d\d-\d\d-\d\d$
+            type: string
+      responses:
+        '200':
+          description: list of domains
+  /feeds/new/search/{search}:
+    get:
+      tags:
+        - feeds
+      summary: Counts of new domains that contain specified string, grouped by day
+      parameters:
+        - name: search
+          in: path
+          description: search term
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: daily counts of domains
+  /feeds/old/date/{date}:
+    get:
+      tags:
+        - feeds
+      summary: List of domains that stopped having an NS record on the specified date
+      parameters:
+        - name: date
+          in: path
+          description: date query
+          required: true
+          schema:
+            pattern: ^\d\d\d\d-\d\d-\d\d$
+            type: string
+      responses:
+        '200':
+          description: list of domains
+  /feeds/old/search/{search}:
+    get:
+      tags:
+        - feeds
+      summary: Counts of removed domains that contain specified string, grouped by day
+      parameters:
+        - name: search
+          in: path
+          description: search term
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: list of nameservers
+  /feeds/moved/date/{date}:
+    get:
+      tags:
+        - feeds
+      summary: List of domains which have changed nameservers, grouped by day
+      parameters:
+        - name: date
+          in: path
+          description: date query
+          required: true
+          schema:
+            pattern: ^\d\d\d\d-\d\d-\d\d$
+            type: string
+      responses:
+        '200':
+          description: list of domains
+  /feeds/moved/search/{search}:
+    get:
+      tags:
+        - feeds
+      summary: Counts of domains that changed nameservers and contain specified string, grouped by day
+      parameters:
+        - name: search
+          in: path
+          description: search term
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: list of nameservers
+  /feeds/ns/new/date/{date}:
+    get:
+      tags:
+        - feeds
+      summary: List of newly added nameservers.
+      parameters:
+        - name: date
+          in: path
+          description: date query
+          required: true
+          schema:
+            pattern: ^\d\d\d\d-\d\d-\d\d$
+            type: string
+      responses:
+        '200':
+          description: list of nameservers
+  /feeds/ns/old/date/{date}:
+    get:
+      tags:
+        - feeds
+      summary: List of nameservers which no longer have root glue `A` or `AAAA` records.
+      parameters:
+        - name: date
+          in: path
+          description: date query
+          required: true
+          schema:
+            pattern: ^\d\d\d\d-\d\d-\d\d$
+            type: string
+      responses:
+        '200':
+          description: list of nameservers
+  /feeds/ns/moved/date/{date}:
+    get:
+      tags:
+        - feeds
+      summary: List of nameservers which have changed IP Addresses.
+      parameters:
+        - name: date
+          in: path
+          description: date query
+          required: true
+          schema:
+            pattern: ^\d\d\d\d-\d\d-\d\d$
+            type: string
+      responses:
+        '200':
+          description: list of nameservers
+  /research/active_ips/{date}:
+    get:
+      tags:
+        - research
+      summary: List of all active IP addresses for the specified date
+      parameters:
+        - name: date
+          in: path
+          description: date query
+          required: true
+          schema:
+            pattern: ^\d\d\d\d-\d\d-\d\d$
+            type: string
+      responses:
+        '200':
+          description: list of active IP addresses
+  /research/ipnszonecount/{ip}:
+    get:
+      tags:
+        - research
+      summary: Count of nameservers pointing to the specified IP address, grouped by zone
+      parameters:
+        - name: ip
+          in: path
+          description: IP address
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: list of zones with nameserver counts
