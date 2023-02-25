@@ -56,6 +56,10 @@ func New(listenAddr string, apiConfig APIConfig) (*Server, error) {
 	server.router.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "static/favicon.ico")
 	}).Methods(http.MethodGet)
+	// docs
+	server.router.HandleFunc("/api", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "static/docs.html")
+	}).Methods(http.MethodGet)
 
 	return server, nil
 }
