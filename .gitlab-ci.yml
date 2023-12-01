@@ -79,21 +79,21 @@ build-prod:
   rules:
     - if: $CI_COMMIT_BRANCH == "production"
 
-container_scanning:
-  needs:
-    - job: build-dev
-      optional: true
-    - job: build-mr
-      optional: true
-    - job: build-prod
-      optional: true
-  variables:
-    GIT_STRATEGY: fetch
-    DOCKER_USER: ${CI_REGISTRY_USER}
-    DOCKER_PASSWORD: ${CI_REGISTRY_PASSWORD}
-    DOCKER_IMAGE: "${CI_REGISTRY_IMAGE}/${CI_COMMIT_REF_NAME}:${CI_COMMIT_SHORT_SHA}"
-  rules:
-    - if: $CI_PIPELINE_SOURCE == 'merge_request_event' || $CI_COMMIT_REF_NAME == 'master' || $CI_COMMIT_REF_NAME == 'production'
+#container_scanning:
+#  needs:
+#    - job: build-dev
+#      optional: true
+#    - job: build-mr
+#      optional: true
+#    - job: build-prod
+#      optional: true
+#  variables:
+#    GIT_STRATEGY: fetch
+#    DOCKER_USER: ${CI_REGISTRY_USER}
+#    DOCKER_PASSWORD: ${CI_REGISTRY_PASSWORD}
+#    DOCKER_IMAGE: "${CI_REGISTRY_IMAGE}/${CI_COMMIT_REF_NAME}:${CI_COMMIT_SHORT_SHA}"
+#  rules:
+#    - if: $CI_PIPELINE_SOURCE == 'merge_request_event' || $CI_COMMIT_REF_NAME == 'master' || $CI_COMMIT_REF_NAME == 'production'
 
 deploy_mr_dns_record:
   stage: pre-deploy
