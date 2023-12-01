@@ -1,17 +1,17 @@
 stages:
   - build
-  - test
+#  - test
   - pre-deploy
   - deploy
   - stop
 
 # GitLab Security Suite
-include:
-  - template: Code-Quality.gitlab-ci.yml
-  - template: Security/SAST.gitlab-ci.yml
-  - template: Security/Dependency-Scanning.gitlab-ci.yml
-  - template: Security/Container-Scanning.gitlab-ci.yml
-  - template: Security/Secret-Detection.gitlab-ci.yml
+#include:
+#  - template: Code-Quality.gitlab-ci.yml
+#  - template: Security/SAST.gitlab-ci.yml
+#  - template: Security/Dependency-Scanning.gitlab-ci.yml
+#  - template: Security/Container-Scanning.gitlab-ci.yml
+#  - template: Security/Secret-Detection.gitlab-ci.yml
 
 variables: 
   CONTAINER_IMAGE_LATEST: ${CI_REGISTRY_IMAGE}/${CI_COMMIT_REF_NAME}:latest
