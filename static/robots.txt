@@ -1,2 +1,10 @@
 User-agent: *
 Disallow: /api
+Disallow: /nameservers
+Disallow: /ip
+Disallow: /search
+Disallow: /domains
+Disallow: /root
+Disallow: /zones
+Disallow: /tlds
+Disallow: /research
