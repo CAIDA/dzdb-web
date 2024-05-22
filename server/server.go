@@ -19,7 +19,7 @@ type APIConfig struct {
 
 var DefaultAPIConfig = APIConfig{
 	APITimeout:           60,
-	APIRequestsPerMinute: 60,
+	APIRequestsPerMinute: 6000,
 	APIMaxRequestHistory: 16384,
 	APIRequestsBurst:     10,
 }
