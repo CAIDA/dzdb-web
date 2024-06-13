@@ -1,5 +1,7 @@
 # [DNS Coffee Frontend](https://dns.coffee)
 
+test
+
 ## Building
 
 Requires go compiler >= go1.13
